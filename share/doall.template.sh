@@ -18,7 +18,7 @@ else
 
     mkdir -p rec_$curn  
 
-    sudo ~/flush_cash.sh
+    drop_caches
 
     xlictworkflow_local.sh \
       --indir $(realpath "clean") \
