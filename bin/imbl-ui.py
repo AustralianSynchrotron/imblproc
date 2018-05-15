@@ -3,10 +3,12 @@
 import sys
 import os
 
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import pyqtSlot, QSettings
+from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5.QtCore import pyqtSlot, QSettings, QProcess, QEventLoop
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.uic import loadUi
+
+from subprocess import Popen
 
 sys.path.append("..")
 from share import ui_imbl
@@ -27,6 +29,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.scanRange = 0
         self.doSerial = self.do2D = False
+
+    def addToConsole(self, text, qcolor=QtGui.QPalette.Text):
+        if not text:
+            return
+        self.ui.console.setTextColor(qcolor)
+        self.ui.console.append(text)
+
+    def addOutToConsole(self, text):
+        self.addToConsole(text, QtCore.Qt.blue)
+
+    def addErrToConsole(self, text):
+        self.addToConsole(text, QtCore.Qt.red)
 
     @pyqtSlot()
     def on_inBrowse_clicked(self):
@@ -162,8 +176,8 @@ class MainWindow(QtWidgets.QMainWindow):
     @pyqtSlot()
     def on_initiate_clicked(self):
 
-        if self.ui.initiate.styleSheet() == warnStyle:
-            # stop initiate
+        if self.initproc:
+            self.initproc.kill()
             return
 
         for tabIdx in range(1, self.ui.tabWidget.count()-1):
@@ -177,9 +191,29 @@ class MainWindow(QtWidgets.QMainWindow):
                    + " -f " if self.ui.notFnS.isChecked() else ""
                    + " -y " if self.ui.yIndependent.isChecked() else ""
                    + " -z " if self.ui.zIndependent.isChecked() else ""
-                   + " -e " if self.ui.noFF.isChecked() else ""
+                   + " -e " if self.ui.noNewFF.isChecked() else ""
                    + self.ui.inPath.text())
-        os.system(command)
+
+        eloop = QEventLoop(self)
+        self.initproc = QProcess(self)
+        self.initproc.finished.connect(eloop.quit)
+        self.initproc.readyReadStandardOutput.connect(eloop.quit)
+        self.initproc.readyReadStandardError.connect(eloop.quit)
+
+        self.addToConsole("Executing command:")
+        self.addToConsole(command)
+        self.initproc.start(command)
+        self.initproc.waitForStarted()
+        while True:
+            self.addOutToConsole(self.initproc.readAllStandardOutput())
+            self.addErrToConsole(self.initproc.readAllStandardError())
+            if self.initproc.state():
+                eloop.exec_()
+            else:
+                break
+        self.addToConsole("Command stopped with exit status %i"
+                          % self.initproc.exitCode())
+        self.initproc = None
 
         self.ui.initInfo.setEnabled(True)
         self.ui.initiate.setStyleSheet('')

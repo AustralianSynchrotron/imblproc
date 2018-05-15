@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>4</number>
       </property>
       <widget class="QWidget" name="tabInit">
        <attribute name="title">
@@ -29,9 +29,9 @@
          <widget class="QWidget" name="initInfo" native="true">
           <layout class="QGridLayout" name="gridLayout_8">
            <item row="5" column="1">
-            <widget class="QCheckBox" name="checkBox_4">
+            <widget class="QCheckBox" name="noNewFF">
              <property name="text">
-              <string>do NOT recreate averaged flat and dark field images</string>
+              <string>Do NOT recreate averaged flat and dark field images</string>
              </property>
             </widget>
            </item>
@@ -574,7 +574,7 @@
          </widget>
         </item>
         <item row="7" column="0" colspan="3">
-         <widget class="QCheckBox" name="noFF">
+         <widget class="QCheckBox" name="noRecFF">
           <property name="text">
            <string>Do NOT perform flat and dark field correction on final processing</string>
           </property>
@@ -593,6 +593,23 @@
           </property>
           <property name="alignment">
            <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tabConsole">
+       <attribute name="title">
+        <string>Console</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QTextBrowser" name="console"/>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_7">
+          <property name="text">
+           <string>TextLabel</string>
           </property>
          </widget>
         </item>
