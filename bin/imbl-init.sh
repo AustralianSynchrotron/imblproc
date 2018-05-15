@@ -34,12 +34,12 @@ shift $(( $OPTIND - 1 ))
 
 
 if [ -z "${1}" ] ; then
-  echo "No input path to the sample was given."
-  printhelp
+  echo "No input path to the sample was given." >&2
+  printhelp >&2
   exit 1
 fi
 if [ ! -e "$1" ] ; then
-  echo "Input path \"$1\" does not exist."
+  echo "Input path \"$1\" does not exist." >&2
   exit 1
 fi
 
@@ -51,7 +51,7 @@ fi
 opath="$(realpath $opath)"
 
 if ! mkdir -p "${opath}" ; then
-  echo "Could not create output directory \"${opath}\"."
+  echo "Could not create output directory \"${opath}\"." >&2
   exit 1
 fi
 
@@ -59,15 +59,22 @@ cd "${opath}"
 
 ls -c "$ipath/" > .listinput
 
-conffile="$ipath/$( cat .listinput | egrep 'acquisition.*config.*' | head -n 1 )"
+conffile="$ipath/$( cat .listinput | egrep 'acquisition.*config.*' | sort -V | tail -n 1 )"
 if [ ! -e "$conffile" ] ; then
-  echo "No configuration file \"${ipath}/acquisition.\*config\*\" found in input path."
+  echo "No configuration file \"${ipath}/acquisition.\*config\*\" found in input path." >&2
   exit 1
 fi
 
 getfromconfig () {
   cat "$conffile" | egrep "${2}|\[${1}\]" | grep "\[${1}\]" -A 1 | grep "${2}" | cut -d'=' -f 2
 }
+
+ctversion=$(getfromconfig General version)
+if [ -z "$ctversion" ] ; then
+    echo "Old version of the CT experiment detected." >&2
+    echo "Use imbl4massive utilities to process" >&2
+    exit 1
+fi
 
 range=$(getfromconfig scan range)
 pjs=$(getfromconfig scan ^steps)
@@ -78,13 +85,12 @@ if (( $range >= 360 ))  &&  $Fst  ; then
 fi
 
 Ysteps=0
+Zsteps=0
 if [ "$(getfromconfig General doserialscans)" == "true" ] ; then
   Ysteps=$(getfromconfig serial outerseries\\\\nofsteps)
-fi
-
-Zsteps=0
-if [ "$(getfromconfig serial 2d)" == "true" ] ; then
-  Zsteps=$(getfromconfig serial innearseries\\\\nofsteps)
+  if [ "$(getfromconfig serial 2d)" == "true" ] ; then
+    Zsteps=$(getfromconfig serial innearseries\\\\nofsteps)
+  fi
 fi
 
 #echo $Zsteps
@@ -159,6 +165,7 @@ for Ydir in $Ydirs ; do
       echo ipath=\"$ipath\" >> "$initfile"
       echo opath=\"$opath\" >> "$initfile"
       echo pjs=$pjs >> "$initfile"
+      echo scanrange=$range >> "$initfile"
       echo fshift=$fshift >> "$initfile"
       echo width=$width  >> "$initfile"
       echo hight=$hight  >> "$initfile"
