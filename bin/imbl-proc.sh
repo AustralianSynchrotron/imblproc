@@ -234,7 +234,7 @@ else # is a projection
   stImgs=""
   if [ ! -z "$imagick" ] ; then
     for imgf in $lsImgs ; do
-      pimgf="tmp/T${pjnum}_$(basename $imgf)"
+      pimgf="tmp/$(basename $imgf)"
       convert -quiet "$imgf" $imagick "$pimgf" ### remove echo
       chkf "$pimgf" "im-processed" ### remove echo
       stImgs="$stImgs $pimgf"

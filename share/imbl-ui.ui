@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>4</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tabInit">
        <attribute name="title">
@@ -605,13 +605,6 @@
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
          <widget class="QTextBrowser" name="console"/>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_7">
-          <property name="text">
-           <string>TextLabel</string>
-          </property>
-         </widget>
         </item>
        </layout>
       </widget>

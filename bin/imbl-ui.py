@@ -5,10 +5,11 @@ import os
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import pyqtSlot, QSettings, QProcess, QEventLoop
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QFileDialog, QApplication
 from PyQt5.uic import loadUi
 
 from subprocess import Popen
+from pathlib import Path
 
 sys.path.append("..")
 from share import ui_imbl
@@ -19,28 +20,84 @@ warnStyle = 'background-color: rgba(255, 0, 0, 128);'
 
 class MainWindow(QtWidgets.QMainWindow):
 
+    configName = str(Path.home()) + "/.imbl-ui"
+
     def __init__(self):
         super(MainWindow, self).__init__()
         # self.ui = loadUi('../share/imbl-ui.ui', self)
         self.ui = ui_imbl.Ui_MainWindow()
         self.ui.setupUi(self)
 
+        self.loadConfiguration()
         self.on_outPath_textChanged()
+
+        for swdg in self.findChildren((QtWidgets.QCheckBox,
+                                       QtWidgets.QAbstractSpinBox,
+                                       QtWidgets.QLineEdit)):
+            if swdg.objectName() == 'qt_spinbox_lineedit':
+                pass
+            elif isinstance(swdg, QtWidgets.QLineEdit):
+                swdg.textChanged.connect(self.saveConfiguration)
+            elif isinstance(swdg, QtWidgets.QCheckBox):
+                swdg.toggled.connect(self.saveConfiguration)
+            elif isinstance(swdg, QtWidgets.QAbstractSpinBox):
+                swdg.valueChanged.connect(self.saveConfiguration)
 
         self.scanRange = 0
         self.doSerial = self.do2D = False
+        self.initproc = QProcess(self)
+        
+        self.addToConsole("Am ready...")
 
-    def addToConsole(self, text, qcolor=QtGui.QPalette.Text):
+    def addToConsole(self, text, qcolor=None):
         if not text:
             return
+        if not qcolor:
+            qcolor = self.ui.console.palette().text().color()
         self.ui.console.setTextColor(qcolor)
-        self.ui.console.append(text)
+        self.ui.console.append(str(text).strip('\n'))
 
     def addOutToConsole(self, text):
         self.addToConsole(text, QtCore.Qt.blue)
 
     def addErrToConsole(self, text):
         self.addToConsole(text, QtCore.Qt.red)
+
+    @pyqtSlot()
+    def saveConfiguration(self, fileName=configName):
+        config = QSettings(fileName, QSettings.IniFormat)
+
+        def valToSave(wdg):
+            if isinstance(wdg, QtWidgets.QLineEdit):
+                return wdg.text()
+            elif isinstance(wdg, QtWidgets.QCheckBox):
+                return wdg.isChecked()
+            elif isinstance(wdg, QtWidgets.QAbstractSpinBox):
+                return wdg.value()
+        for swdg in self.findChildren((QtWidgets.QCheckBox,
+                                       QtWidgets.QAbstractSpinBox,
+                                       QtWidgets.QLineEdit)):
+            if swdg.objectName() != 'qt_spinbox_lineedit':
+                config.setValue(swdg.objectName(), valToSave(swdg))
+
+    @pyqtSlot()
+    def loadConfiguration(self, fileName=configName):
+        config = QSettings(fileName, QSettings.IniFormat)
+
+        def valToLoad(wdg, val):
+            if isinstance(wdg, QtWidgets.QLineEdit):
+                wdg.setText(str(val))
+            elif isinstance(wdg, QtWidgets.QCheckBox):
+                wdg.setChecked(bool(val))
+            elif isinstance(wdg, QtWidgets.QAbstractSpinBox):
+                wdg.setValue(float(val))
+        for swdg in self.findChildren((QtWidgets.QCheckBox,
+                                      QtWidgets.QAbstractSpinBox,
+                                      QtWidgets.QLineEdit)):
+            oName = swdg.objectName()
+            if config.contains(oName) and \
+               oName != 'qt_spinbox_lineedit':
+                valToLoad(swdg, config.value(oName))
 
     @pyqtSlot()
     def on_inBrowse_clicked(self):
@@ -73,11 +130,12 @@ class MainWindow(QtWidgets.QMainWindow):
             attempt += 1
         if not cfgName:  # one more attempt for little earlier code
             cfgName = os.popen(
-                'ls ' + ipath + '/acquisition.*config.* | sort -V | tail -n 1'
-                ).read()
+                'ls ' + ipath + '/acquisition.*config* | sort -V | tail -n 1'
+                ).read().strip("\n")
         if not cfgName:
             self.ui.noConfigLabel.show()
             return
+
         cfg = QSettings(cfgName, QSettings.IniFormat)
         if not cfg.value('version'):
             self.ui.oldConfigLabel.show()
@@ -127,7 +185,7 @@ class MainWindow(QtWidgets.QMainWindow):
         initiatedFile = opath + '/.initstitch'
         if not os.path.exists(initiatedFile):
             return
-
+        # below vars are from initiatedFile
         scanrange = 0
         pjs = 0
         zs = 0
@@ -135,10 +193,10 @@ class MainWindow(QtWidgets.QMainWindow):
         fshift = 0
         width = 0
         hight = 0
-        execfile(initiatedFile)  # above variables are from initiatedFile
+        os.exec(open(initiatedFile).read())
 
         for tabIdx in range(1, self.ui.tabWidget.count()-1):
-            self.ui.tabWidget.setTabEnabled(tabIdx, False)
+            self.ui.tabWidget.setTabEnabled(tabIdx, True)
 
         self.ui.scanRange.setText(str(scanrange))
         self.ui.notFnS.setVisible(scanrange >= 360)
@@ -176,7 +234,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @pyqtSlot()
     def on_initiate_clicked(self):
 
-        if self.initproc:
+        if self.initproc.state():
             self.initproc.kill()
             return
 
@@ -195,25 +253,25 @@ class MainWindow(QtWidgets.QMainWindow):
                    + self.ui.inPath.text())
 
         eloop = QEventLoop(self)
-        self.initproc = QProcess(self)
         self.initproc.finished.connect(eloop.quit)
         self.initproc.readyReadStandardOutput.connect(eloop.quit)
         self.initproc.readyReadStandardError.connect(eloop.quit)
 
         self.addToConsole("Executing command:")
         self.addToConsole(command)
-        self.initproc.start(command)
+        self.initproc.start("/bin/sh", ("-c", command))
         self.initproc.waitForStarted()
         while True:
-            self.addOutToConsole(self.initproc.readAllStandardOutput())
-            self.addErrToConsole(self.initproc.readAllStandardError())
+            self.addOutToConsole(self.initproc.readAllStandardOutput()
+                                 .data().decode(sys.getdefaultencoding()))
+            self.addErrToConsole(self.initproc.readAllStandardError()
+                                 .data().decode(sys.getdefaultencoding()))
             if self.initproc.state():
                 eloop.exec_()
             else:
                 break
         self.addToConsole("Command stopped with exit status %i"
                           % self.initproc.exitCode())
-        self.initproc = None
 
         self.ui.initInfo.setEnabled(True)
         self.ui.initiate.setStyleSheet('')
@@ -222,7 +280,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.on_outPath_textChanged()
 
 
-app = QtWidgets.QApplication(sys.argv)
+app = QApplication(sys.argv)
 my_mainWindow = MainWindow()
 my_mainWindow.show()
 sys.exit(app.exec_())
