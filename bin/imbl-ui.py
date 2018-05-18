@@ -21,6 +21,7 @@ warnStyle = 'background-color: rgba(255, 0, 0, 128);'
 class MainWindow(QtWidgets.QMainWindow):
 
     configName = str(Path.home()) + "/.imbl-ui"
+    amLoading = False
 
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -28,25 +29,64 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui = ui_imbl.Ui_MainWindow()
         self.ui.setupUi(self)
 
+        self.ui.splits.horizontalHeader().setStretchLastSection(False)
+        self.ui.splits.horizontalHeader().setSectionResizeMode(
+            0, QtWidgets.QHeaderView.Stretch)
+        self.ui.splits.horizontalHeader().setSectionResizeMode(
+            1, QtWidgets.QHeaderView.Fixed)
+        self.ui.splits.insertRow(0)
+        butt = QtWidgets.QToolButton(self)
+        butt.setText('add')
+        butt.clicked.connect(self.addToSplit)
+        self.ui.splits.setCellWidget(0, 1, butt)
+
+        self.configObjects = (
+            self.ui.inPath,
+            self.ui.outPath,
+            self.ui.notFnS,
+            self.ui.yIndependent,
+            self.ui.zIndependent,
+            self.ui.noNewFF,
+            self.ui.denoise,
+            self.ui.imageMagick,
+            self.ui.rotate,
+            self.ui.sCropTop,
+            self.ui.sCropBottom,
+            self.ui.sCropRight,
+            self.ui.sCropLeft,
+            self.ui.xBin,
+            self.ui.yBin,
+            self.ui.sameBin,
+            self.ui.iStX,
+            self.ui.iStY,
+            self.ui.oStX,
+            self.ui.oStY,
+            self.ui.fStX,
+            self.ui.fStY,
+            self.ui.fCropTop,
+            self.ui.fCropBottom,
+            self.ui.fCropRight,
+            self.ui.fCropLeft,
+            self.ui.testProjection,
+            self.ui.testY,
+            self.ui.testZ,
+            self.ui.noRecFF
+        )
+
         self.loadConfiguration()
         self.on_outPath_textChanged()
 
-        for swdg in self.findChildren((QtWidgets.QCheckBox,
-                                       QtWidgets.QAbstractSpinBox,
-                                       QtWidgets.QLineEdit)):
-            if swdg.objectName() == 'qt_spinbox_lineedit':
-                pass
-            elif isinstance(swdg, QtWidgets.QLineEdit):
+        for swdg in self.configObjects:
+            if isinstance(swdg, QtWidgets.QLineEdit):
                 swdg.textChanged.connect(self.saveConfiguration)
             elif isinstance(swdg, QtWidgets.QCheckBox):
                 swdg.toggled.connect(self.saveConfiguration)
             elif isinstance(swdg, QtWidgets.QAbstractSpinBox):
                 swdg.valueChanged.connect(self.saveConfiguration)
 
-        self.scanRange = 0
-        self.doSerial = self.do2D = False
-        self.initproc = QProcess(self)
-        
+        self.doSerial = False
+        self.do2D = False
+
         self.addToConsole("Am ready...")
 
     def addToConsole(self, text, qcolor=None):
@@ -65,6 +105,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def saveConfiguration(self, fileName=configName):
+        
+        if self.amLoading:
+            return
         config = QSettings(fileName, QSettings.IniFormat)
 
         def valToSave(wdg):
@@ -74,14 +117,21 @@ class MainWindow(QtWidgets.QMainWindow):
                 return wdg.isChecked()
             elif isinstance(wdg, QtWidgets.QAbstractSpinBox):
                 return wdg.value()
-        for swdg in self.findChildren((QtWidgets.QCheckBox,
-                                       QtWidgets.QAbstractSpinBox,
-                                       QtWidgets.QLineEdit)):
-            if swdg.objectName() != 'qt_spinbox_lineedit':
-                config.setValue(swdg.objectName(), valToSave(swdg))
+        for swdg in self.configObjects:
+            config.setValue(swdg.objectName(), valToSave(swdg))
+
+        config.beginWriteArray('splits')
+        for crow in range(0, self.ui.splits.rowCount()-1):
+            config.setArrayIndex(crow)
+            config.setValue('pos', self.ui.splits.cellWidget(crow, 0).value())
+        config.endArray()
 
     @pyqtSlot()
     def loadConfiguration(self, fileName=configName):
+        
+        if not os.path.exists(fileName):
+            return
+        self.amLoading = True
         config = QSettings(fileName, QSettings.IniFormat)
 
         def valToLoad(wdg, val):
@@ -91,13 +141,19 @@ class MainWindow(QtWidgets.QMainWindow):
                 wdg.setChecked(bool(val))
             elif isinstance(wdg, QtWidgets.QAbstractSpinBox):
                 wdg.setValue(float(val))
-        for swdg in self.findChildren((QtWidgets.QCheckBox,
-                                      QtWidgets.QAbstractSpinBox,
-                                      QtWidgets.QLineEdit)):
+        for swdg in self.configObjects:
             oName = swdg.objectName()
-            if config.contains(oName) and \
-               oName != 'qt_spinbox_lineedit':
+            if config.contains(oName):
                 valToLoad(swdg, config.value(oName))
+
+        self.remFromSplit(self.ui.splits.rowCount())  # clean splits
+        splitsize = config.beginReadArray('splits')
+        for crow in range(0, splitsize):
+            config.setArrayIndex(crow)
+            self.addToSplit(config.value('pos', type=int))
+        config.endArray()
+
+        self.amLoading = False
 
     @pyqtSlot()
     def on_inBrowse_clicked(self):
@@ -142,29 +198,30 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         scanRange = cfg.value('scan/range', type=int)
-        self.ui.scanRange.setText(str(scanRange))
+        self.ui.scanRange.setValue(scanRange)
         self.ui.notFnS.setVisible(scanRange >= 360)
-        self.ui.projections.setText(cfg.value('scan/steps'))
+        self.ui.projections.setValue(cfg.value('scan/steps', type=float))
 
-        doSerial = cfg.value('doserialscans', type=bool)
-        self.ui.yIndependent.setVisible(doSerial)
-        self.ui.ylabel.setVisible(doSerial)
-        self.ui.ys.setVisible(doSerial)
-        self.ui.ys.setText(cfg.value('serial/outerseries/nofsteps'))
+        self.doSerial = cfg.value('doserialscans', type=bool)
+        self.ui.yIndependent.setVisible(self.doSerial)
+        self.ui.ylabel.setVisible(self.doSerial)
+        self.ui.ys.setVisible(self.doSerial)
+        self.ui.ys.setValue(cfg.value('serial/outerseries/nofsteps', type=int))
 
-        do2D = doSerial and cfg.value('serial/2d', type=bool)
-        self.ui.zIndependent.setVisible(do2D)
-        self.ui.zlabel.setVisible(do2D)
-        self.ui.zs.setVisible(do2D)
-        self.ui.zs.setText(cfg.value('serial/innearseries/nofsteps'))
+        self.do2D = self.doSerial and cfg.value('serial/2d', type=bool)
+        self.ui.zIndependent.setVisible(self.do2D)
+        self.ui.zlabel.setVisible(self.do2D)
+        self.ui.zs.setVisible(self.do2D)
+        self.ui.zs.setValue(cfg.value('serial/innearseries/nofsteps', type=int))
 
-        self.ui.initiate.setEnabled(os.path.isdir(self.ui.outPath.text())
-                                    and (scanRange >= 360 or doSerial or do2D))
+        self.ui.initiate.setEnabled(
+            os.path.isdir(self.ui.outPath.text())
+            and (scanRange >= 360 or self.doSerial or self.do2D))
 
     @pyqtSlot()
     def on_outBrowse_clicked(self):
-        newdir = QFileDialog.getExistingDirectory(self, "Processing directory",
-                                                  self.ui.outPath.text())
+        newdir = QFileDialog.getExistingDirectory(
+            self, "Processing directory", self.ui.outPath.text())
         if newdir:
             self.ui.outPath.setText(newdir)
 
@@ -185,51 +242,77 @@ class MainWindow(QtWidgets.QMainWindow):
         initiatedFile = opath + '/.initstitch'
         if not os.path.exists(initiatedFile):
             return
-        # below vars are from initiatedFile
-        scanrange = 0
-        pjs = 0
-        zs = 0
-        ys = 0
-        fshift = 0
-        width = 0
-        hight = 0
-        os.exec(open(initiatedFile).read())
+        initDict = dict()
+        exec(open(initiatedFile).read(), initDict)
+        scanrange = initDict['scanrange']
+        width = initDict['width']
+        hight = initDict['hight']
+        fshift = initDict['fshift']
+        pjs = initDict['pjs']
+        ys = initDict['ys']
+        zs = initDict['zs']
 
         for tabIdx in range(1, self.ui.tabWidget.count()-1):
             self.ui.tabWidget.setTabEnabled(tabIdx, True)
 
-        self.ui.scanRange.setText(str(scanrange))
+        self.ui.scanRange.setValue(scanrange)
         self.ui.notFnS.setVisible(scanrange >= 360)
         self.ui.notFnS.setChecked(fshift > 0)
-        self.ui.projections.setText(pjs)
+        self.ui.projections.setValue(pjs)
+        self.on_notFnS_toggled()
 
-        doSerial = ys > 1
-        self.ui.yIndependent.setVisible(doSerial)
-        self.ui.ylabel.setVisible(doSerial)
-        self.ui.ys.setVisible(doSerial)
-        self.ui.ys.setText(ys)
+        self.doSerial = ys > 1
+        self.ui.yIndependent.setVisible(self.doSerial)
+        self.ui.ylabel.setVisible(self.doSerial)
+        self.ui.ys.setVisible(self.doSerial)
+        self.ui.ys.setValue(ys)
+        self.on_yIndependent_toggled()
 
-        do2D = doSerial and zs > 1
-        self.ui.zIndependent.setVisible(do2D)
-        self.ui.zlabel.setVisible(do2D)
-        self.ui.zs.setVisible(do2D)
-        self.ui.zs.setText(zs)
+        self.do2D = self.doSerial and zs > 1
+        self.ui.zIndependent.setVisible(self.do2D)
+        self.ui.zlabel.setVisible(self.do2D)
+        self.ui.zs.setVisible(self.do2D)
+        self.ui.zs.setValue(zs)
+        self.on_zIndependent_toggled()
 
-        self.ui.imageSize.setText('%i (w) x %i (h)' % width % hight)
+        self.ui.width.setValue(width)
+        self.ui.hight.setValue(hight)
         self.ui.sCropTop.setMaximum(hight)
         self.ui.sCropBottom.setMaximum(hight)
         self.ui.sCropRight.setMaximum(width)
         self.ui.sCropLeft.setMaximum(width)
+
         self.ui.iStX.setRange(-width, width)
-        self.ui.oStX.setRange(-width, width)
-        self.ui.fStX.setRange(-width, width)
         self.ui.iStY.setRange(-hight, hight)
+        self.ui.oStX.setRange(-width, width)
         self.ui.oStY.setRange(-hight, hight)
+        self.ui.fStX.setRange(-width, width)
         self.ui.fStY.setRange(-hight, hight)
         self.ui.fCropTop.setMaximum(hight*max(ys, zs))
         self.ui.fCropBottom.setMaximum(hight*max(ys, zs))
         self.ui.fCropRight.setMaximum(width*max(ys, zs))
         self.ui.fCropLeft.setMaximum(width*max(ys, zs))
+
+    @pyqtSlot()
+    def on_notFnS_toggled(self):
+        visible = self.ui.scanRange.value() >= 360 and \
+            self.ui.notFnS.isChecked()
+        self.ui.fStLbl.setVisible(visible)
+        self.ui.fStWdg.setVisible(visible)
+
+    @pyqtSlot()
+    def on_yIndependent_toggled(self):
+        visible = self.doSerial and self.ui.yIndependent.isChecked()
+        self.ui.oStLbl.setVisible(visible)
+        self.ui.oStWdg.setVisible(visible)
+
+    @pyqtSlot()
+    def on_zIndependent_toggled(self):
+        visible = self.do2D and self.ui.zIndependent.isChecked()
+        self.ui.iStLbl.setVisible(visible)
+        self.ui.iStWdg.setVisible(visible)
+
+    initproc = QProcess()
 
     @pyqtSlot()
     def on_initiate_clicked(self):
@@ -278,6 +361,37 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.initiate.setText('Initiate')
 
         self.on_outPath_textChanged()
+
+    @pyqtSlot()
+    def addToSplit(self, pos=0):
+        nrow = self.ui.splits.rowCount() - 1
+        self.ui.splits.insertRow(nrow)
+        poss = QtWidgets.QSpinBox(self)
+        poss.setMaximum(self.ui.fCropTop.maximum())
+        poss.setValue(pos)
+        poss.editingFinished.connect(self.saveConfiguration)
+        self.ui.splits.setCellWidget(nrow, 0, poss)
+        butt = QtWidgets.QToolButton(self)
+        butt.setText('delete')
+        butt.clicked.connect(self.remFromSplit)
+        self.ui.splits.setCellWidget(nrow, 1, butt)
+        self.saveConfiguration()
+
+    @pyqtSlot()
+    def remFromSplit(self, row=-1):
+        if row < 0:  # on rem click
+            for crow in range(0, self.ui.splits.rowCount()-1):
+                if self.ui.splits.cellWidget(crow, 1) is self.sender():
+                    self.remFromSplit(crow)
+                    break;
+        elif row >= self.ui.splits.rowCount():  # remove all
+            while self.ui.splits.rowCount() > 1:
+                self.remFromSplit(0)
+        else:
+            self.ui.splits.cellWidget(row, 0).destroy()
+            self.ui.splits.cellWidget(row, 1).destroy()
+            self.ui.splits.removeRow(row)
+        self.saveConfiguration()
 
 
 app = QApplication(sys.argv)
