@@ -42,6 +42,30 @@ initfile=".initstitch"
 chkf "$initfile" init
 source "$initfile"
 
+if [ ! -z "$subdirs" ] ; then
+
+  if $testme ; then
+    echo "ERROR! Multiple sub-samples processing cannot be done in test mode."
+    echo "       cd into one of the following sub-sample directories and test there:"
+    for subd in $filemask ; do
+      echo "       $subd"
+    done
+    exit 1
+  fi
+  
+  for subd in $filemask ; do
+    echo "Processing subdirectory $subd ..."
+    cd $subd
+    $0 $@
+    cd $OLDPWD
+    echo "Finished processing ${subd}."
+  done 
+  
+  exit $?
+  
+fi
+
+
 nofSt=$(echo $filemask | wc -w)
 
 allopts="$@"

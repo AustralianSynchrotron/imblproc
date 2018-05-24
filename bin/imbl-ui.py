@@ -14,7 +14,8 @@ from pathlib import Path
 sys.path.append("..")
 from share import ui_imbl
 
-
+# where imbl scripts reside
+execPath = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
 warnStyle = 'background-color: rgba(255, 0, 0, 128);'
 
 
@@ -38,11 +39,12 @@ class MainWindow(QtWidgets.QMainWindow):
         butt = QtWidgets.QToolButton(self)
         butt.setText('add')
         butt.clicked.connect(self.addToSplit)
-        self.ui.splits.setCellWidget(0, 1, butt)
+        self.ui.splits.setCellWidget(0, 0, butt)
+        self.ui.splits.setSpan(0, 0, 1, 2)
 
         self.configObjects = (
             self.ui.inPath,
-            self.ui.outPath,
+            self.ui.outPath,  # must come early in loading
             self.ui.notFnS,
             self.ui.yIndependent,
             self.ui.zIndependent,
@@ -68,13 +70,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.fCropRight,
             self.ui.fCropLeft,
             self.ui.testProjection,
-            self.ui.testY,
-            self.ui.testZ,
-            self.ui.noRecFF
-        )
+            self.ui.testSubDir,
+            self.ui.noRecFF)
 
         self.loadConfiguration()
-        self.on_outPath_textChanged()
 
         for swdg in self.configObjects:
             if isinstance(swdg, QtWidgets.QLineEdit):
@@ -83,6 +82,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 swdg.toggled.connect(self.saveConfiguration)
             elif isinstance(swdg, QtWidgets.QAbstractSpinBox):
                 swdg.valueChanged.connect(self.saveConfiguration)
+            elif isinstance(swdg, QtWidgets.QComboBox):
+                swdg.currentTextChanged.connect(self.saveConfiguration)
 
         self.doSerial = False
         self.do2D = False
@@ -105,7 +106,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def saveConfiguration(self, fileName=configName):
-        
+
         if self.amLoading:
             return
         config = QSettings(fileName, QSettings.IniFormat)
@@ -117,6 +118,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 return wdg.isChecked()
             elif isinstance(wdg, QtWidgets.QAbstractSpinBox):
                 return wdg.value()
+            elif isinstance(wdg, QtWidgets.QComboBox):
+                return wdg.currentText()
         for swdg in self.configObjects:
             config.setValue(swdg.objectName(), valToSave(swdg))
 
@@ -128,7 +131,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def loadConfiguration(self, fileName=configName):
-        
+
         if not os.path.exists(fileName):
             return
         self.amLoading = True
@@ -141,12 +144,19 @@ class MainWindow(QtWidgets.QMainWindow):
                 wdg.setChecked(bool(val))
             elif isinstance(wdg, QtWidgets.QAbstractSpinBox):
                 wdg.setValue(float(val))
+            elif isinstance(wdg, QtWidgets.QComboBox):
+                didx = wdg.findText(str(val))
+                if not didx < 0:
+                    wdg.setCurrentIndex(didx)
         for swdg in self.configObjects:
             oName = swdg.objectName()
             if config.contains(oName):
                 valToLoad(swdg, config.value(oName))
+            if swdg is self.ui.outPath:  # must come early in loading
+                self.on_outPath_textChanged()
 
-        self.remFromSplit(self.ui.splits.rowCount())  # clean splits
+        while self.ui.splits.rowCount() > 1:
+                self.remFromSplit(0)
         splitsize = config.beginReadArray('splits')
         for crow in range(0, splitsize):
             config.setArrayIndex(crow)
@@ -154,6 +164,34 @@ class MainWindow(QtWidgets.QMainWindow):
         config.endArray()
 
         self.amLoading = False
+
+    def execInBg(self, proc):
+
+        self.addToConsole("Executing command:")
+        self.addToConsole(proc.program() + " "
+                          + ' '.join([ar for ar in proc.arguments()]))
+        if proc.workingDirectory() and \
+           not os.path.samefile(proc.workingDirectory(), os.getcwd()):
+            self.addToConsole("in \"%s\""
+                              % os.path.realpath(proc.workingDirectory()))
+
+        eloop = QEventLoop(self)
+        proc.finished.connect(eloop.quit)
+        proc.readyReadStandardOutput.connect(eloop.quit)
+        proc.readyReadStandardError.connect(eloop.quit)
+
+        proc.start()
+        proc.waitForStarted(500)
+        while True:
+            self.addOutToConsole(proc.readAllStandardOutput()
+                                 .data().decode(sys.getdefaultencoding()))
+            self.addErrToConsole(proc.readAllStandardError()
+                                 .data().decode(sys.getdefaultencoding()))
+            if proc.state():
+                eloop.exec_()
+            else:
+                break
+        self.addToConsole("Stopped with exit status %i" % proc.exitCode())
 
     @pyqtSlot()
     def on_inBrowse_clicked(self):
@@ -197,10 +235,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.oldConfigLabel.show()
             return
 
-        scanRange = cfg.value('scan/range', type=int)
-        self.ui.scanRange.setValue(scanRange)
-        self.ui.notFnS.setVisible(scanRange >= 360)
-        self.ui.projections.setValue(cfg.value('scan/steps', type=float))
+        scanrange = cfg.value('scan/range', type=float)
+        self.ui.scanRange.setValue(scanrange)
+        self.ui.notFnS.setVisible(scanrange >= 360)
+        self.ui.projections.setValue(cfg.value('scan/steps', type=int))
 
         self.doSerial = cfg.value('doserialscans', type=bool)
         self.ui.yIndependent.setVisible(self.doSerial)
@@ -216,7 +254,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.ui.initiate.setEnabled(
             os.path.isdir(self.ui.outPath.text())
-            and (scanRange >= 360 or self.doSerial or self.do2D))
+            and (scanrange >= 360 or self.doSerial or self.do2D))
 
     @pyqtSlot()
     def on_outBrowse_clicked(self):
@@ -244,13 +282,17 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         initDict = dict()
         exec(open(initiatedFile).read(), initDict)
-        scanrange = initDict['scanrange']
-        width = initDict['width']
-        hight = initDict['hight']
-        fshift = initDict['fshift']
-        pjs = initDict['pjs']
-        ys = initDict['ys']
-        zs = initDict['zs']
+        try:
+            scanrange = initDict['scanrange']
+            width = initDict['width']
+            hight = initDict['hight']
+            fshift = initDict['fshift']
+            pjs = initDict['pjs']
+            ys = initDict['ys']
+            zs = initDict['zs']
+            filemask = initDict['filemask']
+        except KeyError:
+            return
 
         for tabIdx in range(1, self.ui.tabWidget.count()-1):
             self.ui.tabWidget.setTabEnabled(tabIdx, True)
@@ -293,20 +335,27 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.fCropRight.setMaximum(width*max(ys, zs))
         self.ui.fCropLeft.setMaximum(width*max(ys, zs))
 
-    @pyqtSlot()
+        self.ui.testSubDir.clear()
+        sds = 'subdirs' in initDict
+        self.ui.testSubDir.addItems(filemask.split() if sds else (".",))
+        self.ui.testSubDir.setVisible(sds)
+        self.ui.testSubDirLabel.setVisible(sds)
+        self.ui.testProjection.setMaximum(pjs)
+
+    @pyqtSlot(bool)
     def on_notFnS_toggled(self):
         visible = self.ui.scanRange.value() >= 360 and \
             self.ui.notFnS.isChecked()
         self.ui.fStLbl.setVisible(visible)
         self.ui.fStWdg.setVisible(visible)
 
-    @pyqtSlot()
+    @pyqtSlot(bool)
     def on_yIndependent_toggled(self):
         visible = self.doSerial and self.ui.yIndependent.isChecked()
         self.ui.oStLbl.setVisible(visible)
         self.ui.oStWdg.setVisible(visible)
 
-    @pyqtSlot()
+    @pyqtSlot(bool)
     def on_zIndependent_toggled(self):
         visible = self.do2D and self.ui.zIndependent.isChecked()
         self.ui.iStLbl.setVisible(visible)
@@ -327,34 +376,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.initiate.setStyleSheet(warnStyle)
         self.ui.initiate.setText('Stop')
 
-        command = ("imbl-initiate.sh "
-                   + " -o " + self.ui.outPath.text()
-                   + " -f " if self.ui.notFnS.isChecked() else ""
-                   + " -y " if self.ui.yIndependent.isChecked() else ""
-                   + " -z " if self.ui.zIndependent.isChecked() else ""
-                   + " -e " if self.ui.noNewFF.isChecked() else ""
-                   + self.ui.inPath.text())
+        command = execPath + "imbl-init.sh "
+        if self.ui.notFnS.isChecked():
+            command += " -f "
+        if self.ui.yIndependent.isChecked():
+            command += " -y "
+        if self.ui.zIndependent.isChecked():
+            command += " -z "
+        if self.ui.noNewFF.isChecked():
+            command += " -e "
+        command += " -o \"%s\" " % self.ui.outPath.text()
+        command += self.ui.inPath.text()
 
-        eloop = QEventLoop(self)
-        self.initproc.finished.connect(eloop.quit)
-        self.initproc.readyReadStandardOutput.connect(eloop.quit)
-        self.initproc.readyReadStandardError.connect(eloop.quit)
-
-        self.addToConsole("Executing command:")
-        self.addToConsole(command)
-        self.initproc.start("/bin/sh", ("-c", command))
-        self.initproc.waitForStarted()
-        while True:
-            self.addOutToConsole(self.initproc.readAllStandardOutput()
-                                 .data().decode(sys.getdefaultencoding()))
-            self.addErrToConsole(self.initproc.readAllStandardError()
-                                 .data().decode(sys.getdefaultencoding()))
-            if self.initproc.state():
-                eloop.exec_()
-            else:
-                break
-        self.addToConsole("Command stopped with exit status %i"
-                          % self.initproc.exitCode())
+        self.initproc.setProgram("/bin/sh")
+        self.initproc.setArguments(("-c", command))
+        self.execInBg(self.initproc)
 
         self.ui.initInfo.setEnabled(True)
         self.ui.initiate.setStyleSheet('')
@@ -383,15 +419,112 @@ class MainWindow(QtWidgets.QMainWindow):
             for crow in range(0, self.ui.splits.rowCount()-1):
                 if self.ui.splits.cellWidget(crow, 1) is self.sender():
                     self.remFromSplit(crow)
-                    break;
-        elif row >= self.ui.splits.rowCount():  # remove all
-            while self.ui.splits.rowCount() > 1:
-                self.remFromSplit(0)
-        else:
+                    break
+        elif row < self.ui.splits.rowCount()-1:
             self.ui.splits.cellWidget(row, 0).destroy()
             self.ui.splits.cellWidget(row, 1).destroy()
             self.ui.splits.removeRow(row)
         self.saveConfiguration()
+
+    def stitchparams(self):
+        params = str()
+        if self.doSerial and self.ui.yIndependent.isChecked():
+            params += "-g %i,%i " % (
+                self.ui.oStX.value(), self.ui.oStX.value())
+        if self.do2D and self.ui.zIndependent.isChecked():
+            params += "-G %i,%i " % (
+                self.ui.iStX.value(), self.ui.iStX.value())
+        if self.ui.scanRange.value() >= 360 and self.ui.notFnS.isChecked():
+            params += "-f %i,%i " % (
+                self.ui.fStX.value(), self.ui.fStX.value())
+        if 1 != self.ui.xBin.value() * self.ui.yBin.value():
+            params += "-b %i,%i " % (
+                self.ui.xBin.value(), self.ui.yBin.value())
+        if self.ui.denoise.value():
+            params += "-n %i " % self.ui.denoise.value()
+        if self.ui.imageMagick.text():
+            params += "-i \"%s\" " % self.ui.imageMagick.text()
+        if 0.0 != self.ui.rotate.value():
+            params += "-r %d " % self.ui.rotate.value()
+        if self.ui.splits.rowCount() > 1:
+            splits = []
+            for crow in range(0, self.ui.splits.rowCount()-1):
+                splits.append(self.ui.splits.cellWidget(crow, 0).value())
+            splits.sort()
+            splits = set(splits)
+            params += "-s %s " % ','.join([str(splt) for splt in splits])
+        params += " -c %i,%i,%i,%i " % (
+            self.ui.sCropTop.value(), self.ui.sCropLeft.value(),
+            self.ui.sCropBottom.value(), self.ui.sCropRight.value())
+        params += " -C %i,%i,%i,%i " % (
+            self.ui.fCropTop.value(), self.ui.fCropLeft.value(),
+            self.ui.fCropBottom.value(), self.ui.fCropRight.value())
+        return params
+
+    stitchproc = QProcess()
+
+    @pyqtSlot()
+    def on_test_clicked(self):
+
+        if self.stitchproc.state():
+            self.stitchproc.kill()
+            return
+
+        disableWdgs = (*self.configObjects,
+                       self.ui.splits, self.ui.initiate, self.ui.proc)
+        for wdg in disableWdgs:
+            wdg.setEnabled(False)
+        self.ui.test.setStyleSheet(warnStyle)
+        testButText = self.ui.test.text()
+        self.ui.test.setText('Stop')
+
+        command = (execPath + "imbl-proc.sh "
+                   + " -t "
+                   + self.stitchparams()
+                   + " %i" % self.ui.testProjection.value())
+
+        self.stitchproc.setProgram("/bin/sh")
+        self.stitchproc.setArguments(("-c", command))
+        self.stitchproc.setWorkingDirectory(
+            self.ui.outPath.text() + "/" + self.ui.testSubDir.currentText())
+        self.execInBg(self.stitchproc)
+
+        for wdg in disableWdgs:
+            wdg.setEnabled(True)
+        self.ui.test.setStyleSheet("")
+        self.ui.test.setText(testButText)
+        self.on_inPath_textChanged()  # to correct state of self.ui.initiate
+
+    @pyqtSlot()
+    def on_proc_clicked(self):
+
+        if self.stitchproc.state():
+            self.stitchproc.kill()
+            return
+
+        disableWdgs = (*self.configObjects,
+                       self.ui.splits, self.ui.initiate, self.ui.test)
+        for wdg in disableWdgs:
+            wdg.setEnabled(False)
+        self.ui.proc.setStyleSheet(warnStyle)
+        procButText = self.ui.proc.text()
+        self.ui.proc.setText('Stop')
+
+        command = (execPath + "imbl-proc.sh "
+                   + self.stitchparams()
+                   + (" -d " if self.ui.noRecFF.isChecked() else "")
+                   + " all")
+
+        self.stitchproc.setProgram("/bin/sh")
+        self.stitchproc.setArguments(("-c", command))
+        self.stitchproc.setWorkingDirectory(self.ui.outPath.text())
+        self.execInBg(self.stitchproc)
+
+        for wdg in disableWdgs:
+            wdg.setEnabled(True)
+        self.ui.proc.setStyleSheet("")
+        self.ui.proc.setText(procButText)
+        self.on_inPath_textChanged()  # to correct state of self.ui.initiate
 
 
 app = QApplication(sys.argv)

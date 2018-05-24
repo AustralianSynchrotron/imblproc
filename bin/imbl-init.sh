@@ -25,7 +25,7 @@ while getopts "yzfheo:" opt ; do
     y) Yst=false ;;
     z) Zst=false ;;
     f) Fst=false ;;
-    h) printhelp ; exit 0 ;;    
+    h) printhelp ; exit 0 ;;
     \?) echo "Invalid option: -$OPTARG" >&2 ; exit 1 ;;
     :)  echo "Option -$OPTARG requires an argument." >&2 ; exit 1 ;;
   esac
@@ -137,10 +137,29 @@ fi
 Ysize=$(echo $Ylist | wc -w)
 
 
+outInitFile() {
+  echo filemask=\""${1}"\"
+  echo ipath=\""$ipath"\"
+  echo opath=\""$opath"\"
+  echo pjs=$pjs
+  echo scanrange=$range
+  echo fshift=$fshift
+  echo width=$width
+  echo hight=$hight
+  echo zs=$Zsteps
+  echo ys=$Ysteps
+  echo secondSize=$Ysize
+}
+
+
+Sdirs=""
+initName=".initstitch"
+
 for Ydir in $Ydirs ; do
   for Zdir in $Zdirs ; do
 
     Sdir="$Ydir/$Zdir"
+    Sdirs="$Sdirs $Sdir"
 
     if ! mkdir -p "$Sdir/rec32fp" "$Sdir/clean" "$Sdir/rec8int" "$Sdir/tmp" ; then
       echo "Could not create output sub-directories in \"$PWD/$Sdir\"."
@@ -150,7 +169,7 @@ for Ydir in $Ydirs ; do
       for Ycur in $Ylist ; do
         if [ -z "$Zlist" ] ; then
           Slist="$Slist ${Ydir}${Ycur}"
-        else 
+        else
           for Zcur in $Zlist ; do
             Slist="$Slist ${Ydir}${Ycur}_${Zdir}${Zcur}"
           done
@@ -159,23 +178,21 @@ for Ydir in $Ydirs ; do
       Slist="$(echo $Slist | sed -e \
               's:\.::g' -e 's:__:_:g' -e 's:_ *$::g' -e 's:^ *_::g' )"
 
-      initfile="$Sdir/.initstitch"
-      
+      initfile="$Sdir/$initName"
       cat /dev/null > "$initfile"
-      echo ipath=\"$ipath\" >> "$initfile"
-      echo opath=\"$opath\" >> "$initfile"
-      echo pjs=$pjs >> "$initfile"
-      echo scanrange=$range >> "$initfile"
-      echo fshift=$fshift >> "$initfile"
-      echo width=$width  >> "$initfile"
-      echo hight=$hight  >> "$initfile"
-      echo filemask=\"$Slist\"   >> "$initfile"
-      echo zs=\"$Zsteps\"   >> "$initfile"
-      echo ys=\"$Ysteps\"   >> "$initfile"
-      echo secondSize=$Ysize >> "$initfile"
+      outInitFile "$Slist" >>  "$initfile"
 
     fi
 
-  done  
+  done
 done
+
+subdCount=$(echo $Sdirs | wc -w)
+
+if (( $subdCount > 1 )) ; then
+  echo subdirs=$subdCount >>  "$initName"
+  outInitFile "$Sdirs" >>  "$initName"
+fi
+
+
 
