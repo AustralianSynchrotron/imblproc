@@ -130,22 +130,20 @@ while getopts "g:G:f:c:C:r:b:s:n:i:o:dth" opt ; do
 done
 shift $(( $OPTIND - 1 ))
 
+
+if (( $nofSt > 1 )) ; then
+  stParam="$stParam -g $origin"
+  if (( $secondsize > 1 )) ; then
+    stParam="$stParam -G $originSecond"
+    stParam="$stParam -S $secondsize"
+  fi
+fi
+
 if (( $fshift >= 1 )) ; then
   nofSt=$(( 2 * $nofSt ))
   pjs=$(( $pjs / 2 ))
   stParam="$stParam -f $originFlip"
 fi
-
-if (( $zs > 1 )) ; then
-  stParam="$stParam -g $origin"
-  if (( $ys > 1 )) ; then
-    stParam="$stParam -G $originSecond"
-    stParam="$stParam -S $secondsize"
-  fi
-elif (( $ys > 1 )) ; then
-  stParam="$stParam -g $origin"
-fi
-
 
 proj="$1"
 
@@ -269,7 +267,9 @@ else # is a projection
   fi
 
 
-  ctas proj $stParam $stImgs
+  ctas proj $stParam $stImgs ||
+  ( echo There was an error executing: >&2
+    echo ctas proj $stParam $stImgs >&2 )
 
 
   if ! $testme  &&  [ ! -z "$imagick" ] ; then

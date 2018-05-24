@@ -56,8 +56,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.sCropRight,
             self.ui.sCropLeft,
             self.ui.xBin,
+            self.ui.sameBin,  # must come between those two
             self.ui.yBin,
-            self.ui.sameBin,
             self.ui.iStX,
             self.ui.iStY,
             self.ui.oStX,
@@ -84,6 +84,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 swdg.valueChanged.connect(self.saveConfiguration)
             elif isinstance(swdg, QtWidgets.QComboBox):
                 swdg.currentTextChanged.connect(self.saveConfiguration)
+
 
         self.ui.notFnS.clicked.connect(self.needReinitiation)
         self.ui.yIndependent.clicked.connect(self.needReinitiation)
@@ -142,23 +143,25 @@ class MainWindow(QtWidgets.QMainWindow):
         self.amLoading = True
         config = QSettings(fileName, QSettings.IniFormat)
 
-        def valToLoad(wdg, val):
+        def valToLoad(wdg, nm):
             if isinstance(wdg, QtWidgets.QLineEdit):
-                wdg.setText(str(val))
+                wdg.setText(config.value(oName, type=str))
             elif isinstance(wdg, QtWidgets.QCheckBox):
-                wdg.setChecked(bool(val))
+                wdg.setChecked(config.value(oName, type=bool))
             elif isinstance(wdg, QtWidgets.QAbstractSpinBox):
-                wdg.setValue(float(val))
+                wdg.setValue(config.value(oName, type=float))
             elif isinstance(wdg, QtWidgets.QComboBox):
-                didx = wdg.findText(str(val))
+                didx = wdg.findText(config.value(oName, type=str))
                 if not didx < 0:
                     wdg.setCurrentIndex(didx)
         for swdg in self.configObjects:
             oName = swdg.objectName()
             if config.contains(oName):
-                valToLoad(swdg, config.value(oName))
+                valToLoad(swdg, oName)
             if swdg is self.ui.outPath:  # must come early in loading
                 self.on_outPath_textChanged()
+            if swdg is self.ui.sameBin:
+                self.on_sameBin_clicked()
 
         while self.ui.splits.rowCount() > 1:
                 self.remFromSplit(0)
@@ -198,7 +201,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 break
         self.addToConsole("Stopped with exit status %i" % proc.exitCode())
 
-
+    @pyqtSlot()
     def needReinitiation(self):
         for tabIdx in range(1, self.ui.tabWidget.count()-1):
             self.ui.tabWidget.setTabEnabled(tabIdx, False)
@@ -392,6 +395,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.on_outPath_textChanged()
 
     @pyqtSlot()
+    def on_sameBin_clicked(self):
+        if (self.ui.sameBin.isChecked()):
+            self.ui.yBin.setValue(self.ui.xBin.value())
+            self.ui.xBin.valueChanged.connect(self.ui.yBin.setValue)
+        else:
+            try:
+                self.ui.xBin.valueChanged.disconnect(self.ui.yBin.setValue)
+            except TypeError:
+                pass
+        self.ui.yBin.setEnabled(not self.ui.sameBin.isChecked())
+
+    @pyqtSlot()
     def addToSplit(self, pos=0):
         nrow = self.ui.splits.rowCount() - 1
         self.ui.splits.insertRow(nrow)
@@ -489,6 +504,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.test.setStyleSheet("")
         self.ui.test.setText(testButText)
         self.on_inPath_textChanged()  # to correct state of self.ui.initiate
+        self.on_sameBin_clicked()  # to correct state of the yBin
 
     @pyqtSlot()
     def on_proc_clicked(self):
@@ -520,6 +536,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.proc.setStyleSheet("")
         self.ui.proc.setText(procButText)
         self.on_inPath_textChanged()  # to correct state of self.ui.initiate
+        self.on_sameBin_clicked()  # to correct state of the yBin
 
 
 app = QApplication(sys.argv)

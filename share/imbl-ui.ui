@@ -321,9 +321,6 @@
           </item>
           <item>
            <widget class="QSpinBox" name="yBin">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
             <property name="minimum">
              <number>1</number>
             </property>
@@ -333,9 +330,6 @@
            <widget class="QCheckBox" name="sameBin">
             <property name="text">
              <string>same as X</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
             </property>
            </widget>
           </item>
