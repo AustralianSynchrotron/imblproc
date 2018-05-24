@@ -33,7 +33,7 @@ printhelp() {
 
 chkf () {
   if [ ! -e "$1" ] ; then
-    echo "ERROR! Non existing" $2 "file: \"$1\""
+    echo "ERROR! Non existing" $2 "file: \"$1\"" >&2
     exit 1
   fi
 }
@@ -45,28 +45,29 @@ source "$initfile"
 if [ ! -z "$subdirs" ] ; then
 
   if $testme ; then
-    echo "ERROR! Multiple sub-samples processing cannot be done in test mode."
-    echo "       cd into one of the following sub-sample directories and test there:"
+    echo "ERROR! Multiple sub-samples processing cannot be done in test mode." >&2
+    echo "       cd into one of the following sub-sample directories and test there:" >&2
     for subd in $filemask ; do
-      echo "       $subd"
+      echo "       $subd" >&2
     done
     exit 1
   fi
-  
+
   for subd in $filemask ; do
     echo "Processing subdirectory $subd ..."
     cd $subd
     $0 $@
     cd $OLDPWD
     echo "Finished processing ${subd}."
-  done 
-  
+  done
+
   exit $?
-  
+
 fi
 
 
 nofSt=$(echo $filemask | wc -w)
+secondsize=$ystitch
 
 allopts="$@"
 crop="0,0,0,0"
@@ -90,22 +91,22 @@ while getopts "g:G:f:c:C:r:b:s:n:i:o:dth" opt ; do
   case $opt in
     g)  origin=$OPTARG
         if (( $nofSt < 2 )) ; then
-          echo "ERROR! Accordingly to the init file there is nothing to stitch."
-          echo "       Thus, -g option is meaningless. Exiting."
+          echo "ERROR! Accordingly to the init file there is nothing to stitch." >&2
+          echo "       Thus, -g option is meaningless. Exiting." >&2
           exit 1
         fi
         ;;
     G)  originSecond=$OPTARG
-        if (( $secondSize < 2 )) ; then
-          echo "ERROR! Accordingly to the init file there is no second stitch."
-          echo "       Thus, -G option is meaningless. Exiting."
+        if (( $secondsize < 2 )) ; then
+          echo "ERROR! Accordingly to the init file there is no second stitch." >&2
+          echo "       Thus, -G option is meaningless. Exiting." >&2
           exit 1
         fi
         ;;
     f)  originFlip=$OPTARG
         if (( $fshift < 1 )) ; then
-          echo "ERROR! Accordingly to the init file there is no flip-and-stitch."
-          echo "       Thus, -f option is meaningless. Exiting."
+          echo "ERROR! Accordingly to the init file there is no flip-and-stitch." >&2
+          echo "       Thus, -f option is meaningless. Exiting." >&2
           exit 1
         fi
         ;;
@@ -139,7 +140,7 @@ if (( $zs > 1 )) ; then
   stParam="$stParam -g $origin"
   if (( $ys > 1 )) ; then
     stParam="$stParam -G $originSecond"
-    stParam="$stParam -S $secondSize"
+    stParam="$stParam -S $secondsize"
   fi
 elif (( $ys > 1 )) ; then
   stParam="$stParam -g $origin"
@@ -151,7 +152,7 @@ proj="$1"
 if [ "$proj" == "all" ] ; then
 
   if $testme ; then
-    echo "ERROR! Whole sample stitching (\"all\" argument) cannot be done in test mode."
+    echo "ERROR! Whole sample stitching (\"all\" argument) cannot be done in test mode." >&2
     exit 1
   fi
 
@@ -159,23 +160,23 @@ if [ "$proj" == "all" ] ; then
 
   allopts="$(echo $allopts | sed 's all  g')"
   $0 $allopts  && # do df and bg
-  seq 0 $pjs | parallel --eta "$0 $allopts {}" 
+  seq 0 $pjs | parallel --eta "$0 $allopts {}"
   exit $?
 
 elif [ "$proj" -eq "$proj" ] 2> /dev/null ; then # is an int
 
   if (( $proj < 0 )) ; then
-    echo "ERROR! Negative projection $proj."
+    echo "ERROR! Negative projection $proj." >&2
     exit 1
   fi
   if (( $proj > $pjs )) ; then
-    echo "ERROR! Projection $proj is greater than maximum $pjs."
+    echo "ERROR! Projection $proj is greater than maximum $pjs." >&2
     exit 1
   fi
 
 elif [ ! -z "$proj" ] ; then
 
-  echo "ERROR! Can't interpret input projection \"$proj\"."
+  echo "ERROR! Can't interpret input projection \"$proj\"." >&2
   exit 1
 
 fi
@@ -188,12 +189,12 @@ if [ ! -z "$imagick" ] ; then
   pimgdf="tmp/$(basename $imgdf)"
   if $testme  ||  [ -z "$proj" ]  ||  [ ! -e "$pimgbg" ]  ||  [ ! -e "$pimgdf" ] ; then
     if [ -e "$imgbg" ] ; then
-      convert -quiet "$imgbg" $imagick "$pimgbg" ### remove echo
-      chkf "$pimgbg" "im-processed background"  ### remove echo
+      convert -quiet "$imgbg" $imagick "$pimgbg"
+      chkf "$pimgbg" "im-processed background"
     fi
     if [ -e "$imgdf" ] ; then
-      convert -quiet "$imgdf" $imagick "$pimgdf" ### remove echo
-      chkf "$pimgdf" "im-processed dark field"  ### remove echo
+      convert -quiet "$imgdf" $imagick "$pimgdf"
+      chkf "$pimgdf" "im-processed dark field"
     fi
   fi
   imgbg="$pimgbg"
@@ -204,7 +205,7 @@ fi
 if [ -z "$proj" ] ; then  # is bg and df
 
   if $testme ; then
-    echo "ERROR! Background and dark-field stitching (no argument) cannot be done in test mode."
+    echo "ERROR! Background and dark-field stitching (no argument) cannot be done in test mode." >&2
     exit 1
   fi
 
@@ -212,31 +213,31 @@ if [ -z "$proj" ] ; then  # is bg and df
   for (( icur=0 ; icur < $nofSt ; icur++ )) ; do
     stImgs="$stImgs $imgbg"
   done
-  ctas proj -o clean/BG.tif $stParam $stImgs ### remove echo 
+  ctas proj -o clean/BG.tif $stParam $stImgs
 
   stImgs=""
   for (( icur=0 ; icur < $nofSt ; icur++ )) ; do
     stImgs="$stImgs $imgdf"
   done
-  ctas proj -o clean/DF.tif $stParam $stImgs ### remove echo 
+  ctas proj -o clean/DF.tif $stParam $stImgs
 
 
 else # is a projection
 
 
   if [ -e $imgbg ]  &&  $ffcorrection ; then
-    stParam="$stParam -B $imgbg"  
+    stParam="$stParam -B $imgbg"
   fi
   if [ -e $imgdf ]  &&  $ffcorrection ; then
-    stParam="$stParam -D $imgdf"  
+    stParam="$stParam -D $imgdf"
   fi
-  
+
   pjnum=$( printf "%0${#pjs}i" $proj )
 
   oname="SAMPLE_T${pjnum}.tif"
   if $testme ; then
     stParam="$stParam -t tmp/T${pjnum}_"
-  else 
+  else
     stParam="$stParam -o clean/$oname"
   fi
 
@@ -259,8 +260,8 @@ else # is a projection
   if [ ! -z "$imagick" ] ; then
     for imgf in $lsImgs ; do
       pimgf="tmp/$(basename $imgf)"
-      convert -quiet "$imgf" $imagick "$pimgf" ### remove echo
-      chkf "$pimgf" "im-processed" ### remove echo
+      convert -quiet "$imgf" $imagick "$pimgf"
+      chkf "$pimgf" "im-processed"
       stImgs="$stImgs $pimgf"
     done
   else
@@ -268,7 +269,7 @@ else # is a projection
   fi
 
 
-  ctas proj $stParam $stImgs ### remove echo 
+  ctas proj $stParam $stImgs
 
 
   if ! $testme  &&  [ ! -z "$imagick" ] ; then

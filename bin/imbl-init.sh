@@ -93,11 +93,7 @@ if [ "$(getfromconfig General doserialscans)" == "true" ] ; then
   fi
 fi
 
-#echo $Zsteps
-#getfromconfig serial 2d
-#getfromconfig serial innearseries\\\\positions\\\\size
-
-if $MakeFF ; then
+if $MakeFF || [ ! -e "bg.tif" ] ; then
   convert $(cat .listinput | grep BG | sed "s BG ${ipath}/BG g") \
           -quiet -evaluate-sequence Mean "bg.tif"
   convert $(cat .listinput | grep DF | sed "s DF ${ipath}/DF g") \
@@ -122,6 +118,7 @@ if (( $Zsteps > 1 )) ; then
     Zlist="_"
   fi
 fi
+Zsize=$(echo $Zlist | wc -w)
 
 Ylist=""
 Ydirs="."
@@ -148,35 +145,40 @@ outInitFile() {
   echo hight=$hight
   echo zs=$Zsteps
   echo ys=$Ysteps
-  echo secondSize=$Ysize
+  echo ystitch=$Ysize
+  echo zstitch=$Zsize
 }
 
 
 Sdirs=""
 initName=".initstitch"
 
+strip_ () {
+  echo $1 | sed -e 's:_ *$::g' -e 's:^ *_: :g'
+}
+
 for Ydir in $Ydirs ; do
   for Zdir in $Zdirs ; do
 
     Sdir="$Ydir/$Zdir"
-    Sdirs="$Sdirs $Sdir"
+    Sdirs="$Sdirs $(realpath $Sdir --relative-to='.')"
 
     if ! mkdir -p "$Sdir/rec32fp" "$Sdir/clean" "$Sdir/rec8int" "$Sdir/tmp" ; then
-      echo "Could not create output sub-directories in \"$PWD/$Sdir\"."
+      echo "Could not create output sub-directories in \"$PWD/$Sdir\"." >&2
+      exit 1
     else
 
       Slist=""
       for Ycur in $Ylist ; do
         if [ -z "$Zlist" ] ; then
-          Slist="$Slist ${Ydir}${Ycur}"
+          Slist="$Slist $(strip_ ${Ydir}${Ycur})"
         else
           for Zcur in $Zlist ; do
-            Slist="$Slist ${Ydir}${Ycur}_${Zdir}${Zcur}"
+            Slist="$Slist $(strip_ ${Ydir}${Ycur}_${Zdir}${Zcur})"
           done
         fi
       done
-      Slist="$(echo $Slist | sed -e \
-              's:\.::g' -e 's:__:_:g' -e 's:_ *$::g' -e 's:^ *_::g' )"
+      Slist="$(echo $Slist | sed -e 's:\.::g' -e 's:__:_:g')"
 
       initfile="$Sdir/$initName"
       cat /dev/null > "$initfile"
@@ -188,8 +190,8 @@ for Ydir in $Ydirs ; do
 done
 
 subdCount=$(echo $Sdirs | wc -w)
-
 if (( $subdCount > 1 )) ; then
+  cat /dev/null > "$initfile"
   echo subdirs=$subdCount >>  "$initName"
   outInitFile "$Sdirs" >>  "$initName"
 fi

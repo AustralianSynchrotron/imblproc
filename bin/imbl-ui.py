@@ -11,10 +11,9 @@ from PyQt5.uic import loadUi
 from subprocess import Popen
 from pathlib import Path
 
-sys.path.append("..")
-from share import ui_imbl
+# sys.path.append("..")
+# from share import ui_imbl
 
-# where imbl scripts reside
 execPath = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
 warnStyle = 'background-color: rgba(255, 0, 0, 128);'
 
@@ -26,9 +25,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
         super(MainWindow, self).__init__()
-        # self.ui = loadUi('../share/imbl-ui.ui', self)
-        self.ui = ui_imbl.Ui_MainWindow()
-        self.ui.setupUi(self)
+        self.ui = loadUi('../share/imbl-ui.ui', self)
+        # self.ui = ui_imbl.Ui_MainWindow()
+        # self.ui.setupUi(self)
 
         self.ui.splits.horizontalHeader().setStretchLastSection(False)
         self.ui.splits.horizontalHeader().setSectionResizeMode(
@@ -71,7 +70,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.fCropLeft,
             self.ui.testProjection,
             self.ui.testSubDir,
-            self.ui.noRecFF)
+            self.ui.noRecFF
+        )
 
         self.loadConfiguration()
 
@@ -85,10 +85,15 @@ class MainWindow(QtWidgets.QMainWindow):
             elif isinstance(swdg, QtWidgets.QComboBox):
                 swdg.currentTextChanged.connect(self.saveConfiguration)
 
-        self.doSerial = False
-        self.do2D = False
+        self.ui.notFnS.clicked.connect(self.needReinitiation)
+        self.ui.yIndependent.clicked.connect(self.needReinitiation)
+        self.ui.zIndependent.clicked.connect(self.needReinitiation)
 
-        self.addToConsole("Am ready...")
+        self.doYst = False
+        self.doZst = False
+        self.doFnS = False
+
+        self.addToConsole("Am ready.")
 
     def addToConsole(self, text, qcolor=None):
         if not text:
@@ -193,6 +198,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 break
         self.addToConsole("Stopped with exit status %i" % proc.exitCode())
 
+
+    def needReinitiation(self):
+        for tabIdx in range(1, self.ui.tabWidget.count()-1):
+            self.ui.tabWidget.setTabEnabled(tabIdx, False)
+
     @pyqtSlot()
     def on_inBrowse_clicked(self):
         newdir = QFileDialog.getExistingDirectory(self, "Experiment directory",
@@ -240,21 +250,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.notFnS.setVisible(scanrange >= 360)
         self.ui.projections.setValue(cfg.value('scan/steps', type=int))
 
-        self.doSerial = cfg.value('doserialscans', type=bool)
-        self.ui.yIndependent.setVisible(self.doSerial)
-        self.ui.ylabel.setVisible(self.doSerial)
-        self.ui.ys.setVisible(self.doSerial)
+        serialScan = cfg.value('doserialscans', type=bool)
+        self.ui.yIndependent.setVisible(serialScan)
+        self.ui.ylabel.setVisible(serialScan)
+        self.ui.ys.setVisible(serialScan)
         self.ui.ys.setValue(cfg.value('serial/outerseries/nofsteps', type=int))
 
-        self.do2D = self.doSerial and cfg.value('serial/2d', type=bool)
-        self.ui.zIndependent.setVisible(self.do2D)
-        self.ui.zlabel.setVisible(self.do2D)
-        self.ui.zs.setVisible(self.do2D)
+        twodScan = serialScan and cfg.value('serial/2d', type=bool)
+        self.ui.zIndependent.setVisible(twodScan)
+        self.ui.zlabel.setVisible(twodScan)
+        self.ui.zs.setVisible(twodScan)
         self.ui.zs.setValue(cfg.value('serial/innearseries/nofsteps', type=int))
 
         self.ui.initiate.setEnabled(
             os.path.isdir(self.ui.outPath.text())
-            and (scanrange >= 360 or self.doSerial or self.do2D))
+            and (scanrange >= 360 or serialScan or twodScan))
 
     @pyqtSlot()
     def on_outBrowse_clicked(self):
@@ -267,15 +277,13 @@ class MainWindow(QtWidgets.QMainWindow):
     def on_outPath_textChanged(self):
 
         self.on_inPath_textChanged()  # to update initiate button state
-
-        self.ui.outPath.setStyleSheet('')
-        for tabIdx in range(1, self.ui.tabWidget.count()-1):
-            self.ui.tabWidget.setTabEnabled(tabIdx, False)
+        self.needReinitiation()
 
         opath = self.ui.outPath.text()
         if not os.path.isdir(opath):
             self.ui.outPath.setStyleSheet(warnStyle)
             return
+        self.ui.outPath.setStyleSheet('')
 
         initiatedFile = opath + '/.initstitch'
         if not os.path.exists(initiatedFile):
@@ -283,6 +291,8 @@ class MainWindow(QtWidgets.QMainWindow):
         initDict = dict()
         exec(open(initiatedFile).read(), initDict)
         try:
+            filemask = initDict['filemask']
+            ipath = initDict['ipath']
             scanrange = initDict['scanrange']
             width = initDict['width']
             hight = initDict['hight']
@@ -290,32 +300,31 @@ class MainWindow(QtWidgets.QMainWindow):
             pjs = initDict['pjs']
             ys = initDict['ys']
             zs = initDict['zs']
-            filemask = initDict['filemask']
+            ystitch = initDict['ystitch']
+            zstitch = initDict['zstitch']
         except KeyError:
             return
 
-        for tabIdx in range(1, self.ui.tabWidget.count()-1):
-            self.ui.tabWidget.setTabEnabled(tabIdx, True)
+        self.ui.inPath.setText(ipath)
 
+        self.doFnS = scanrange >= 360 and fshift > 0
         self.ui.scanRange.setValue(scanrange)
-        self.ui.notFnS.setVisible(scanrange >= 360)
-        self.ui.notFnS.setChecked(fshift > 0)
+        self.ui.notFnS.setChecked(not self.doFnS)
+        self.ui.fStLbl.setVisible(self.doFnS)
+        self.ui.fStWdg.setVisible(self.doFnS)
         self.ui.projections.setValue(pjs)
-        self.on_notFnS_toggled()
 
-        self.doSerial = ys > 1
-        self.ui.yIndependent.setVisible(self.doSerial)
-        self.ui.ylabel.setVisible(self.doSerial)
-        self.ui.ys.setVisible(self.doSerial)
+        self.doYst = ys > 1 and ystitch > 1
+        self.ui.yIndependent.setChecked(not self.doYst)
         self.ui.ys.setValue(ys)
-        self.on_yIndependent_toggled()
+        self.ui.oStLbl.setVisible(self.doYst)
+        self.ui.oStWdg.setVisible(self.doYst)
 
-        self.do2D = self.doSerial and zs > 1
-        self.ui.zIndependent.setVisible(self.do2D)
-        self.ui.zlabel.setVisible(self.do2D)
-        self.ui.zs.setVisible(self.do2D)
+        self.doZst = zs > 1 and zstitch > 1
+        self.ui.zIndependent.setChecked(not self.doZst)
         self.ui.zs.setValue(zs)
-        self.on_zIndependent_toggled()
+        self.ui.iStLbl.setVisible(self.doZst)
+        self.ui.iStWdg.setVisible(self.doZst)
 
         self.ui.width.setValue(width)
         self.ui.hight.setValue(hight)
@@ -342,24 +351,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.testSubDirLabel.setVisible(sds)
         self.ui.testProjection.setMaximum(pjs)
 
-    @pyqtSlot(bool)
-    def on_notFnS_toggled(self):
-        visible = self.ui.scanRange.value() >= 360 and \
-            self.ui.notFnS.isChecked()
-        self.ui.fStLbl.setVisible(visible)
-        self.ui.fStWdg.setVisible(visible)
-
-    @pyqtSlot(bool)
-    def on_yIndependent_toggled(self):
-        visible = self.doSerial and self.ui.yIndependent.isChecked()
-        self.ui.oStLbl.setVisible(visible)
-        self.ui.oStWdg.setVisible(visible)
-
-    @pyqtSlot(bool)
-    def on_zIndependent_toggled(self):
-        visible = self.do2D and self.ui.zIndependent.isChecked()
-        self.ui.iStLbl.setVisible(visible)
-        self.ui.iStWdg.setVisible(visible)
+        for tabIdx in range(1, self.ui.tabWidget.count()-1):
+            self.ui.tabWidget.setTabEnabled(tabIdx, True)
 
     initproc = QProcess()
 
@@ -428,13 +421,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def stitchparams(self):
         params = str()
-        if self.doSerial and self.ui.yIndependent.isChecked():
+        if self.doYst or self.doZst:
             params += "-g %i,%i " % (
                 self.ui.oStX.value(), self.ui.oStX.value())
-        if self.do2D and self.ui.zIndependent.isChecked():
+        if self.doYst and self.doZst:
             params += "-G %i,%i " % (
                 self.ui.iStX.value(), self.ui.iStX.value())
-        if self.ui.scanRange.value() >= 360 and self.ui.notFnS.isChecked():
+        if self.doFnS:
             params += "-f %i,%i " % (
                 self.ui.fStX.value(), self.ui.fStX.value())
         if 1 != self.ui.xBin.value() * self.ui.yBin.value():
@@ -453,12 +446,14 @@ class MainWindow(QtWidgets.QMainWindow):
             splits.sort()
             splits = set(splits)
             params += "-s %s " % ','.join([str(splt) for splt in splits])
-        params += " -c %i,%i,%i,%i " % (
-            self.ui.sCropTop.value(), self.ui.sCropLeft.value(),
-            self.ui.sCropBottom.value(), self.ui.sCropRight.value())
-        params += " -C %i,%i,%i,%i " % (
-            self.ui.fCropTop.value(), self.ui.fCropLeft.value(),
-            self.ui.fCropBottom.value(), self.ui.fCropRight.value())
+        crops = (self.ui.sCropTop.value(), self.ui.sCropLeft.value(),
+                 self.ui.sCropBottom.value(), self.ui.sCropRight.value())
+        if sum(crops):
+            params += " -c %i,%i,%i,%i " % crops
+        crops = (self.ui.fCropTop.value(), self.ui.fCropLeft.value(),
+                 self.ui.fCropBottom.value(), self.ui.fCropRight.value())
+        if sum(crops):
+            params += " -C %i,%i,%i,%i " % crops
         return params
 
     stitchproc = QProcess()
