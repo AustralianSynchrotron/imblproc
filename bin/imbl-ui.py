@@ -434,109 +434,82 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.splits.removeRow(row)
         self.saveConfiguration()
 
-    def stitchparams(self):
-        params = str()
+    stitchproc = QProcess()
+
+    def common_test_proc(self, ars, wdir, actButton):
+
+        if self.stitchproc.state():
+            self.stitchproc.kill()
+            return
+
+        prms = str()
         if self.doYst or self.doZst:
-            params += "-g %i,%i " % (
+            prms += "-g %i,%i " % (
                 self.ui.oStX.value(), self.ui.oStX.value())
         if self.doYst and self.doZst:
-            params += "-G %i,%i " % (
+            prms += "-G %i,%i " % (
                 self.ui.iStX.value(), self.ui.iStX.value())
         if self.doFnS:
-            params += "-f %i,%i " % (
+            prms += "-f %i,%i " % (
                 self.ui.fStX.value(), self.ui.fStX.value())
         if 1 != self.ui.xBin.value() * self.ui.yBin.value():
-            params += "-b %i,%i " % (
+            prms += "-b %i,%i " % (
                 self.ui.xBin.value(), self.ui.yBin.value())
         if self.ui.denoise.value():
-            params += "-n %i " % self.ui.denoise.value()
+            prms += "-n %i " % self.ui.denoise.value()
         if self.ui.imageMagick.text():
-            params += "-i \"%s\" " % self.ui.imageMagick.text()
+            prms += "-i \"%s\" " % self.ui.imageMagick.text()
         if 0.0 != self.ui.rotate.value():
-            params += "-r %d " % self.ui.rotate.value()
+            prms += "-r %d " % self.ui.rotate.value()
         if self.ui.splits.rowCount() > 1:
             splits = []
             for crow in range(0, self.ui.splits.rowCount()-1):
                 splits.append(self.ui.splits.cellWidget(crow, 0).value())
             splits.sort()
             splits = set(splits)
-            params += "-s %s " % ','.join([str(splt) for splt in splits])
+            prms += "-s %s " % ','.join([str(splt) for splt in splits])
         crops = (self.ui.sCropTop.value(), self.ui.sCropLeft.value(),
                  self.ui.sCropBottom.value(), self.ui.sCropRight.value())
         if sum(crops):
-            params += " -c %i,%i,%i,%i " % crops
+            prms += " -c %i,%i,%i,%i " % crops
         crops = (self.ui.fCropTop.value(), self.ui.fCropLeft.value(),
                  self.ui.fCropBottom.value(), self.ui.fCropRight.value())
         if sum(crops):
-            params += " -C %i,%i,%i,%i " % crops
-        return params
+            prms += " -C %i,%i,%i,%i " % crops
+        prms += ars
 
-    stitchproc = QProcess()
+        disableWdgs = (*self.configObjects, self.ui.proc, self.ui.test,
+                       self.ui.splits, self.ui.initiate)
+        for wdg in disableWdgs:
+            if wdg is not actButton:
+                wdg.setEnabled(False)
+        actButton.setStyleSheet(warnStyle)
+        actText = actButton.text()
+        actButton.setText('Stop')
+
+        self.stitchproc.setProgram("/bin/sh")
+        self.stitchproc.setArguments(("-c", execPath + "imbl-proc.sh " + prms))
+        self.stitchproc.setWorkingDirectory(wdir)
+        self.execInBg(self.stitchproc)
+
+        for wdg in disableWdgs:
+            wdg.setEnabled(True)
+        actButton.setStyleSheet("")
+        actButton.setText(actText)
+        self.on_inPath_textChanged()  # to correct state of self.ui.initiate
+        self.on_sameBin_clicked()  # to correct state of the yBin
 
     @pyqtSlot()
     def on_test_clicked(self):
-
-        if self.stitchproc.state():
-            self.stitchproc.kill()
-            return
-
-        disableWdgs = (*self.configObjects,
-                       self.ui.splits, self.ui.initiate, self.ui.proc)
-        for wdg in disableWdgs:
-            wdg.setEnabled(False)
-        self.ui.test.setStyleSheet(warnStyle)
-        testButText = self.ui.test.text()
-        self.ui.test.setText('Stop')
-
-        command = (execPath + "imbl-proc.sh "
-                   + " -t "
-                   + self.stitchparams()
-                   + " %i" % self.ui.testProjection.value())
-
-        self.stitchproc.setProgram("/bin/sh")
-        self.stitchproc.setArguments(("-c", command))
-        self.stitchproc.setWorkingDirectory(
-            self.ui.outPath.text() + "/" + self.ui.testSubDir.currentText())
-        self.execInBg(self.stitchproc)
-
-        for wdg in disableWdgs:
-            wdg.setEnabled(True)
-        self.ui.test.setStyleSheet("")
-        self.ui.test.setText(testButText)
-        self.on_inPath_textChanged()  # to correct state of self.ui.initiate
-        self.on_sameBin_clicked()  # to correct state of the yBin
+        ars = (" -t %i" % self.ui.testProjection.value())
+        wdir = self.ui.outPath.text() + "/" + self.ui.testSubDir.currentText()
+        self.common_test_proc(ars, wdir, self.ui.test)
 
     @pyqtSlot()
     def on_proc_clicked(self):
-
-        if self.stitchproc.state():
-            self.stitchproc.kill()
-            return
-
-        disableWdgs = (*self.configObjects,
-                       self.ui.splits, self.ui.initiate, self.ui.test)
-        for wdg in disableWdgs:
-            wdg.setEnabled(False)
-        self.ui.proc.setStyleSheet(warnStyle)
-        procButText = self.ui.proc.text()
-        self.ui.proc.setText('Stop')
-
-        command = (execPath + "imbl-proc.sh "
-                   + self.stitchparams()
-                   + (" -d " if self.ui.noRecFF.isChecked() else "")
-                   + " all")
-
-        self.stitchproc.setProgram("/bin/sh")
-        self.stitchproc.setArguments(("-c", command))
-        self.stitchproc.setWorkingDirectory(self.ui.outPath.text())
-        self.execInBg(self.stitchproc)
-
-        for wdg in disableWdgs:
-            wdg.setEnabled(True)
-        self.ui.proc.setStyleSheet("")
-        self.ui.proc.setText(procButText)
-        self.on_inPath_textChanged()  # to correct state of self.ui.initiate
-        self.on_sameBin_clicked()  # to correct state of the yBin
+        ars = (" -d " if self.ui.noRecFF.isChecked() else "") + " all"
+        wdir = self.ui.outPath.text()
+        self.common_test_proc(ars, wdir, self.ui.proc)
 
 
 app = QApplication(sys.argv)

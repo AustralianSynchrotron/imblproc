@@ -268,8 +268,8 @@ else # is a projection
 
 
   ctas proj $stParam $stImgs ||
-  ( echo There was an error executing: >&2
-    echo ctas proj $stParam $stImgs >&2 )
+  ( echo "There was an error executing:" >&2
+    echo "ctas proj $stParam $stImgs" >&2 )
 
 
   if ! $testme  &&  [ ! -z "$imagick" ] ; then
