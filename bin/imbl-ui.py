@@ -41,6 +41,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.splits.setCellWidget(0, 0, butt)
         self.ui.splits.setSpan(0, 0, 1, 2)
 
+        self.doYst = False
+        self.doZst = False
+        self.doFnS = False
+
         self.configObjects = (
             self.ui.inPath,
             self.ui.outPath,  # must come early in loading
@@ -89,10 +93,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.notFnS.clicked.connect(self.needReinitiation)
         self.ui.yIndependent.clicked.connect(self.needReinitiation)
         self.ui.zIndependent.clicked.connect(self.needReinitiation)
-
-        self.doYst = False
-        self.doZst = False
-        self.doFnS = False
 
         self.addToConsole("Am ready.")
 
@@ -366,8 +366,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.initproc.kill()
             return
 
-        for tabIdx in range(1, self.ui.tabWidget.count()-1):
-            self.ui.tabWidget.setTabEnabled(tabIdx, False)
+        self.needReinitiation()
         self.ui.initInfo.setEnabled(False)
         self.ui.initiate.setStyleSheet(warnStyle)
         self.ui.initiate.setText('Stop')
@@ -445,13 +444,13 @@ class MainWindow(QtWidgets.QMainWindow):
         prms = str()
         if self.doYst or self.doZst:
             prms += "-g %i,%i " % (
-                self.ui.oStX.value(), self.ui.oStX.value())
+                self.ui.oStX.value(), self.ui.oStY.value())
         if self.doYst and self.doZst:
             prms += "-G %i,%i " % (
-                self.ui.iStX.value(), self.ui.iStX.value())
+                self.ui.iStX.value(), self.ui.iStY.value())
         if self.doFnS:
             prms += "-f %i,%i " % (
-                self.ui.fStX.value(), self.ui.fStX.value())
+                self.ui.fStX.value(), self.ui.fStY.value())
         if 1 != self.ui.xBin.value() * self.ui.yBin.value():
             prms += "-b %i,%i " % (
                 self.ui.xBin.value(), self.ui.yBin.value())
@@ -483,9 +482,9 @@ class MainWindow(QtWidgets.QMainWindow):
         for wdg in disableWdgs:
             if wdg is not actButton:
                 wdg.setEnabled(False)
-        actButton.setStyleSheet(warnStyle)
         actText = actButton.text()
         actButton.setText('Stop')
+        actButton.setStyleSheet(warnStyle)
 
         self.stitchproc.setProgram("/bin/sh")
         self.stitchproc.setArguments(("-c", execPath + "imbl-proc.sh " + prms))
@@ -494,8 +493,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         for wdg in disableWdgs:
             wdg.setEnabled(True)
-        actButton.setStyleSheet("")
         actButton.setText(actText)
+        actButton.setStyleSheet("")
         self.on_inPath_textChanged()  # to correct state of self.ui.initiate
         self.on_sameBin_clicked()  # to correct state of the yBin
 

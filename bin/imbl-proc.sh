@@ -67,7 +67,7 @@ fi
 
 
 nofSt=$(echo $filemask | wc -w)
-secondsize=$ystitch
+secondsize=$(( $zstitch > 1 ? $ystitch : 0 ))
 
 allopts="$@"
 crop="0,0,0,0"
@@ -265,7 +265,6 @@ else # is a projection
   else
     stImgs="$lsImgs"
   fi
-
 
   ctas proj $stParam $stImgs ||
   ( echo "There was an error executing:" >&2
