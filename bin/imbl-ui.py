@@ -25,7 +25,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
         super(MainWindow, self).__init__()
-        self.ui = loadUi('../share/imbl-ui.ui', self)
+        self.ui = loadUi(execPath + '../share/imbl-ui.ui', self)
         # self.ui = ui_imbl.Ui_MainWindow()
         # self.ui.setupUi(self)
 
@@ -78,6 +78,7 @@ class MainWindow(QtWidgets.QMainWindow):
         )
 
         self.loadConfiguration()
+        self.on_outPath_textChanged()
 
         for swdg in self.configObjects:
             if isinstance(swdg, QtWidgets.QLineEdit):
