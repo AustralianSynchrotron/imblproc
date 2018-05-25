@@ -4,7 +4,7 @@ import sys
 import os
 
 from PyQt5 import QtWidgets, QtCore, QtGui
-from PyQt5.QtCore import pyqtSlot, QSettings, QProcess, QEventLoop
+from PyQt5.QtCore import pyqtSlot, QSettings, QProcess, QEventLoop, QTimer
 from PyQt5.QtWidgets import QFileDialog, QApplication
 from PyQt5.uic import loadUi
 
@@ -26,8 +26,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         self.ui = loadUi(execPath + '../share/imbl-ui.ui', self)
+        # self.setWindowIcon(QtGui.QIcon(execPath + '../share/imbl-ui.png')))
         # self.ui = ui_imbl.Ui_MainWindow()
         # self.ui.setupUi(self)
+        self.on_individualIO_toggled()
 
         self.ui.splits.horizontalHeader().setStretchLastSection(False)
         self.ui.splits.horizontalHeader().setSectionResizeMode(
@@ -46,6 +48,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.doFnS = False
 
         self.configObjects = (
+            self.ui.individualIO,
+            self.ui.expPath,
+            self.ui.expSample,
             self.ui.inPath,
             self.ui.outPath,  # must come early in loading
             self.ui.notFnS,
@@ -77,9 +82,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.noRecFF
         )
 
-        self.loadConfiguration()
-        self.on_outPath_textChanged()
-
         for swdg in self.configObjects:
             if isinstance(swdg, QtWidgets.QLineEdit):
                 swdg.textChanged.connect(self.saveConfiguration)
@@ -90,12 +92,11 @@ class MainWindow(QtWidgets.QMainWindow):
             elif isinstance(swdg, QtWidgets.QComboBox):
                 swdg.currentTextChanged.connect(self.saveConfiguration)
 
-
         self.ui.notFnS.clicked.connect(self.needReinitiation)
         self.ui.yIndependent.clicked.connect(self.needReinitiation)
         self.ui.zIndependent.clicked.connect(self.needReinitiation)
 
-        self.addToConsole("Am ready.")
+        QtCore.QTimer.singleShot(100, self.loadConfiguration)
 
     def addToConsole(self, text, qcolor=None):
         if not text:
@@ -152,14 +153,15 @@ class MainWindow(QtWidgets.QMainWindow):
             elif isinstance(wdg, QtWidgets.QAbstractSpinBox):
                 wdg.setValue(config.value(oName, type=float))
             elif isinstance(wdg, QtWidgets.QComboBox):
-                didx = wdg.findText(config.value(oName, type=str))
+                txt = config.value(oName, type=str)
+                didx = wdg.findText(txt)
                 if not didx < 0:
                     wdg.setCurrentIndex(didx)
         for swdg in self.configObjects:
             oName = swdg.objectName()
             if config.contains(oName):
                 valToLoad(swdg, oName)
-            if swdg is self.ui.outPath:  # must come early in loading
+            if swdg is self.ui.outPath:
                 self.on_outPath_textChanged()
             if swdg is self.ui.sameBin:
                 self.on_sameBin_clicked()
@@ -208,15 +210,83 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.tabWidget.setTabEnabled(tabIdx, False)
 
     @pyqtSlot()
+    @pyqtSlot(bool)
+    def on_individualIO_toggled(self):
+        ind = self.ui.individualIO.isChecked()
+        self.ui.expPath.setVisible(not ind)
+        self.ui.expLbl.setVisible(not ind)
+        self.ui.expWdg.setVisible(not ind)
+        self.ui.expSample.setVisible(not ind)
+        self.ui.expSampleLbl.setVisible(not ind)
+        self.ui.inPath.setReadOnly(not ind)
+        self.ui.inBrowse.setVisible(ind)
+        self.ui.outPath.setReadOnly(not ind)
+        self.ui.outBrowse.setVisible(ind)
+        self.on_expPath_textChanged()
+        self.on_outPath_textChanged()
+
+    @pyqtSlot()
+    def on_expBrowse_clicked(self):
+        newdir = QFileDialog.getExistingDirectory(
+            self, "Experiment directory", self.ui.expPath.text())
+        if newdir:
+            self.ui.expPath.setText(newdir)
+
+    @pyqtSlot(str)
+    def on_expPath_textChanged(self):
+        if self.ui.individualIO.isChecked():
+            return
+
+        ciName = self.ui.inPath.text()
+        self.ui.expPath.setStyleSheet('')
+        self.ui.expSample.setEnabled(False)
+        self.ui.expSample.setStyleSheet(warnStyle)
+        self.ui.expSample.clear()
+
+        epath = self.ui.expPath.text()
+        if not os.path.isdir(epath):
+            self.ui.expSample.addItem("Experiment does not exist")
+            return
+        eipath = os.path.join(epath, 'input')
+        if not os.path.exists(eipath):
+            self.ui.expSample.addItem("No input subdirectory")
+            return
+
+        self.ui.expSample.addItem("Loading...")
+        self.update()
+        QtCore.QCoreApplication.processEvents()
+        samples = [name for name in os.listdir(eipath)
+                   if os.path.isdir(os.path.join(eipath, name))]
+        self.ui.expSample.clear()
+        self.ui.expSample.setStyleSheet('')
+        self.ui.expSample.addItems(samples)
+        if ciName[:len(eipath)] == eipath:
+            sample = ciName[len(eipath):].lstrip(os.path.sep)
+            sidx = self.ui.expSample.findText(sample)
+            if not sidx < 0:
+                self.ui.expSample.setCurrentIndex(sidx)
+        self.ui.expSample.setEnabled(True)
+
+    @pyqtSlot(str)
+    def on_expSample_currentTextChanged(self):
+        if self.ui.individualIO.isChecked() or self.ui.expSample.styleSheet():
+            return
+        epath = self.ui.expPath.text()
+        sample = self.ui.expSample.currentText()
+        self.ui.inPath.setText(os.path.join(epath, 'input', sample))
+        self.ui.outPath.setText(os.path.join(epath, 'output', sample))
+
+    @pyqtSlot()
     def on_inBrowse_clicked(self):
-        newdir = QFileDialog.getExistingDirectory(self, "Experiment directory",
-                                                  self.ui.inPath.text())
+        newdir = QFileDialog.getExistingDirectory(
+            self, "Sample directory", os.path.dirname(self.ui.inPath.text()))
         if newdir:
             self.ui.inPath.setText(newdir)
 
     @pyqtSlot(str)
     def on_inPath_textChanged(self):
 
+        self.needReinitiation()
         self.ui.noConfigLabel.hide()
         self.ui.oldConfigLabel.hide()
         self.ui.initiate.setEnabled(False)
@@ -266,17 +336,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.zs.setVisible(twodScan)
         self.ui.zs.setValue(cfg.value('serial/innearseries/nofsteps', type=int))
 
-        self.ui.initiate.setEnabled(
-            os.path.isdir(self.ui.outPath.text())
-            and (scanrange >= 360 or serialScan or twodScan))
+        readyToInitiate = os.path.isdir(ipath)
+        readyToInitiate &= os.path.isdir(self.ui.outPath.text()) \
+            or not self.ui.individualIO.isChecked()
+        readyToInitiate &= scanrange >= 360 or serialScan or twodScan
+        self.ui.initiate.setEnabled(readyToInitiate)
 
     @pyqtSlot()
     def on_outBrowse_clicked(self):
         newdir = QFileDialog.getExistingDirectory(
-            self, "Processing directory", self.ui.outPath.text())
+            self, "Output directory", os.path.dirname(self.ui.outPath.text()))
         if newdir:
             self.ui.outPath.setText(newdir)
 
+    @pyqtSlot()
     @pyqtSlot(str)
     def on_outPath_textChanged(self):
 
@@ -285,7 +358,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         opath = self.ui.outPath.text()
         if not os.path.isdir(opath):
-            self.ui.outPath.setStyleSheet(warnStyle)
+            self.ui.outPath.setStyleSheet(
+                warnStyle if self.ui.individualIO.isChecked() else "")
             return
         self.ui.outPath.setStyleSheet('')
 
@@ -372,6 +446,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.initiate.setStyleSheet(warnStyle)
         self.ui.initiate.setText('Stop')
 
+        opath = self.ui.outPath.text()
+        if not self.ui.individualIO.isChecked() and \
+           not os.path.isdir(opath):
+            os.makedirs(opath, exist_ok=True)
+
         command = execPath + "imbl-init.sh "
         if self.ui.notFnS.isChecked():
             command += " -f "
@@ -381,7 +460,7 @@ class MainWindow(QtWidgets.QMainWindow):
             command += " -z "
         if self.ui.noNewFF.isChecked():
             command += " -e "
-        command += " -o \"%s\" " % self.ui.outPath.text()
+        command += " -o \"%s\" " % opath
         command += self.ui.inPath.text()
 
         self.initproc.setProgram("/bin/sh")
