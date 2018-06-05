@@ -7,28 +7,30 @@ printhelp() {
   echo "Stitching options."
   echo "  Two numbers are  the origin of the second image in the coordinate system of"
   echo "  the first one. Same as produced by the pairwise-stitching plugin of ImageJ."
-  echo "  -g X,Y            origin of the first stitch."
-  echo "  -G X,Y            origin of the second stitch (in 2D scans)."
-  echo "  -f X,Y            origin of the flip-and-stitch (in 360deg scans)."
+  echo "  -g X,Y            Origin of the first stitch."
+  echo "  -G X,Y            Origin of the second stitch (in 2D scans)."
+  echo "  -f X,Y            Origin of the flip-and-stitch (in 360deg scans)."
   echo "Cropping options."
   echo "  Four numbers give cropping from the edges of the images:"
   echo "  top,left,bottom,right."
-  echo "  -c T,L,B,R        crop source images."
-  echo "  -C T,L,B,R        crop final image."
+  echo "  -c T,L,B,R        Crop source images."
+  echo "  -C T,L,B,R        Crop final image."
   echo "Other options."
-  echo "  -r ANGLE          rotate projections."
-  echo "  -b INT[,INT]      binning factor(s). If second number is given, then two"
+  echo "  -r ANGLE          Rotate projections."
+  echo "  -b INT[,INT]      Binning factor(s). If second number is given, then two"
   echo "                    independent binnings in X and Y coordinates; same otherwise."
-  echo "  -s INT[,INT...]   split point(s). If given, then final projection is"
+  echo "  -s INT[,INT...]   Split point(s). If given, then final projection is"
   echo "                    horizontally split and fractions are named with _N postfix."
-  echo "  -n RAD            reduce noise removing peaks (same as imagick's -median option)."
-  echo "  -i STRING         if given then source images, before any further processing, are"
+  echo "  -n RAD            Reduce noise removing peaks (same as imagick's -median option)."
+  echo "  -i STRING         If given then source images, before any further processing, are"
   echo "                    piped through imagemagick with this string as the parameters."
   echo "                    The results are used instead of the original source images."
   echo "                    Make sure you know how to use it correctly."
-  echo "  -d                does not perform flat field correction on the images."
-  echo "  -t                test mode: keeps intermediate images in tmp directory."
-  echo "  -h                prints this help."
+  echo "  -d                Does not perform flat field correction on the images."
+  echo "  -x STRING         Chain stitching with the X-tract reconstruction with"
+  echo "                    the parameters read from the given parameters file."
+  echo "  -t                Test mode: keeps intermediate images in tmp directory."
+  echo "  -h                Prints this help."
 }
 
 chkf () {
@@ -41,29 +43,6 @@ chkf () {
 initfile=".initstitch"
 chkf "$initfile" init
 source "$initfile"
-
-if [ ! -z "$subdirs" ] ; then
-
-  if $testme ; then
-    echo "ERROR! Multiple sub-samples processing cannot be done in test mode." >&2
-    echo "       cd into one of the following sub-sample directories and test there:" >&2
-    for subd in $filemask ; do
-      echo "       $subd" >&2
-    done
-    exit 1
-  fi
-
-  for subd in $filemask ; do
-    echo "Processing subdirectory $subd ..."
-    cd $subd
-    $0 $@
-    cd $OLDPWD
-    echo "Finished processing ${subd}."
-  done
-
-  exit $?
-
-fi
 
 
 nofSt=$(echo $filemask | wc -w)
@@ -82,12 +61,13 @@ testme=false
 ffcorrection=true
 imagick=""
 stParam=""
+xtParamFile=""
 
 if [ -z "$PROCRECURSIVE" ] ; then
   echo "$allopts" >> ".proc.history"
 fi
 
-while getopts "g:G:f:c:C:r:b:s:n:i:o:dth" opt ; do
+while getopts "g:G:f:c:C:r:b:s:n:i:o:x:dth" opt ; do
   case $opt in
     g)  origin=$OPTARG
         if (( $nofSt < 2 )) ; then
@@ -121,6 +101,9 @@ while getopts "g:G:f:c:C:r:b:s:n:i:o:dth" opt ; do
         ;;
     n)  imagick="$imagick -median $OPTARG" ;;
     i)  imagick="$imagick $OPTARG" ;;
+    x)  xtParamFile="$OPTARG"
+        chkf "$xtParamFile" "X-tract parameters"
+        ;;
     d)  ffcorrection=false ;;
     t)  testme=true ;;
     h)  printhelp ; exit 1 ;;
@@ -128,6 +111,30 @@ while getopts "g:G:f:c:C:r:b:s:n:i:o:dth" opt ; do
     :)  echo "Option -$OPTARG requires an argument." >&2 ; exit 1 ;;
   esac
 done
+
+if [ ! -z "$subdirs" ] ; then
+
+  if $testme ; then
+    echo "ERROR! Multiple sub-samples processing cannot be done in test mode." >&2
+    echo "       cd into one of the following sub-sample directories and test there:" >&2
+    for subd in $filemask ; do
+      echo "       $subd" >&2
+    done
+    exit 1
+  fi
+
+  for subd in $filemask ; do
+    echo "Processing subdirectory $subd ..."
+    cd $subd
+    $0 $@
+    cd $OLDPWD
+    echo "Finished processing ${subd}."
+  done
+
+  exit $?
+
+fi
+
 shift $(( $OPTIND - 1 ))
 
 
@@ -147,6 +154,7 @@ fi
 
 proj="$1"
 
+
 if [ "$proj" == "all" ] ; then
 
   if $testme ; then
@@ -159,6 +167,41 @@ if [ "$proj" == "all" ] ; then
   allopts="$(echo $allopts | sed 's all  g')"
   $0 $allopts  && # do df and bg
   seq 0 $pjs | parallel --eta "$0 $allopts {}"
+  if [ ! -z "$xtParamFile" ] ; then
+    exit $?
+  fi
+
+  pindir=" --indir $(realpath clean) "
+  poutdir=" --outdir $(realpath rec8int) "
+
+  xparams="$(cat "$(realpath "$xtParamFile")" |
+              perl -p -e 's/:\n/ /g' |
+              grep -- -- |
+              sed 's/.* --/--/g' |
+              grep -v 'Not set' |
+              grep -v -- --indir |
+              grep -v -- --outdir  |
+              grep -v -- --file_prefix_ctrecon  |
+              grep -v -- --file_prefix_sinograms  |
+              grep -v -- --proj ) \
+              --indir $(realpath clean) \
+              --outdir $(realpath rec32fp)"
+
+  nsplits="_"
+  if [ -z "splits" ] ; then
+    nsplits=$(ls clean/SAMPLE*split* | sed 's .*\(_split[0-9]\+\).* \1 g' | sort | uniq)
+    if [ ! -z "$nsplits" ] ; then
+      echo "ERROR! Did not find individual splits of sample projections where they were expected." >&2
+      exit 1
+    fi
+  fi
+  for spl in $nsplits ; do
+    xlictworkflow_local.sh $xparams \
+                             --proj "SAMPLE\w+$spl\w+" \
+                             --file_prefix_ctrecon "recon${spl}_.tif" \
+                             --file_prefix_sinograms "sino${spl}_.tif"
+  done
+
   exit $?
 
 elif [ "$proj" -eq "$proj" ] 2> /dev/null ; then # is an int
@@ -169,6 +212,10 @@ elif [ "$proj" -eq "$proj" ] 2> /dev/null ; then # is an int
   fi
   if (( $proj > $pjs )) ; then
     echo "ERROR! Projection $proj is greater than maximum $pjs." >&2
+    exit 1
+  fi
+  if [ -z "$xtParamFile" ] ; then
+    echo "ERROR! Xtract reconstruction can be used only after all projections processed." >&2
     exit 1
   fi
 

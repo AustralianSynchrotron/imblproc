@@ -32,49 +32,40 @@
         <item row="2" column="0">
          <widget class="QWidget" name="initInfo" native="true">
           <layout class="QGridLayout" name="gridLayout_8">
-           <item row="1" column="0">
-            <widget class="QLabel" name="expLbl">
-             <property name="text">
-              <string>Experiment</string>
-             </property>
+           <item row="8" column="1">
+            <widget class="QWidget" name="widget_3" native="true">
+             <layout class="QHBoxLayout" name="horizontalLayout_9">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QLineEdit" name="outPath"/>
+              </item>
+              <item>
+               <widget class="QPushButton" name="outBrowse">
+                <property name="text">
+                 <string>Browse</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </widget>
            </item>
-           <item row="9" column="1">
-            <widget class="QCheckBox" name="noNewFF">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_15">
              <property name="text">
-              <string>Do NOT recreate averaged flat and dark field images</string>
+              <string/>
              </property>
             </widget>
-           </item>
-           <item row="8" column="0">
-            <widget class="QLabel" name="label_2">
-             <property name="text">
-              <string>Output</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="0">
-            <widget class="QLabel" name="label">
-             <property name="text">
-              <string>Input</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="expSampleLbl">
-             <property name="text">
-              <string>Sample</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QComboBox" name="expSample"/>
            </item>
            <item row="1" column="1">
             <widget class="QWidget" name="expWdg" native="true">
@@ -102,6 +93,48 @@
                </widget>
               </item>
              </layout>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="expSampleLbl">
+             <property name="text">
+              <string>Sample</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QWidget" name="widget_2" native="true">
+             <layout class="QHBoxLayout" name="horizontalLayout_8">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QLineEdit" name="inPath"/>
+              </item>
+              <item>
+               <widget class="QPushButton" name="inBrowse">
+                <property name="text">
+                 <string>Browse</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item row="8" column="0">
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Output</string>
+             </property>
             </widget>
            </item>
            <item row="6" column="1" rowspan="2">
@@ -230,32 +263,56 @@
              </item>
             </layout>
            </item>
-           <item row="8" column="1">
-            <widget class="QWidget" name="widget_3" native="true">
-             <layout class="QHBoxLayout" name="horizontalLayout_9">
-              <property name="spacing">
-               <number>0</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
-               <number>0</number>
-              </property>
-              <item>
-               <widget class="QLineEdit" name="outPath"/>
-              </item>
-              <item>
-               <widget class="QPushButton" name="outBrowse">
-                <property name="text">
-                 <string>Browse</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>Input</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QCheckBox" name="individualIO">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Select input and output individually</string>
+             </property>
+            </widget>
+           </item>
+           <item row="9" column="1">
+            <widget class="QCheckBox" name="noNewFF">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Do NOT recreate averaged flat and dark field images</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QComboBox" name="expSample"/>
+           </item>
+           <item row="5" column="1">
+            <widget class="QLabel" name="oldConfigLabel">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">color: rgb(255, 0, 4);</string>
+             </property>
+             <property name="text">
+              <string>Old version. Use imbl4massive tools to process</string>
+             </property>
             </widget>
            </item>
            <item row="4" column="1">
@@ -274,67 +331,17 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="1">
-            <widget class="QCheckBox" name="individualIO">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
+           <item row="1" column="0">
+            <widget class="QLabel" name="expLbl">
              <property name="text">
-              <string>Select input and output individually</string>
+              <string>Experiment</string>
              </property>
             </widget>
            </item>
-           <item row="3" column="1">
-            <widget class="QWidget" name="widget_2" native="true">
-             <layout class="QHBoxLayout" name="horizontalLayout_8">
-              <property name="spacing">
-               <number>0</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
-               <number>0</number>
-              </property>
-              <item>
-               <widget class="QLineEdit" name="inPath"/>
-              </item>
-              <item>
-               <widget class="QPushButton" name="inBrowse">
-                <property name="text">
-                 <string>Browse</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item row="5" column="1">
-            <widget class="QLabel" name="oldConfigLabel">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">color: rgb(255, 0, 4);</string>
-             </property>
+           <item row="10" column="1">
+            <widget class="QCheckBox" name="procAfterInit">
              <property name="text">
-              <string>Old version. Use imbl4massive tools to process</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_15">
-             <property name="text">
-              <string>                        </string>
+              <string>Process straight after the initiation.</string>
              </property>
             </widget>
            </item>
@@ -715,21 +722,14 @@
         <string>Finilize and execute</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_7">
-        <item row="7" column="0" colspan="3">
-         <widget class="QPushButton" name="proc">
+        <item row="5" column="0">
+         <widget class="QPushButton" name="procThis">
           <property name="text">
-           <string>Process all</string>
+           <string>Process only:</string>
           </property>
          </widget>
         </item>
-        <item row="4" column="1">
-         <widget class="QLabel" name="testSubDirLabel">
-          <property name="text">
-           <string>subdirectory</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0" rowspan="2">
+        <item row="4" column="0">
          <widget class="QPushButton" name="test">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
@@ -742,51 +742,22 @@
           </property>
          </widget>
         </item>
-        <item row="3" column="2">
-         <widget class="QSpinBox" name="testProjection"/>
-        </item>
-        <item row="3" column="1">
-         <widget class="QLabel" name="label_26">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>projection</string>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="0" colspan="3">
+        <item row="6" column="0" colspan="3">
          <widget class="Line" name="line">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
          </widget>
         </item>
-        <item row="6" column="0" colspan="3">
+        <item row="1" column="0" colspan="3">
          <widget class="QCheckBox" name="noRecFF">
           <property name="text">
            <string>Do NOT perform flat and dark field correction</string>
           </property>
          </widget>
         </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_27">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>Split result</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
+        <item row="4" column="2">
+         <widget class="QSpinBox" name="testProjection"/>
         </item>
         <item row="0" column="1" colspan="2">
          <widget class="QTableWidget" name="splits">
@@ -811,8 +782,74 @@
           </column>
          </widget>
         </item>
-        <item row="4" column="2">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_27">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Split result</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="1">
+         <widget class="QLabel" name="testSubDirLabel">
+          <property name="text">
+           <string>subdirectory</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QLabel" name="label_26">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>projection</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0" colspan="3">
+         <widget class="QCheckBox" name="xtractAfter">
+          <property name="text">
+           <string>After stitching run X-tract reconstruction reading parameters from file:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="2">
          <widget class="QComboBox" name="testSubDir"/>
+        </item>
+        <item row="10" column="0" colspan="3">
+         <widget class="QPushButton" name="procAll">
+          <property name="text">
+           <string>Process all</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1" colspan="2">
+         <widget class="QWidget" name="xtractWdg" native="true">
+          <layout class="QHBoxLayout" name="_2">
+           <item>
+            <widget class="QLineEdit" name="xtractIn"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="xtractBrowse">
+             <property name="text">
+              <string>Browse</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
         </item>
        </layout>
       </widget>

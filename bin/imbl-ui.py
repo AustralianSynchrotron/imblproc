@@ -26,10 +26,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         self.ui = loadUi(execPath + '../share/imbl-ui.ui', self)
-        # self.setWindowIcon(QtGui.QIcon(execPath + '../share/imbl-ui.png')))
         # self.ui = ui_imbl.Ui_MainWindow()
         # self.ui.setupUi(self)
         self.on_individualIO_toggled()
+        self.on_xtractIn_textChanged()
 
         self.ui.splits.horizontalHeader().setStretchLastSection(False)
         self.ui.splits.horizontalHeader().setSectionResizeMode(
@@ -57,6 +57,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.yIndependent,
             self.ui.zIndependent,
             self.ui.noNewFF,
+            self.ui.procAfterInit,
             self.ui.denoise,
             self.ui.imageMagick,
             self.ui.rotate,
@@ -79,7 +80,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.fCropLeft,
             self.ui.testProjection,
             self.ui.testSubDir,
-            self.ui.noRecFF
+            self.ui.noRecFF,
+            self.ui.xtractAfter,
+            self.ui.xtractIn
         )
 
         for swdg in self.configObjects:
@@ -95,6 +98,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.notFnS.clicked.connect(self.needReinitiation)
         self.ui.yIndependent.clicked.connect(self.needReinitiation)
         self.ui.zIndependent.clicked.connect(self.needReinitiation)
+        self.ui.xtractAfter.toggled.connect(self.on_xtractIn_textChanged)
 
         QtCore.QTimer.singleShot(100, self.loadConfiguration)
 
@@ -209,6 +213,11 @@ class MainWindow(QtWidgets.QMainWindow):
         for tabIdx in range(1, self.ui.tabWidget.count()-1):
             self.ui.tabWidget.setTabEnabled(tabIdx, False)
 
+    def update_initiate_state(self):
+        self.ui.initiate.setEnabled(os.path.isdir(self.ui.inPath.text()) and
+                                    (os.path.isdir(self.ui.outPath.text()) or
+                                     not self.ui.individualIO.isChecked()))
+
     @pyqtSlot()
     @pyqtSlot(bool)
     def on_individualIO_toggled(self):
@@ -286,6 +295,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @pyqtSlot(str)
     def on_inPath_textChanged(self):
 
+        QtCore.QCoreApplication.processEvents()  # to update ui.inPath
         self.needReinitiation()
         self.ui.noConfigLabel.hide()
         self.ui.oldConfigLabel.hide()
@@ -336,11 +346,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.zs.setVisible(twodScan)
         self.ui.zs.setValue(cfg.value('serial/innearseries/nofsteps', type=int))
 
-        readyToInitiate = os.path.isdir(ipath)
-        readyToInitiate &= os.path.isdir(self.ui.outPath.text()) \
-            or not self.ui.individualIO.isChecked()
-        readyToInitiate &= scanrange >= 360 or serialScan or twodScan
-        self.ui.initiate.setEnabled(readyToInitiate)
+        self.update_initiate_state()
 
     @pyqtSlot()
     def on_outBrowse_clicked(self):
@@ -353,7 +359,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @pyqtSlot(str)
     def on_outPath_textChanged(self):
 
-        self.on_inPath_textChanged()  # to update initiate button state
+        self.update_initiate_state()
         self.needReinitiation()
 
         opath = self.ui.outPath.text()
@@ -367,7 +373,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if not os.path.exists(initiatedFile):
             return
         initDict = dict()
-        exec(open(initiatedFile).read(), initDict)
+        os.exec(open(initiatedFile).read(), initDict)
         try:
             filemask = initDict['filemask']
             ipath = initDict['ipath']
@@ -427,6 +433,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.testSubDir.addItems(filemask.split() if sds else (".",))
         self.ui.testSubDir.setVisible(sds)
         self.ui.testSubDirLabel.setVisible(sds)
+        self.ui.procThis.setVisible(sds)
         self.ui.testProjection.setMaximum(pjs)
 
         for tabIdx in range(1, self.ui.tabWidget.count()-1):
@@ -472,6 +479,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.initiate.setText('Initiate')
 
         self.on_outPath_textChanged()
+
+        if self.ui.procAfterInit.isChecked():
+            self.on_proc_clicked()
 
     @pyqtSlot()
     def on_sameBin_clicked(self):
@@ -524,10 +534,10 @@ class MainWindow(QtWidgets.QMainWindow):
         prms = str()
         if self.doYst or self.doZst:
             prms += "-g %i,%i " % (
-                self.ui.oStX.value(), self.ui.oStY.value())
+                self.ui.iStX.value(), self.ui.iStY.value())
         if self.doYst and self.doZst:
             prms += "-G %i,%i " % (
-                self.ui.iStX.value(), self.ui.iStY.value())
+                self.ui.oStX.value(), self.ui.oStY.value())
         if self.doFnS:
             prms += "-f %i,%i " % (
                 self.ui.fStX.value(), self.ui.fStY.value())
@@ -557,7 +567,8 @@ class MainWindow(QtWidgets.QMainWindow):
             prms += " -C %i,%i,%i,%i " % crops
         prms += ars
 
-        disableWdgs = (*self.configObjects, self.ui.proc, self.ui.test,
+        disableWdgs = (*self.configObjects,
+                       self.ui.procAll, self.ui.procThis, self.ui.test,
                        self.ui.splits, self.ui.initiate)
         for wdg in disableWdgs:
             if wdg is not actButton:
@@ -575,8 +586,9 @@ class MainWindow(QtWidgets.QMainWindow):
             wdg.setEnabled(True)
         actButton.setText(actText)
         actButton.setStyleSheet("")
-        self.on_inPath_textChanged()  # to correct state of self.ui.initiate
         self.on_sameBin_clicked()  # to correct state of the yBin
+        self.on_xtractIn_textChanged()  # to correct state of process all
+        self.update_initiate_state()
 
     @pyqtSlot()
     def on_test_clicked(self):
@@ -585,10 +597,39 @@ class MainWindow(QtWidgets.QMainWindow):
         self.common_test_proc(ars, wdir, self.ui.test)
 
     @pyqtSlot()
-    def on_proc_clicked(self):
-        ars = (" -d " if self.ui.noRecFF.isChecked() else "") + " all"
+    def on_procAll_clicked(self):
+        ars = " -d " if self.ui.noRecFF.isChecked() else ""
+        ars += (" -x \"%s\" " % self.ui.xtractIn.text()
+                if self.ui.xtractAfter.isChecked() else "")
+        ars += " all"
         wdir = self.ui.outPath.text()
-        self.common_test_proc(ars, wdir, self.ui.proc)
+        self.common_test_proc(ars, wdir, self.ui.procAll)
+
+    @pyqtSlot()
+    def on_procThis_clicked(self):
+        ars = " -d " if self.ui.noRecFF.isChecked() else ""
+        ars += (" -x \"%s\" " % self.ui.xtractIn.text()
+                if self.ui.xtractAfter.isChecked() else "")
+        ars += " all"
+        wdir = self.ui.outPath.text() + "/" + self.ui.testSubDir.currentText()
+        self.common_test_proc(ars, wdir, self.ui.procThis)
+
+    @pyqtSlot()
+    def on_xtractBrowse_clicked(self):
+        newfile = QFileDialog.getOpenFileName(self,
+            "Xtract parameters file", os.path.dirname(self.ui.xtractIn.text()))
+        if newfile:
+            self.ui.xtractIn.setText(newfile)
+
+    @pyqtSlot()
+    @pyqtSlot(str)
+    def on_xtractIn_textChanged(self):
+        xparfOK = os.path.exists(self.ui.xtractIn.text()) or \
+                  not self.ui.xtractAfter.isChecked()
+        self.ui.xtractWdg.setVisible(self.ui.xtractAfter.isChecked())
+        self.ui.xtractIn.setStyleSheet("" if xparfOK else warnStyle)
+        self.ui.procThis.setEnabled(xparfOK)
+        self.ui.procAll.setEnabled(xparfOK)
 
 
 app = QApplication(sys.argv)
