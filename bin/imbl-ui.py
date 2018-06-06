@@ -373,7 +373,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if not os.path.exists(initiatedFile):
             return
         initDict = dict()
-        os.exec(open(initiatedFile).read(), initDict)
+        exec(open(initiatedFile).read(), initDict)
         try:
             filemask = initDict['filemask']
             ipath = initDict['ipath']
@@ -533,8 +533,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         prms = str()
         if self.doYst or self.doZst:
-            prms += "-g %i,%i " % (
-                self.ui.iStX.value(), self.ui.iStY.value())
+            if self.doZst:
+              prms += "-g %i,%i " % (
+                  self.ui.iStX.value(), self.ui.iStY.value())
+            else:
+               prms += "-g %i,%i " % (
+                  self.ui.oStX.value(), self.ui.oStY.value())
         if self.doYst and self.doZst:
             prms += "-G %i,%i " % (
                 self.ui.oStX.value(), self.ui.oStY.value())
@@ -616,7 +620,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def on_xtractBrowse_clicked(self):
-        newfile = QFileDialog.getOpenFileName(self,
+        newfile, _filter = QFileDialog.getOpenFileName(self,
             "Xtract parameters file", os.path.dirname(self.ui.xtractIn.text()))
         if newfile:
             self.ui.xtractIn.setText(newfile)

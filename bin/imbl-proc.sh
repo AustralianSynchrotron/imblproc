@@ -167,7 +167,7 @@ if [ "$proj" == "all" ] ; then
   allopts="$(echo $allopts | sed 's all  g')"
   $0 $allopts  && # do df and bg
   seq 0 $pjs | parallel --eta "$0 $allopts {}"
-  if [ ! -z "$xtParamFile" ] ; then
+  if [ -z "$xtParamFile" ] ; then
     exit $?
   fi
 
@@ -214,7 +214,7 @@ elif [ "$proj" -eq "$proj" ] 2> /dev/null ; then # is an int
     echo "ERROR! Projection $proj is greater than maximum $pjs." >&2
     exit 1
   fi
-  if [ -z "$xtParamFile" ] ; then
+  if [ ! -z "$xtParamFile" ] ; then
     echo "ERROR! Xtract reconstruction can be used only after all projections processed." >&2
     exit 1
   fi
