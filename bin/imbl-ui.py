@@ -99,6 +99,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.yIndependent.clicked.connect(self.needReinitiation)
         self.ui.zIndependent.clicked.connect(self.needReinitiation)
         self.ui.xtractAfter.toggled.connect(self.on_xtractIn_textChanged)
+        self.ui.expUpdate.clicked.connect(self.on_expPath_textChanged)
 
         QtCore.QTimer.singleShot(100, self.loadConfiguration)
 
@@ -225,7 +226,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.expPath.setVisible(not ind)
         self.ui.expLbl.setVisible(not ind)
         self.ui.expWdg.setVisible(not ind)
-        self.ui.expSample.setVisible(not ind)
+        self.ui.sampleWdg.setVisible(not ind)
         self.ui.expSampleLbl.setVisible(not ind)
         self.ui.inPath.setReadOnly(not ind)
         self.ui.inBrowse.setVisible(ind)
@@ -241,8 +242,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if newdir:
             self.ui.expPath.setText(newdir)
 
+    @pyqtSlot(bool)
     @pyqtSlot(str)
     def on_expPath_textChanged(self):
+
         if self.ui.individualIO.isChecked():
             return
 

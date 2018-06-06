@@ -73,13 +73,7 @@
               <property name="spacing">
                <number>0</number>
               </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
+              <property name="margin">
                <number>0</number>
               </property>
               <item>
@@ -108,13 +102,7 @@
               <property name="spacing">
                <number>0</number>
               </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
+              <property name="margin">
                <number>0</number>
               </property>
               <item>
@@ -296,9 +284,6 @@
              </property>
             </widget>
            </item>
-           <item row="2" column="1">
-            <widget class="QComboBox" name="expSample"/>
-           </item>
            <item row="5" column="1">
             <widget class="QLabel" name="oldConfigLabel">
              <property name="sizePolicy">
@@ -340,9 +325,40 @@
            </item>
            <item row="10" column="1">
             <widget class="QCheckBox" name="procAfterInit">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="text">
               <string>Process straight after the initiation.</string>
              </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QWidget" name="sampleWdg" native="true">
+             <layout class="QHBoxLayout" name="horizontalLayout_10">
+              <property name="margin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QComboBox" name="expSample"/>
+              </item>
+              <item>
+               <widget class="QPushButton" name="expUpdate">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="text">
+                 <string>Update</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </widget>
            </item>
           </layout>
@@ -873,7 +889,7 @@
      <x>0</x>
      <y>0</y>
      <width>1068</width>
-     <height>44</height>
+     <height>20</height>
     </rect>
    </property>
   </widget>
