@@ -197,9 +197,9 @@ if [ "$proj" == "all" ] ; then
   fi
   for spl in $nsplits ; do
     xlictworkflow_local.sh $xparams \
-                             --proj "SAMPLE\w+$spl\w+" \
-                             --file_prefix_ctrecon "recon${spl}_.tif" \
-                             --file_prefix_sinograms "sino${spl}_.tif"
+                           --proj "SAMPLE\w*$spl\w*.tif" \
+                           --file_prefix_ctrecon "recon${spl}_.tif" \
+                           --file_prefix_sinograms "sino${spl}_.tif"
   done
 
   exit $?
@@ -214,7 +214,7 @@ elif [ "$proj" -eq "$proj" ] 2> /dev/null ; then # is an int
     echo "ERROR! Projection $proj is greater than maximum $pjs." >&2
     exit 1
   fi
-  if [ ! -z "$xtParamFile" ] ; then
+  if [ ! -z "$xtParamFile" ] && [ -z "$PROCRECURSIVE" ]   ; then
     echo "ERROR! Xtract reconstruction can be used only after all projections processed." >&2
     exit 1
   fi

@@ -481,7 +481,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.on_outPath_textChanged()
 
         if self.ui.procAfterInit.isChecked():
-            self.on_proc_clicked()
+            self.on_procAll_clicked()
 
     @pyqtSlot()
     def on_sameBin_clicked(self):
