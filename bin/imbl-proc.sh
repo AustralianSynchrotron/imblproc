@@ -196,6 +196,7 @@ if [ "$proj" == "all" ] ; then
     fi
   fi
   for spl in $nsplits ; do
+    drop_caches
     xlictworkflow_local.sh $xparams \
                            --proj "SAMPLE\w*$spl\w*.tif" \
                            --file_prefix_ctrecon "recon${spl}_.tif" \
