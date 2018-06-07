@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1068</width>
-    <height>797</height>
+    <width>612</width>
+    <height>500</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -22,7 +22,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tabInit">
        <attribute name="title">
@@ -206,7 +206,7 @@
                 <string>°</string>
                </property>
                <property name="maximum">
-                <double>3600.000000000000000</double>
+                <double>36000000.000000000000000</double>
                </property>
               </widget>
              </item>
@@ -486,16 +486,32 @@
         <item row="5" column="1">
          <layout class="QGridLayout" name="gridLayout_4">
           <item row="0" column="1" colspan="2">
-           <widget class="QSpinBox" name="sCropTop"/>
+           <widget class="QSpinBox" name="sCropTop">
+            <property name="maximum">
+             <number>999999999</number>
+            </property>
+           </widget>
           </item>
           <item row="2" column="1" colspan="2">
-           <widget class="QSpinBox" name="sCropBottom"/>
+           <widget class="QSpinBox" name="sCropBottom">
+            <property name="maximum">
+             <number>999999999</number>
+            </property>
+           </widget>
           </item>
           <item row="1" column="0" colspan="2">
-           <widget class="QSpinBox" name="sCropLeft"/>
+           <widget class="QSpinBox" name="sCropLeft">
+            <property name="maximum">
+             <number>999999999</number>
+            </property>
+           </widget>
           </item>
           <item row="1" column="2" colspan="2">
-           <widget class="QSpinBox" name="sCropRight"/>
+           <widget class="QSpinBox" name="sCropRight">
+            <property name="maximum">
+             <number>999999999</number>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
@@ -622,16 +638,32 @@
         <item row="3" column="1">
          <layout class="QGridLayout" name="gridLayout_6">
           <item row="0" column="1" colspan="2">
-           <widget class="QSpinBox" name="fCropTop"/>
+           <widget class="QSpinBox" name="fCropTop">
+            <property name="maximum">
+             <number>999999999</number>
+            </property>
+           </widget>
           </item>
           <item row="2" column="1" colspan="2">
-           <widget class="QSpinBox" name="fCropBottom"/>
+           <widget class="QSpinBox" name="fCropBottom">
+            <property name="maximum">
+             <number>999999999</number>
+            </property>
+           </widget>
           </item>
           <item row="1" column="0" colspan="2">
-           <widget class="QSpinBox" name="fCropLeft"/>
+           <widget class="QSpinBox" name="fCropLeft">
+            <property name="maximum">
+             <number>999999999</number>
+            </property>
+           </widget>
           </item>
           <item row="1" column="2" colspan="2">
-           <widget class="QSpinBox" name="fCropRight"/>
+           <widget class="QSpinBox" name="fCropRight">
+            <property name="maximum">
+             <number>999999999</number>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
@@ -649,7 +681,14 @@
             </widget>
            </item>
            <item>
-            <widget class="QDoubleSpinBox" name="iStX"/>
+            <widget class="QDoubleSpinBox" name="iStX">
+             <property name="minimum">
+              <double>-999999999.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>999999999.000000000000000</double>
+             </property>
+            </widget>
            </item>
            <item>
             <widget class="QLabel" name="label_18">
@@ -662,7 +701,14 @@
             </widget>
            </item>
            <item>
-            <widget class="QDoubleSpinBox" name="iStY"/>
+            <widget class="QDoubleSpinBox" name="iStY">
+             <property name="minimum">
+              <double>-999999999.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>999999999.000000000000000</double>
+             </property>
+            </widget>
            </item>
           </layout>
          </widget>
@@ -681,7 +727,14 @@
             </widget>
            </item>
            <item>
-            <widget class="QDoubleSpinBox" name="oStX"/>
+            <widget class="QDoubleSpinBox" name="oStX">
+             <property name="minimum">
+              <double>-999999999.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>999999999.000000000000000</double>
+             </property>
+            </widget>
            </item>
            <item>
             <widget class="QLabel" name="label_24">
@@ -694,7 +747,14 @@
             </widget>
            </item>
            <item>
-            <widget class="QDoubleSpinBox" name="oStY"/>
+            <widget class="QDoubleSpinBox" name="oStY">
+             <property name="minimum">
+              <double>-999999999.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>999999999.000000000000000</double>
+             </property>
+            </widget>
            </item>
           </layout>
          </widget>
@@ -713,7 +773,14 @@
             </widget>
            </item>
            <item>
-            <widget class="QDoubleSpinBox" name="fStX"/>
+            <widget class="QDoubleSpinBox" name="fStX">
+             <property name="minimum">
+              <double>-999999999.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>999999999.000000000000000</double>
+             </property>
+            </widget>
            </item>
            <item>
             <widget class="QLabel" name="label_31">
@@ -726,7 +793,14 @@
             </widget>
            </item>
            <item>
-            <widget class="QDoubleSpinBox" name="fStY"/>
+            <widget class="QDoubleSpinBox" name="fStY">
+             <property name="minimum">
+              <double>-999999999.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>999999999.000000000000000</double>
+             </property>
+            </widget>
            </item>
           </layout>
          </widget>
@@ -773,7 +847,11 @@
          </widget>
         </item>
         <item row="4" column="2">
-         <widget class="QSpinBox" name="testProjection"/>
+         <widget class="QSpinBox" name="testProjection">
+          <property name="maximum">
+           <number>999999999</number>
+          </property>
+         </widget>
         </item>
         <item row="0" column="1" colspan="2">
          <widget class="QTableWidget" name="splits">
@@ -888,7 +966,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1068</width>
+     <width>612</width>
      <height>20</height>
     </rect>
    </property>
