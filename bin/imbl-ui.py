@@ -20,7 +20,7 @@ warnStyle = 'background-color: rgba(255, 0, 0, 128);'
 
 class MainWindow(QtWidgets.QMainWindow):
 
-    configName = str(Path.home()) + "/.imbl-ui"
+    configName = os.path.join(Path.home(), ".imbl-ui")
     amLoading = False
 
     def __init__(self):
@@ -30,6 +30,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.ui.setupUi(self)
         self.on_individualIO_toggled()
         self.on_xtractIn_textChanged()
+        self.on_preCTln_textChanged()
+        self.on_postCTln_textChanged()
 
         self.ui.splits.horizontalHeader().setStretchLastSection(False)
         self.ui.splits.horizontalHeader().setSectionResizeMode(
@@ -82,7 +84,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.testSubDir,
             self.ui.noRecFF,
             self.ui.xtractAfter,
-            self.ui.xtractIn
+            self.ui.xtractIn,
+            self.ui.preCTln,
+            self.ui.postCTln
         )
 
         for swdg in self.configObjects:
@@ -313,16 +317,16 @@ class MainWindow(QtWidgets.QMainWindow):
         cfgName = ''
         attempt = 0
         while True:
-            n_cfgName = ipath + '/acquisition.%i.configuration' % attempt
+            n_cfgName = os.path.join(ipath,
+                                     'acquisition.%i.configuration' % attempt)
             if os.path.exists(n_cfgName):
                 cfgName = n_cfgName
             else:
                 break
             attempt += 1
         if not cfgName:  # one more attempt for little earlier code
-            cfgName = os.popen(
-                'ls ' + ipath + '/acquisition.*config* | sort -V | tail -n 1'
-                ).read().strip("\n")
+            cfgName = os.popen('ls ' + ipath + os.sep + 'acquisition.*config*' +
+                               ' | sort -V | tail -n 1').read().strip("\n")
         if not cfgName:
             self.ui.noConfigLabel.show()
             return
@@ -372,7 +376,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         self.ui.outPath.setStyleSheet('')
 
-        initiatedFile = opath + '/.initstitch'
+        initiatedFile = os.path.join(opath, '.initstitch')
         if not os.path.exists(initiatedFile):
             return
         initDict = dict()
@@ -595,12 +599,15 @@ class MainWindow(QtWidgets.QMainWindow):
         actButton.setStyleSheet("")
         self.on_sameBin_clicked()  # to correct state of the yBin
         self.on_xtractIn_textChanged()  # to correct state of process all
+        self.on_preCTln_textChanged()
+        self.on_postCTln_textChanged()
         self.update_initiate_state()
 
     @pyqtSlot()
     def on_test_clicked(self):
         ars = (" -t %i" % self.ui.testProjection.value())
-        wdir = self.ui.outPath.text() + "/" + self.ui.testSubDir.currentText()
+        wdir = os.path.join(self.ui.outPath.text(),
+                            self.ui.testSubDir.currentText())
         self.common_test_proc(ars, wdir, self.ui.test)
 
     @pyqtSlot()
@@ -618,7 +625,8 @@ class MainWindow(QtWidgets.QMainWindow):
         ars += (" -x \"%s\" " % self.ui.xtractIn.text()
                 if self.ui.xtractAfter.isChecked() else "")
         ars += " all"
-        wdir = self.ui.outPath.text() + "/" + self.ui.testSubDir.currentText()
+        wdir = os.path.join(self.ui.outPath.text(),
+                            self.ui.testSubDir.currentText())
         self.common_test_proc(ars, wdir, self.ui.procThis)
 
     @pyqtSlot()
@@ -637,6 +645,56 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.xtractIn.setStyleSheet("" if xparfOK else warnStyle)
         self.ui.procThis.setEnabled(xparfOK)
         self.ui.procAll.setEnabled(xparfOK)
+
+    def on_script_clicked(self, execProc, execSrc, execBut):
+        if execProc.state():
+            execProc.kill()
+            return
+        command = execSrc.text()
+        if not command:
+            return
+        execProc.setProgram("/bin/sh")
+        execProc.setArguments(("-c", command))
+        execProc.setWorkingDirectory(
+            os.path.join(self.ui.outPath.text(),
+                         self.ui.testSubDir.currentText()))
+
+        butText = execBut.text()
+        execBut.setText('Stop')
+        execBut.setStyleSheet(warnStyle)
+        execSrc.setEnabled(False)
+
+        self.execInBg(execProc)
+
+        execBut.setText(butText)
+        execBut.setStyleSheet('')
+        execSrc.setEnabled(True)
+
+    preCTproc = QProcess()
+
+    @pyqtSlot()
+    def on_preCTx_clicked(self):
+        self.on_script_clicked(self.preCTproc,
+                               self.ui.preCTln, self.ui.preCTx)
+
+    @pyqtSlot()
+    @pyqtSlot(str)
+    def on_preCTln_textChanged(self):
+        self.ui.preCTx.setEnabled(len(self.ui.preCTln.text())
+                                  or self.preCTproc.state())
+
+    postCTproc = QProcess()
+
+    @pyqtSlot()
+    def on_postCTx_clicked(self):
+        self.on_script_clicked(self.postCTproc,
+                               self.ui.postCTln, self.ui.postCTx)
+
+    @pyqtSlot()
+    @pyqtSlot(str)
+    def on_postCTln_textChanged(self):
+        self.ui.postCTx.setEnabled(len(self.ui.postCTln.text())
+                                   or self.postCTproc.state())
 
 
 app = QApplication(sys.argv)

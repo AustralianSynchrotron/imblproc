@@ -28,6 +28,8 @@ printhelp() {
   echo "                    Make sure you know how to use it correctly."
   echo "  -d                Does not perform flat field correction on the images."
   echo "  -x STRING         Chain stitching with the X-tract reconstruction with"
+  echo "  -y STRING         Command executed before X-tract reconstruction"
+  echo "  -z STRING         Command executed after X-tract reconstruction"
   echo "                    the parameters read from the given parameters file."
   echo "  -t                Test mode: keeps intermediate images in tmp directory."
   echo "  -h                Prints this help."
@@ -62,12 +64,14 @@ ffcorrection=true
 imagick=""
 stParam=""
 xtParamFile=""
+preXT=""
+postXT=""
 
 if [ -z "$PROCRECURSIVE" ] ; then
   echo "$allopts" >> ".proc.history"
 fi
 
-while getopts "g:G:f:c:C:r:b:s:n:i:o:x:dth" opt ; do
+while getopts "g:G:f:c:C:r:b:s:n:i:o:x:y:z:dth" opt ; do
   case $opt in
     g)  origin=$OPTARG
         if (( $nofSt < 2 )) ; then
@@ -104,6 +108,8 @@ while getopts "g:G:f:c:C:r:b:s:n:i:o:x:dth" opt ; do
     x)  xtParamFile="$OPTARG"
         chkf "$xtParamFile" "X-tract parameters"
         ;;
+    y)  preXT="$OPTARG" ;;
+    z)  postXT="$OPTARG" ;;
     d)  ffcorrection=false ;;
     t)  testme=true ;;
     h)  printhelp ; exit 1 ;;
@@ -196,11 +202,21 @@ if [ "$proj" == "all" ] ; then
     fi
   fi
   for spl in $nsplits ; do
+
+    if [ ! -z "$preXT" ] ; then
+      /bin/sh -c "$preXT"
+    fi
+
     drop_caches
     xlictworkflow_local.sh $xparams \
                            --proj "SAMPLE\w*$spl\w*.tif" \
                            --file_prefix_ctrecon "recon${spl}_.tif" \
                            --file_prefix_sinograms "sino${spl}_.tif"
+
+    if [ ! -z "$postXT" ] ; then
+      /bin/sh -c $postXT
+    fi
+
   done
 
   exit $?

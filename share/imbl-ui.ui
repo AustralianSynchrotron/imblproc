@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>612</width>
-    <height>500</height>
+    <width>1099</width>
+    <height>841</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -73,7 +73,16 @@
               <property name="spacing">
                <number>0</number>
               </property>
-              <property name="margin">
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
                <number>0</number>
               </property>
               <item>
@@ -102,7 +111,16 @@
               <property name="spacing">
                <number>0</number>
               </property>
-              <property name="margin">
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
                <number>0</number>
               </property>
               <item>
@@ -339,7 +357,16 @@
            <item row="2" column="1">
             <widget class="QWidget" name="sampleWdg" native="true">
              <layout class="QHBoxLayout" name="horizontalLayout_10">
-              <property name="margin">
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
                <number>0</number>
               </property>
               <item>
@@ -931,14 +958,34 @@
         </item>
         <item row="3" column="1" colspan="2">
          <widget class="QWidget" name="xtractWdg" native="true">
-          <layout class="QHBoxLayout" name="_2">
-           <item>
+          <layout class="QGridLayout" name="gridLayout_9">
+           <item row="0" column="0">
             <widget class="QLineEdit" name="xtractIn"/>
            </item>
-           <item>
+           <item row="2" column="0">
+            <widget class="QLineEdit" name="postCTln"/>
+           </item>
+           <item row="0" column="1">
             <widget class="QPushButton" name="xtractBrowse">
              <property name="text">
               <string>Browse</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLineEdit" name="preCTln"/>
+           </item>
+           <item row="1" column="1">
+            <widget class="QPushButton" name="preCTx">
+             <property name="text">
+              <string>Pre-CT script</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QPushButton" name="postCTx">
+             <property name="text">
+              <string>Post-CT script</string>
              </property>
             </widget>
            </item>
@@ -966,8 +1013,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>612</width>
-     <height>20</height>
+     <width>1099</width>
+     <height>44</height>
     </rect>
    </property>
   </widget>
