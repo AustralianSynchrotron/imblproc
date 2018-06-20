@@ -161,13 +161,13 @@ for Ydir in $Ydirs ; do
   for Zdir in $Zdirs ; do
 
     Sdir="$Ydir/$Zdir"
-    Sdirs="$Sdirs $(realpath $Sdir --relative-to='.')"
 
     if ! mkdir -p "$Sdir/rec32fp" "$Sdir/clean" "$Sdir/rec8int" "$Sdir/tmp" ; then
       echo "Could not create output sub-directories in \"$PWD/$Sdir\"." >&2
       exit 1
     else
 
+      Sdirs="$Sdirs $(realpath $Sdir --relative-to='.')"
       Slist=""
       for Ycur in $Ylist ; do
         if [ -z "$Zlist" ] ; then
