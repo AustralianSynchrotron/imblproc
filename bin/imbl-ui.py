@@ -30,7 +30,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.ui.setupUi(self)
         self.on_individualIO_toggled()
         self.on_xtractIn_textChanged()
-        self.on_preStLn_textChanged()
+#        self.on_preStLn_textChanged()
         self.on_postStLn_textChanged()
 
         self.ui.splits.horizontalHeader().setStretchLastSection(False)
@@ -85,7 +85,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.noRecFF,
             self.ui.xtractAfter,
             self.ui.xtractIn,
-            self.ui.preStLn,
+#            self.ui.preStLn,
             self.ui.postStLn
         )
 
@@ -599,7 +599,7 @@ class MainWindow(QtWidgets.QMainWindow):
         actButton.setStyleSheet("")
         self.on_sameBin_clicked()  # to correct state of the yBin
         self.on_xtractIn_textChanged()  # to correct state of process all
-        self.on_preStLn_textChanged()
+#        self.on_preStLn_textChanged()
         self.on_postStLn_textChanged()
         self.update_initiate_state()
 
