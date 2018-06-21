@@ -30,8 +30,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.ui.setupUi(self)
         self.on_individualIO_toggled()
         self.on_xtractIn_textChanged()
-        self.on_preCTln_textChanged()
-        self.on_postCTln_textChanged()
+        self.on_preStLn_textChanged()
+        self.on_postStLn_textChanged()
 
         self.ui.splits.horizontalHeader().setStretchLastSection(False)
         self.ui.splits.horizontalHeader().setSectionResizeMode(
@@ -85,8 +85,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.noRecFF,
             self.ui.xtractAfter,
             self.ui.xtractIn,
-            self.ui.preCTln,
-            self.ui.postCTln
+            self.ui.preStLn,
+            self.ui.postStLn
         )
 
         for swdg in self.configObjects:
@@ -541,10 +541,10 @@ class MainWindow(QtWidgets.QMainWindow):
         prms = str()
         if self.doYst or self.doZst:
             if self.doZst:
-              prms += "-g %i,%i " % (
+                prms += "-g %i,%i " % (
                   self.ui.iStX.value(), self.ui.iStY.value())
             else:
-               prms += "-g %i,%i " % (
+                prms += "-g %i,%i " % (
                   self.ui.oStX.value(), self.ui.oStY.value())
         if self.doYst and self.doZst:
             prms += "-G %i,%i " % (
@@ -599,8 +599,8 @@ class MainWindow(QtWidgets.QMainWindow):
         actButton.setStyleSheet("")
         self.on_sameBin_clicked()  # to correct state of the yBin
         self.on_xtractIn_textChanged()  # to correct state of process all
-        self.on_preCTln_textChanged()
-        self.on_postCTln_textChanged()
+        self.on_preStLn_textChanged()
+        self.on_postStLn_textChanged()
         self.update_initiate_state()
 
     @pyqtSlot()
@@ -615,6 +615,8 @@ class MainWindow(QtWidgets.QMainWindow):
         ars = " -d " if self.ui.noRecFF.isChecked() else ""
         ars += (" -x \"%s\" " % self.ui.xtractIn.text()
                 if self.ui.xtractAfter.isChecked() else "")
+        ars += (" -X \"%s\" " % self.ui.postStLn.text()
+                if self.ui.postStLn.text() else "")
         ars += " all"
         wdir = self.ui.outPath.text()
         self.common_test_proc(ars, wdir, self.ui.procAll)
@@ -624,6 +626,8 @@ class MainWindow(QtWidgets.QMainWindow):
         ars = " -d " if self.ui.noRecFF.isChecked() else ""
         ars += (" -x \"%s\" " % self.ui.xtractIn.text()
                 if self.ui.xtractAfter.isChecked() else "")
+        ars += (" -X \"%s\" " % self.ui.postStLn.text()
+                if self.ui.postStLn.text() else "")
         ars += " all"
         wdir = os.path.join(self.ui.outPath.text(),
                             self.ui.testSubDir.currentText())
@@ -662,39 +666,37 @@ class MainWindow(QtWidgets.QMainWindow):
         butText = execBut.text()
         execBut.setText('Stop')
         execBut.setStyleSheet(warnStyle)
-        execSrc.setEnabled(False)
 
         self.execInBg(execProc)
 
         execBut.setText(butText)
         execBut.setStyleSheet('')
-        execSrc.setEnabled(True)
 
-    preCTproc = QProcess()
+#    preStProc = QProcess()
+
+#    @pyqtSlot()
+#    def on_preStX_clicked(self):
+#        self.on_script_clicked(self.preStProc,
+#                               self.ui.preStLn, self.ui.preStX)
+
+#    @pyqtSlot()
+#    @pyqtSlot(str)
+#    def on_preStLn_textChanged(self):
+#        self.ui.preStX.setEnabled(len(self.ui.preStLn.text())
+#                                  or self.preStProc.state())
+
+    postStProc = QProcess()
 
     @pyqtSlot()
-    def on_preCTx_clicked(self):
-        self.on_script_clicked(self.preCTproc,
-                               self.ui.preCTln, self.ui.preCTx)
+    def on_postStX_clicked(self):
+        self.on_script_clicked(self.postStProc,
+                               self.ui.postStLn, self.ui.postStX)
 
     @pyqtSlot()
     @pyqtSlot(str)
-    def on_preCTln_textChanged(self):
-        self.ui.preCTx.setEnabled(len(self.ui.preCTln.text())
-                                  or self.preCTproc.state())
-
-    postCTproc = QProcess()
-
-    @pyqtSlot()
-    def on_postCTx_clicked(self):
-        self.on_script_clicked(self.postCTproc,
-                               self.ui.postCTln, self.ui.postCTx)
-
-    @pyqtSlot()
-    @pyqtSlot(str)
-    def on_postCTln_textChanged(self):
-        self.ui.postCTx.setEnabled(len(self.ui.postCTln.text())
-                                   or self.postCTproc.state())
+    def on_postStLn_textChanged(self):
+        self.ui.postStX.setEnabled(len(self.ui.postStLn.text())
+                                   or self.postStProc.state())
 
 
 app = QApplication(sys.argv)

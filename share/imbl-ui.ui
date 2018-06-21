@@ -839,14 +839,61 @@
         <string>Finilize and execute</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_7">
-        <item row="5" column="0">
-         <widget class="QPushButton" name="procThis">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_27">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="text">
-           <string>Process only:</string>
+           <string>Split result</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
           </property>
          </widget>
         </item>
-        <item row="4" column="0">
+        <item row="13" column="0" colspan="3">
+         <widget class="QPushButton" name="procAll">
+          <property name="text">
+           <string>Process all</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QPushButton" name="preStX">
+          <property name="text">
+           <string>Execute</string>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="2">
+         <widget class="QSpinBox" name="testProjection">
+          <property name="maximum">
+           <number>999999999</number>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0" colspan="3">
+         <widget class="QCheckBox" name="noRecFF">
+          <property name="text">
+           <string>Do NOT perform flat and dark field correction</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="2">
+         <widget class="QLineEdit" name="preStLn"/>
+        </item>
+        <item row="9" column="0" colspan="3">
+         <widget class="Line" name="line">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="0">
          <widget class="QPushButton" name="test">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
@@ -859,26 +906,65 @@
           </property>
          </widget>
         </item>
-        <item row="6" column="0" colspan="3">
-         <widget class="Line" name="line">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0" colspan="3">
-         <widget class="QCheckBox" name="noRecFF">
+        <item row="8" column="0">
+         <widget class="QPushButton" name="procThis">
           <property name="text">
-           <string>Do NOT perform flat and dark field correction</string>
+           <string>Process only:</string>
           </property>
          </widget>
         </item>
-        <item row="4" column="2">
-         <widget class="QSpinBox" name="testProjection">
-          <property name="maximum">
-           <number>999999999</number>
+        <item row="5" column="1" colspan="2">
+         <widget class="QWidget" name="xtractWdg" native="true">
+          <layout class="QGridLayout" name="gridLayout_9">
+           <item row="0" column="0">
+            <widget class="QLineEdit" name="xtractIn"/>
+           </item>
+           <item row="0" column="1">
+            <widget class="QPushButton" name="xtractBrowse">
+             <property name="text">
+              <string>Browse</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="4" column="1" colspan="2">
+         <widget class="QCheckBox" name="xtractAfter">
+          <property name="text">
+           <string>Run X-tract reconstruction reading parameters from file:</string>
           </property>
          </widget>
+        </item>
+        <item row="8" column="1">
+         <widget class="QLabel" name="testSubDirLabel">
+          <property name="text">
+           <string>subdirectory</string>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="1">
+         <widget class="QLabel" name="label_26">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>projection</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0" rowspan="2">
+         <widget class="QLabel" name="label_16">
+          <property name="text">
+           <string>Post-stitch</string>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="2">
+         <widget class="QComboBox" name="testSubDir"/>
         </item>
         <item row="0" column="1" colspan="2">
          <widget class="QTableWidget" name="splits">
@@ -903,93 +989,11 @@
           </column>
          </widget>
         </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_27">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
+        <item row="6" column="0" colspan="3">
+         <widget class="Line" name="line_2">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
           </property>
-          <property name="text">
-           <string>Split result</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="1">
-         <widget class="QLabel" name="testSubDirLabel">
-          <property name="text">
-           <string>subdirectory</string>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="1">
-         <widget class="QLabel" name="label_26">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>projection</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0" colspan="3">
-         <widget class="QCheckBox" name="xtractAfter">
-          <property name="text">
-           <string>After stitching run X-tract reconstruction reading parameters from file:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="2">
-         <widget class="QComboBox" name="testSubDir"/>
-        </item>
-        <item row="10" column="0" colspan="3">
-         <widget class="QPushButton" name="procAll">
-          <property name="text">
-           <string>Process all</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="1" colspan="2">
-         <widget class="QWidget" name="xtractWdg" native="true">
-          <layout class="QGridLayout" name="gridLayout_9">
-           <item row="0" column="0">
-            <widget class="QLineEdit" name="xtractIn"/>
-           </item>
-           <item row="2" column="0">
-            <widget class="QLineEdit" name="postCTln"/>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="xtractBrowse">
-             <property name="text">
-              <string>Browse</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLineEdit" name="preCTln"/>
-           </item>
-           <item row="1" column="1">
-            <widget class="QPushButton" name="preCTx">
-             <property name="text">
-              <string>Pre-CT script</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QPushButton" name="postCTx">
-             <property name="text">
-              <string>Post-CT script</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
          </widget>
         </item>
        </layout>
