@@ -190,6 +190,7 @@ for Ydir in $Ydirs ; do
 done
 
 subdCount=$(echo $Sdirs | wc -w)
+initfile="$initName"
 if (( $subdCount > 1 )) ; then
   cat /dev/null > "$initfile"
   echo subdirs=$subdCount >>  "$initName"
