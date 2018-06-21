@@ -641,9 +641,10 @@ class MainWindow(QtWidgets.QMainWindow):
     @pyqtSlot()
     @pyqtSlot(str)
     def on_xtractIn_textChanged(self):
-        xparfOK = os.path.exists(self.ui.xtractIn.text()) or \
-                  not self.ui.xtractAfter.isChecked()
-        self.ui.xtractWdg.setVisible(self.ui.xtractAfter.isChecked())
+        doXtract = self.ui.xtractAfter.isChecked()
+        xparfOK = os.path.exists(self.ui.xtractIn.text()) or not doXtract
+        self.ui.xtractWdg.setVisible(doXtract)
+        self.ui.xtractInabel.setVisible(doXtract)
         self.ui.xtractIn.setStyleSheet("" if xparfOK else warnStyle)
         self.ui.procThis.setEnabled(xparfOK)
         self.ui.procAll.setEnabled(xparfOK)
@@ -653,7 +654,7 @@ class MainWindow(QtWidgets.QMainWindow):
         maxProj = self.ui.maxProj.value()
         if maxProj == self.ui.maxProj.minimum():
             maxProj = self.ui.projections.value()
-        rangeOK = minProj >= maxProj
+        rangeOK = minProj <= maxProj
         self.ui.minProj.setStyleSheet("" if rangeOK else warnStyle)
         self.ui.maxProj.setStyleSheet("" if rangeOK else warnStyle)
 
