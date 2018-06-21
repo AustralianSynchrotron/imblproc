@@ -30,8 +30,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.ui.setupUi(self)
         self.on_individualIO_toggled()
         self.on_xtractIn_textChanged()
-#        self.on_preStLn_textChanged()
-        self.on_postStLn_textChanged()
 
         self.ui.splits.horizontalHeader().setStretchLastSection(False)
         self.ui.splits.horizontalHeader().setSectionResizeMode(
@@ -85,8 +83,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.noRecFF,
             self.ui.xtractAfter,
             self.ui.xtractIn,
-#            self.ui.preStLn,
-            self.ui.postStLn
+            self.ui.minProj,
+            self.ui.maxProj
         )
 
         for swdg in self.configObjects:
@@ -442,6 +440,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.testSubDirLabel.setVisible(sds)
         self.ui.procThis.setVisible(sds)
         self.ui.testProjection.setMaximum(pjs)
+        self.ui.minProj.setMaximum(pjs)
+        self.ui.maxProj.setMaximum(pjs)
 
         for tabIdx in range(1, self.ui.tabWidget.count()-1):
             self.ui.tabWidget.setTabEnabled(tabIdx, True)
@@ -599,8 +599,6 @@ class MainWindow(QtWidgets.QMainWindow):
         actButton.setStyleSheet("")
         self.on_sameBin_clicked()  # to correct state of the yBin
         self.on_xtractIn_textChanged()  # to correct state of process all
-#        self.on_preStLn_textChanged()
-        self.on_postStLn_textChanged()
         self.update_initiate_state()
 
     @pyqtSlot()
@@ -610,28 +608,28 @@ class MainWindow(QtWidgets.QMainWindow):
                             self.ui.testSubDir.currentText())
         self.common_test_proc(ars, wdir, self.ui.test)
 
-    @pyqtSlot()
-    def on_procAll_clicked(self):
+    def procParams(self):
         ars = " -d " if self.ui.noRecFF.isChecked() else ""
         ars += (" -x \"%s\" " % self.ui.xtractIn.text()
                 if self.ui.xtractAfter.isChecked() else "")
-        ars += (" -X \"%s\" " % self.ui.postStLn.text()
-                if self.ui.postStLn.text() else "")
+        minProj = self.ui.minProj.value()
+        maxProj = self.ui.maxProj.value()
+        if maxProj == self.ui.maxProj.minimum():
+            maxProj = self.ui.projections.value()
+        ars += " -m %i -M %i " % (minProj, maxProj)
         ars += " all"
+        return ars
+
+    @pyqtSlot()
+    def on_procAll_clicked(self):
         wdir = self.ui.outPath.text()
-        self.common_test_proc(ars, wdir, self.ui.procAll)
+        self.common_test_proc(self.procParams(), wdir, self.ui.procAll)
 
     @pyqtSlot()
     def on_procThis_clicked(self):
-        ars = " -d " if self.ui.noRecFF.isChecked() else ""
-        ars += (" -x \"%s\" " % self.ui.xtractIn.text()
-                if self.ui.xtractAfter.isChecked() else "")
-        ars += (" -X \"%s\" " % self.ui.postStLn.text()
-                if self.ui.postStLn.text() else "")
-        ars += " all"
         wdir = os.path.join(self.ui.outPath.text(),
                             self.ui.testSubDir.currentText())
-        self.common_test_proc(ars, wdir, self.ui.procThis)
+        self.common_test_proc(self.procParams(), wdir, self.ui.procThis)
 
     @pyqtSlot()
     def on_xtractBrowse_clicked(self):
@@ -650,53 +648,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.procThis.setEnabled(xparfOK)
         self.ui.procAll.setEnabled(xparfOK)
 
-    def on_script_clicked(self, execProc, execSrc, execBut):
-        if execProc.state():
-            execProc.kill()
-            return
-        command = execSrc.text()
-        if not command:
-            return
-        execProc.setProgram("/bin/sh")
-        execProc.setArguments(("-c", command))
-        execProc.setWorkingDirectory(
-            os.path.join(self.ui.outPath.text(),
-                         self.ui.testSubDir.currentText()))
+    def onMinMaxProjectionChanged(self):
+        minProj = self.ui.minProj.value()
+        maxProj = self.ui.maxProj.value()
+        if maxProj == self.ui.maxProj.minimum():
+            maxProj = self.ui.projections.value()
+        rangeOK = minProj >= maxProj
+        self.ui.minProj.setStyleSheet("" if rangeOK else warnStyle)
+        self.ui.maxProj.setStyleSheet("" if rangeOK else warnStyle)
 
-        butText = execBut.text()
-        execBut.setText('Stop')
-        execBut.setStyleSheet(warnStyle)
+    @pyqtSlot(int)
+    def on_minProj_valueChanged(self):
+        self.onMinMaxProjectionChanged()
 
-        self.execInBg(execProc)
-
-        execBut.setText(butText)
-        execBut.setStyleSheet('')
-
-#    preStProc = QProcess()
-
-#    @pyqtSlot()
-#    def on_preStX_clicked(self):
-#        self.on_script_clicked(self.preStProc,
-#                               self.ui.preStLn, self.ui.preStX)
-
-#    @pyqtSlot()
-#    @pyqtSlot(str)
-#    def on_preStLn_textChanged(self):
-#        self.ui.preStX.setEnabled(len(self.ui.preStLn.text())
-#                                  or self.preStProc.state())
-
-    postStProc = QProcess()
-
-    @pyqtSlot()
-    def on_postStX_clicked(self):
-        self.on_script_clicked(self.postStProc,
-                               self.ui.postStLn, self.ui.postStX)
-
-    @pyqtSlot()
-    @pyqtSlot(str)
-    def on_postStLn_textChanged(self):
-        self.ui.postStX.setEnabled(len(self.ui.postStLn.text())
-                                   or self.postStProc.state())
+    @pyqtSlot(int)
+    def on_maxProj_valueChanged(self):
+        self.onMinMaxProjectionChanged()
 
 
 app = QApplication(sys.argv)

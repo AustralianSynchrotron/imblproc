@@ -26,17 +26,18 @@ printhelp() {
   echo "                    piped through imagemagick with this string as the parameters."
   echo "                    The results are used instead of the original source images."
   echo "                    Make sure you know how to use it correctly."
+  echo "  -m INT            First projection to be processed with \"all\"."
+  echo "  -M INT            Last projection to be processed with \"all\"."
   echo "  -d                Does not perform flat field correction on the images."
   echo "  -x STRING         Chain stitching with the X-tract reconstruction with"
   echo "                    the parameters read from the given parameters file."
-  echo "  -X STRING         Executes string as the script after processing (but before X-tract)."
   echo "  -t                Test mode: keeps intermediate images in tmp directory."
   echo "  -h                Prints this help."
 }
 
 chkf () {
   if [ ! -e "$1" ] ; then
-    echo "ERROR! Non existing" $2 "file: \"$1\"" >&2
+    echo "ERROR! Non existing" $2 "path: \"$1\"" >&2
     exit 1
   fi
 }
@@ -64,12 +65,14 @@ imagick=""
 stParam=""
 xtParamFile=""
 postT=""
+minProj=0
+maxProj=$pjs
 
 if [ -z "$PROCRECURSIVE" ] ; then
   echo "$allopts" >> ".proc.history"
 fi
 
-while getopts "g:G:f:c:C:r:b:s:n:i:o:x:X:dth" opt ; do
+while getopts "g:G:f:c:C:r:b:s:n:i:o:x:m:M:dth" opt ; do
   case $opt in
     g)  origin=$OPTARG
         if (( $nofSt < 2 )) ; then
@@ -103,10 +106,27 @@ while getopts "g:G:f:c:C:r:b:s:n:i:o:x:X:dth" opt ; do
         ;;
     n)  imagick="$imagick -median $OPTARG" ;;
     i)  imagick="$imagick $OPTARG" ;;
+    m)  minProj=$OPTARG
+        if [ ! "$minProj" -eq "$minProj" ] 2> /dev/null ; then
+          echo "ERROR! -m argument \"$minProj\" is not an integer." >&2
+          exit 1
+        fi
+        if [ "$minProj" -lt 0 ] ; then
+          minProj=0
+        fi
+        ;;
+    M)  maxProj=$OPTARG
+        if [ ! "$maxProj" -eq "$maxProj" ] 2> /dev/null ; then
+          echo "ERROR! -M argument \"$maxProj\" is not an integer." >&2
+          exit 1
+        fi
+        if [ "$maxProj" -gt "$pjs" ] ; then
+          maxProj=$pjs
+        fi
+        ;;
     x)  xtParamFile="$OPTARG"
         chkf "$xtParamFile" "X-tract parameters"
         ;;
-    X)  postST="$OPTARG" ;;
     d)  ffcorrection=false ;;
     t)  testme=true ;;
     h)  printhelp ; exit 1 ;;
@@ -114,6 +134,7 @@ while getopts "g:G:f:c:C:r:b:s:n:i:o:x:X:dth" opt ; do
     :)  echo "Option -$OPTARG requires an argument." >&2 ; exit 1 ;;
   esac
 done
+
 
 if [ ! -z "$subdirs" ] ; then
 
@@ -164,19 +185,22 @@ if [ "$proj" == "all" ] ; then
     echo "ERROR! Whole sample stitching (\"all\" argument) cannot be done in test mode." >&2
     exit 1
   fi
+  if [ "$minProj" -ge "$maxProj" ] ; then
+    echo "ERROR! First projection $minProj is greater than or equal to the last one $maxProj." >&2
+    echo "       Check -m and/or -M options."  >&2
+    exit 1
+  fi
 
   export PROCRECURSIVE=true
 
   allopts="$(echo $allopts | sed 's all  g')"
   $0 $allopts  && # do df and bg
-  seq 0 $pjs | parallel --eta "$0 $allopts {}"
+  seq $minProj $maxProj | parallel --eta "$0 $allopts {}"
   if [ -z "$xtParamFile" ] ; then
     exit $?
   fi
 
-  pindir=" --indir $(realpath clean) "
-  poutdir=" --outdir $(realpath rec8int) "
-
+  # X-tract processing: to be replaced with imbl-xtract-wrapper.sh after testing
   xparams="$(cat "$(realpath "$xtParamFile")" |
               perl -p -e 's/:\n/ /g' |
               grep -- -- |
@@ -199,17 +223,11 @@ if [ "$proj" == "all" ] ; then
     fi
   fi
   for spl in $nsplits ; do
-
-    if [ ! -z "$postST" ] ; then
-      /bin/sh -c $postST
-    fi
-
     drop_caches
     xlictworkflow_local.sh $xparams \
                            --proj "SAMPLE\w*$spl\w*.tif" \
                            --file_prefix_ctrecon "recon${spl}_.tif" \
                            --file_prefix_sinograms "sino${spl}_.tif"
-
   done
 
   exit $?
