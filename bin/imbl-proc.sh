@@ -30,6 +30,7 @@ printhelp() {
   echo "  -d                Does not perform flat field correction on the images."
   echo "  -x STRING         Chain stitching with the X-tract reconstruction with"
   echo "                    the parameters read from the given parameters file."
+  echo "  -w                Delete projections folder (clean) after X-tract processing."
   echo "  -t                Test mode: keeps intermediate images in tmp directory."
   echo "  -h                Prints this help."
 }
@@ -69,12 +70,13 @@ xtParamFile=""
 postT=""
 minProj=0
 maxProj=$pjs
+wipeClean=false
 
 if [ -z "$PROCRECURSIVE" ] ; then
   echo "$allopts" >> ".proc.history"
 fi
 
-while getopts "g:G:f:c:C:r:b:s:n:i:o:x:m:M:dth" opt ; do
+while getopts "g:G:f:c:C:r:b:s:n:i:o:x:m:M:dthw" opt ; do
   case $opt in
     g)  origin=$OPTARG
         if (( $nofSt < 2 )) ; then
@@ -129,6 +131,7 @@ while getopts "g:G:f:c:C:r:b:s:n:i:o:x:m:M:dth" opt ; do
     x)  xtParamFile="$OPTARG"
         chkf "$xtParamFile" "X-tract parameters"
         ;;
+    w)  wipeClean=true ;;
     d)  ffcorrection=false ;;
     t)  testme=true ;;
     h)  printhelp ; exit 1 ;;
@@ -230,9 +233,20 @@ if [ "$proj" == "all" ] ; then
                            --proj "SAMPLE\w*$spl\w*.tif" \
                            --file_prefix_ctrecon "recon${spl}_.tif" \
                            --file_prefix_sinograms "sino${spl}_.tif"
+    if [ "$?" -ne 0 ] ; then
+      wipeClean=false
+    fi
   done
 
-  exit $?
+  if $wipeClean ; then
+      nlen=${#pjs}
+      mv clean/SAMPLE*$(printf \%0${nlen}i $minProj).tif .
+      mv clean/SAMPLE*$(printf \%0${nlen}i $maxProj).tif .
+      mv clean/SAMPLE*$(printf \%0${nlen}i $(( ( $minProj + $maxProj ) / 2 )) ).tif .
+      rm -rf clean
+  fi
+
+  exit 0
 
 elif [ "$proj" -eq "$proj" ] 2> /dev/null ; then # is an int
 
@@ -319,7 +333,7 @@ else # is a projection
   imagemask=""
   if [ -z "$filemask" ] ; then
     imagemask="_"
-  else 
+  else
     for finm in $filemask ; do
       imagemask="$imagemask _${finm}_"
     done
