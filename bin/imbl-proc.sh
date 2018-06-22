@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 printhelp() {
   echo "Usage: $0 [OPTIONS] [PROJECTION]"
   echo "OPTIONS:"
@@ -48,6 +47,9 @@ source "$initfile"
 
 
 nofSt=$(echo $filemask | wc -w)
+if (( $nofSt == 0 )) ; then
+  nofSt=1
+fi
 secondsize=$(( $zstitch > 1 ? $ystitch : 0 ))
 
 allopts="$@"
@@ -314,16 +316,25 @@ else # is a projection
     stParam="$stParam -o clean/$oname"
   fi
 
+  imagemask=""
+  if [ -z "$filemask" ] ; then
+    imagemask="_"
+  else 
+    for finm in $filemask ; do
+      imagemask="$imagemask _${finm}_"
+    done
+  fi
+
   lsImgs=""
-  for imgm in $filemask ; do
-    imgf="$ipath/SAMPLE_${imgm}_T$pjnum.tif"
+  for imgm in $imagemask ; do
+    imgf="$ipath/SAMPLE${imgm}T$pjnum.tif"
     chkf "$imgf" projection
     lsImgs="$lsImgs $imgf"
   done
   if (( $fshift >= 1 )) ; then
     pjsnum=$( printf "%0${#pjs}i" $(( $proj + $fshift )) )
-    for imgm in $filemask ; do
-      imgf="$ipath/SAMPLE_${imgm}_T${pjsnum}.tif"
+    for imgm in $imagemask ; do
+      imgf="$ipath/SAMPLE${imgm}T${pjsnum}.tif"
       chkf "$imgf" "flip projection"
       lsImgs="$lsImgs $imgf"
     done
