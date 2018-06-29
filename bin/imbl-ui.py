@@ -613,7 +613,7 @@ class MainWindow(QtWidgets.QMainWindow):
         ars = " -d " if self.ui.noRecFF.isChecked() else ""
         ars += (" -x \"%s\" " % self.ui.xtractIn.text()
                 if self.ui.xtractAfter.isChecked() else "")
-        ars = " -w " if self.ui.deleteClean.isChecked() else ""
+        ars += " -w " if self.ui.deleteClean.isChecked() else ""
         minProj = self.ui.minProj.value()
         maxProj = self.ui.maxProj.value()
         if maxProj == self.ui.maxProj.minimum():
