@@ -124,9 +124,6 @@ while getopts "g:G:f:c:C:r:b:s:n:i:o:x:m:M:dthw" opt ; do
           echo "ERROR! -M argument \"$maxProj\" is not an integer." >&2
           exit 1
         fi
-        if [ "$maxProj" -gt "$pjs" ] ; then
-          maxProj=$pjs
-        fi
         ;;
     x)  xtParamFile="$OPTARG"
         chkf "$xtParamFile" "X-tract parameters"
@@ -177,7 +174,7 @@ fi
 
 if (( $fshift >= 1 )) ; then
   nofSt=$(( 2 * $nofSt ))
-  pjs=$(( $pjs / 2 ))
+  pjs=$(( $pjs - $fshift ))
   stParam="$stParam -f $originFlip"
 fi
 
@@ -191,12 +188,16 @@ if [ "$proj" == "all" ] ; then
     exit 1
   fi
   if [ "$minProj" -ge "$maxProj" ] ; then
-    echo "ERROR! First projection $minProj is greater than or equal to the last one $maxProj." >&2
+    echo "ERROR! First projection $minProj is greater than or equal to the last $maxProj." >&2
     echo "       Check -m and/or -M options."  >&2
     exit 1
   fi
 
   export PROCRECURSIVE=true
+
+  if (( maxProj > $pjs  )) ; then
+    maxProj=$pjs
+  fi
 
   allopts="$(echo $allopts | sed 's all  g')"
   $0 $allopts  && # do df and bg
