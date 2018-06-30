@@ -71,7 +71,7 @@ xparams="$xparams --indir $(realpath ${indir})"
 xparams="$xparams --outdir $(realpath ${outdir})"
 
 if [ ! -z "$projFiles" ] ; then
- 
+
     if [ ! -z "$recFiles" ] ; then
         xparams="$( echo "$xparams" | grep -v -- --file_prefix_ctrecon) --file_prefix_ctrecon $recFiles"
     fi
@@ -81,7 +81,7 @@ if [ ! -z "$projFiles" ] ; then
     xparams="$( echo "$xparams" | grep -v -- --proj) --proj $projFiles"
 
     drop_caches
-    xlictworkflow_local.sh $xparams 
+    xlictworkflow_local.sh $xparams
     exit $?
 
 fi
@@ -91,16 +91,13 @@ if [ -z "$nsplits" ] && ls ${indir}/SAMPLE*tif > /dev/null ; then
   nsplits="_"
 fi
 
+retnum=0
 for spl in $nsplits ; do
-
-    echo SPL $spl 
-
-    xparams="$( echo "$xparams" | grep -v -- --file_prefix_ctrecon) --file_prefix_ctrecon recon${spl}_.tif"
-    xparams="$( echo "$xparams" | grep -v -- --file_prefix_sinograms) --file_prefix_sinograms sino${spl}_.tif"
-    xparams="$( echo "$xparams" | grep -v -- --proj) --proj SAMPLE\w*$spl\w*.tif"
-
-    drop_caches
-    xlictworkflow_local.sh $xparams 
-
+    $0 "$xtParamFile" "$(realpath ${indir})" "$(realpath ${outdir})" \
+        -p "SAMPLE\w*${spl}\w*.tif" -s "sino${spl}_.tif" -r "recon${spl}_.tif"
+    if ! $@ ; then
+        retnum=1
+    fi
 done
 
+ext $retnum
