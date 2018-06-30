@@ -60,6 +60,28 @@ if ! mkdir -p "${outdir}" ; then
   exit 1
 fi
 
+if [ -z "$projFiles" ] ; then
+
+  nsplits=$(ls "${indir}/"SAMPLE*split* | sed 's .*\(_split[0-9]\+\).* \1 g' | sort | uniq 2> /dev/null )
+  if [ -z "$nsplits" ] && ls "${indir}/"SAMPLE*tif 2> /dev/null ; then
+    nsplits="_"
+  fi
+
+  retnum=0
+  for spl in $nsplits ; do
+      $0 "$xtParamFile" "${indir}" "${outdir}" \
+          -p "SAMPLE\w*${spl}\w*.tif" -s "sino${spl}_.tif" -r "recon${spl}_.tif"
+      if ! $@ ; then
+          retnum=1
+      fi
+  done
+
+  exit $retnum
+
+fi
+
+
+
 xparams="$(cat "$(realpath "$xtParamFile")" |
             perl -p -e 's/:\n/ /g' |
             grep -- -- |
@@ -67,37 +89,18 @@ xparams="$(cat "$(realpath "$xtParamFile")" |
             grep -v 'Not set' |
             grep -v -- --indir |
             grep -v -- --outdir)"
-xparams="$xparams --indir $(realpath ${indir})"
-xparams="$xparams --outdir $(realpath ${outdir})"
+xparams="$xparams"$'\n'"--indir $(realpath ${indir})"
+xparams="$xparams"$'\n'"--outdir $(realpath ${outdir})"
 
-if [ ! -z "$projFiles" ] ; then
-
-    if [ ! -z "$recFiles" ] ; then
-        xparams="$( echo "$xparams" | grep -v -- --file_prefix_ctrecon) --file_prefix_ctrecon $recFiles"
-    fi
-    if [ ! -z "$sinFiles" ] ; then
-        xparams="$( echo "$xparams" | grep -v -- --file_prefix_sinograms) --file_prefix_sinograms $sinFiles"
-    fi
-    xparams="$( echo "$xparams" | grep -v -- --proj) --proj $projFiles"
-
-    drop_caches
-    xlictworkflow_local.sh $xparams
-    exit $?
-
+if [ ! -z "$recFiles" ] ; then
+    xparams=$(echo "$xparams" | grep -v -- --file_prefix_ctrecon)$'\n'"--file_prefix_ctrecon $recFiles"
 fi
-
-nsplits=$(ls ${indir}/SAMPLE*split* | sed 's .*\(_split[0-9]\+\).* \1 g' | sort | uniq)
-if [ -z "$nsplits" ] && ls ${indir}/SAMPLE*tif > /dev/null ; then
-  nsplits="_"
+if [ ! -z "$sinFiles" ] ; then
+    xparams=$( echo "$xparams" | grep -v -- --file_prefix_sinograms)$'\n'"--file_prefix_sinograms $sinFiles"
 fi
+xparams=$( echo "$xparams" | grep -v -- --proj)$'\n'"--proj $projFiles"
 
-retnum=0
-for spl in $nsplits ; do
-    $0 "$xtParamFile" "$(realpath ${indir})" "$(realpath ${outdir})" \
-        -p "SAMPLE\w*${spl}\w*.tif" -s "sino${spl}_.tif" -r "recon${spl}_.tif"
-    if ! $@ ; then
-        retnum=1
-    fi
-done
+drop_caches
+xlictworkflow_local.sh $xparams
+exit $?
 
-ext $retnum
