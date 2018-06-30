@@ -16,7 +16,7 @@ chkf () {
   fi
 }
 
-projFiles="SAMPLE\w+.tif"
+projFiles=""
 recFiles=""
 sinFiles=""
 
@@ -30,6 +30,7 @@ while getopts "p:r:s:h" opt ; do
     :)  echo "Option -$OPTARG requires an argument." >&2 ; exit 1 ;;
   esac
 done
+shift $(( $OPTIND - 1 ))
 
 
 xtParamFile="${1}"
@@ -57,7 +58,7 @@ fi
 if ! mkdir -p "${outdir}" ; then
   echo "Could not create output directory \"${outdir}\"." >&2
   exit 1
-i
+fi
 
 xparams="$(cat "$(realpath "$xtParamFile")" |
             perl -p -e 's/:\n/ /g' |
@@ -66,19 +67,18 @@ xparams="$(cat "$(realpath "$xtParamFile")" |
             grep -v 'Not set' |
             grep -v -- --indir |
             grep -v -- --outdir)"
+xparams="$xparams --indir $(realpath ${indir})"
+xparams="$xparams --outdir $(realpath ${outdir})"
 
 if [ ! -z "$projFiles" ] ; then
  
     if [ ! -z "$recFiles" ] ; then
-        xparams="$( echo "$xparams" | grep -v -- --file_prefix_ctrecon)" \
-                " --file_prefix_ctrecon \"$recFiles\""
+        xparams="$( echo "$xparams" | grep -v -- --file_prefix_ctrecon) --file_prefix_ctrecon $recFiles"
     fi
     if [ ! -z "$sinFiles" ] ; then
-        xparams="$( echo "$xparams" | grep -v -- --file_prefix_sinograms)" \
-                " --file_prefix_sinograms \"$sinFiles\""
+        xparams="$( echo "$xparams" | grep -v -- --file_prefix_sinograms) --file_prefix_sinograms $sinFiles"
     fi
-    xparams="$( echo "$xparams" | grep -v -- --proj)" \
-            " --proj \"$projFiles\""
+    xparams="$( echo "$xparams" | grep -v -- --proj) --proj $projFiles"
 
     drop_caches
     xlictworkflow_local.sh $xparams 
@@ -86,19 +86,18 @@ if [ ! -z "$projFiles" ] ; then
 
 fi
 
-nsplits=$(ls clean/SAMPLE*split* | sed 's .*\(_split[0-9]\+\).* \1 g' | sort | uniq)
-if [ -z "$nsplits" ] && ! ls clean/SAMPLE*tif > /dev/null ; then
+nsplits=$(ls ${indir}/SAMPLE*split* | sed 's .*\(_split[0-9]\+\).* \1 g' | sort | uniq)
+if [ -z "$nsplits" ] && ls ${indir}/SAMPLE*tif > /dev/null ; then
   nsplits="_"
 fi
 
 for spl in $nsplits ; do
 
-    xparams="$( echo "$xparams" | grep -v -- --file_prefix_ctrecon)" \
-                " --file_prefix_ctrecon \"recon${spl}_.tif\""
-    xparams="$( echo "$xparams" | grep -v -- --file_prefix_sinograms)" \
-                " --file_prefix_sinograms \"sino${spl}_.tif\""
-    xparams="$( echo "$xparams" | grep -v -- --proj)" \
-            " --proj \"SAMPLE\w*$spl\w*.tif\""
+    echo SPL $spl 
+
+    xparams="$( echo "$xparams" | grep -v -- --file_prefix_ctrecon) --file_prefix_ctrecon recon${spl}_.tif"
+    xparams="$( echo "$xparams" | grep -v -- --file_prefix_sinograms) --file_prefix_sinograms sino${spl}_.tif"
+    xparams="$( echo "$xparams" | grep -v -- --proj) --proj SAMPLE\w*$spl\w*.tif"
 
     drop_caches
     xlictworkflow_local.sh $xparams 

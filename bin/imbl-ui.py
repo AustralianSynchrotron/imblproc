@@ -640,6 +640,30 @@ class MainWindow(QtWidgets.QMainWindow):
         if newfile:
             self.ui.xtractIn.setText(newfile)
 
+    xtrproc = QProcess()
+
+    @pyqtSlot()
+    def on_xtractExecute_clicked(self):
+        if self.xtrproc.state():
+            self.xtrproc.kill()
+            return
+
+        xtrText = xtractExecute.text()
+        xtractExecute.setText('Stop')
+        xtractExecute.setStyleSheet(warnStyle)
+
+        self.xtrproc.setProgram("/bin/sh")
+        self.xtrproc.setArguments(("-c", 
+                                   execPath + "/imbl-xtract-wrapper.sh " +
+                                   self.ui.xtractIn.text() + " clean rec32fp"))
+        wdir = os.path.join(self.ui.outPath.text(),
+                            self.ui.testSubDir.currentText())
+        self.xtrproc.setWorkingDirectory(wdir)
+        self.execInBg(self.xtrproc)
+
+        xtractExecute.setText(xtrText)
+        xtractExecute.setStyleSheet("")
+
     @pyqtSlot()
     @pyqtSlot(str)
     def on_xtractIn_textChanged(self):

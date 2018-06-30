@@ -206,48 +206,14 @@ if [ "$proj" == "all" ] ; then
     exit $?
   fi
 
-  # X-tract processing: to be replaced with imbl-xtract-wrapper.sh after testing
-  xparams="$(cat "$(realpath "$xtParamFile")" |
-              perl -p -e 's/:\n/ /g' |
-              grep -- -- |
-              sed 's/.* --/--/g' |
-              grep -v 'Not set' |
-              grep -v -- --indir |
-              grep -v -- --outdir  |
-              grep -v -- --file_prefix_ctrecon  |
-              grep -v -- --file_prefix_sinograms  |
-              grep -v -- --proj ) \
-              --indir $(realpath clean) \
-              --outdir $(realpath rec32fp)"
-
-  nsplits="_"
-  if [ -z "splits" ] ; then
-    nsplits=$(ls clean/SAMPLE*split* | sed 's .*\(_split[0-9]\+\).* \1 g' | sort | uniq)
-    if [ ! -z "$nsplits" ] ; then
-      echo "ERROR! Did not find individual splits of sample projections where they were expected." >&2
-      exit 1
-    fi
-  fi
-  for spl in $nsplits ; do
-    drop_caches
-    xlictworkflow_local.sh $xparams \
-                           --proj "SAMPLE\w*$spl\w*.tif" \
-                           --file_prefix_ctrecon "recon${spl}_.tif" \
-                           --file_prefix_sinograms "sino${spl}_.tif"
-    if [ "$?" -ne 0 ] ; then
-      wipeClean=false
-    fi
-  done
-
-  if $wipeClean ; then
+  imbl-xtract-wrapper.sh $xtParamFile clean rec32fp 
+  if $? && $wipeClean ; then
       nlen=${#pjs}
       mv clean/SAMPLE*$(printf \%0${nlen}i $minProj).tif .
       mv clean/SAMPLE*$(printf \%0${nlen}i $maxProj).tif .
       mv clean/SAMPLE*$(printf \%0${nlen}i $(( ( $minProj + $maxProj ) / 2 )) ).tif .
       rm -rf clean
   fi
-
-  exit 0
 
 elif [ "$proj" -eq "$proj" ] 2> /dev/null ; then # is an int
 
