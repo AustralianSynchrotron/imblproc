@@ -71,7 +71,7 @@ if [ -z "$projFiles" ] ; then
   for spl in $nsplits ; do
       $0 -p "SAMPLE\w*${spl}\w*.tif" -s "sino${spl}_.tif" -r "recon${spl}_.tif" \
           "$xtParamFile" "${indir}" "${outdir}" 
-      if ! $@ ; then
+      if ! $? ; then
           retnum=1
       fi
   done
