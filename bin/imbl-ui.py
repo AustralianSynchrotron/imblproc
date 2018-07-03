@@ -648,9 +648,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.xtrproc.kill()
             return
 
-        xtrText = xtractExecute.text()
-        xtractExecute.setText('Stop')
-        xtractExecute.setStyleSheet(warnStyle)
+        xtrText = self.ui.xtractExecute.text()
+        self.ui.xtractExecute.setText('Stop')
+        self.ui.xtractExecute.setStyleSheet(warnStyle)
 
         self.xtrproc.setProgram("/bin/sh")
         self.xtrproc.setArguments(("-c", 
@@ -661,8 +661,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.xtrproc.setWorkingDirectory(wdir)
         self.execInBg(self.xtrproc)
 
-        xtractExecute.setText(xtrText)
-        xtractExecute.setStyleSheet("")
+        self.ui.xtractExecute.setText(xtrText)
+        self.ui.xtractExecute.setStyleSheet("")
 
     @pyqtSlot()
     @pyqtSlot(str)

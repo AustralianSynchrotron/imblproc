@@ -22,9 +22,9 @@ sinFiles=""
 
 while getopts "p:r:s:h" opt ; do
   case $opt in
-    p)  projFiles=="$OPTARG" ;;
-    r)  recFiles=="$OPTARG" ;;
-    s)  sinFiles=="$OPTARG" ;;
+    p)  projFiles="$OPTARG" ;;
+    r)  recFiles="$OPTARG" ;;
+    s)  sinFiles="$OPTARG" ;;
     h)  printhelp ; exit 1 ;;
     \?) echo "Invalid option: -$OPTARG" >&2 ; exit 1 ;;
     :)  echo "Option -$OPTARG requires an argument." >&2 ; exit 1 ;;
@@ -69,8 +69,8 @@ if [ -z "$projFiles" ] ; then
 
   retnum=0
   for spl in $nsplits ; do
-      $0 "$xtParamFile" "${indir}" "${outdir}" \
-          -p "SAMPLE\w*${spl}\w*.tif" -s "sino${spl}_.tif" -r "recon${spl}_.tif"
+      $0 -p "SAMPLE\w*${spl}\w*.tif" -s "sino${spl}_.tif" -r "recon${spl}_.tif" \
+          "$xtParamFile" "${indir}" "${outdir}" 
       if ! $@ ; then
           retnum=1
       fi
