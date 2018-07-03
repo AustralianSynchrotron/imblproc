@@ -207,13 +207,16 @@ if [ "$proj" == "all" ] ; then
   fi
 
   imbl-xtract-wrapper.sh $xtParamFile clean rec32fp 
-  if $? && $wipeClean ; then
+  xret="$?"
+  if [ "$xret" -eq "0" ] && $wipeClean ; then
       nlen=${#pjs}
       mv clean/SAMPLE*$(printf \%0${nlen}i $minProj).tif .
       mv clean/SAMPLE*$(printf \%0${nlen}i $maxProj).tif .
       mv clean/SAMPLE*$(printf \%0${nlen}i $(( ( $minProj + $maxProj ) / 2 )) ).tif .
       rm -rf clean
   fi
+
+  exit $xret
 
 elif [ "$proj" -eq "$proj" ] 2> /dev/null ; then # is an int
 
