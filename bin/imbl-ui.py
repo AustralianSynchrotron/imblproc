@@ -20,7 +20,8 @@ warnStyle = 'background-color: rgba(255, 0, 0, 128);'
 
 class MainWindow(QtWidgets.QMainWindow):
 
-    configName = os.path.join(Path.home(), ".imbl-ui")
+    configName = ".imbl-ui"
+    etcConfigName = os.path.join(Path.home(), configName)
     amLoading = False
 
     def __init__(self):
@@ -42,6 +43,16 @@ class MainWindow(QtWidgets.QMainWindow):
         butt.clicked.connect(self.addToSplit)
         self.ui.splits.setCellWidget(0, 0, butt)
         self.ui.splits.setSpan(0, 0, 1, 2)
+
+        saveBtn = QtWidgets.QPushButton("Save", self)
+        saveBtn.setFlat(True)
+        saveBtn.clicked.connect(self.saveNewConfiguration)
+        self.ui.statusBar().addPermanentWidget(saveBtn)
+
+        loadBtn = QtWidgets.QPushButton("Load", self)
+        loadBtn.setFlat(True)
+        loadBtn.clicked.connect(self.loadNewConfiguration)
+        self.ui.statusBar().addPermanentWidget(loadBtn)
 
         self.doYst = False
         self.doZst = False
@@ -121,10 +132,24 @@ class MainWindow(QtWidgets.QMainWindow):
         self.addToConsole(text, QtCore.Qt.red)
 
     @pyqtSlot()
-    def saveConfiguration(self, fileName=configName):
+    def saveNewConfiguration(self):
+        self.saveConfiguration("")
+
+    @pyqtSlot()
+    def saveConfiguration(self, fileName=etcConfigName):
 
         if self.amLoading:
             return
+
+        if not fileName:
+            newfile, _filter = QFileDialog.getSaveFileName(
+                self, "IMBL processing configuration",
+                directory=self.ui.outPath.text())
+            if newfile:
+                fileName = newfile
+        if not fileName:
+            return
+
         config = QSettings(fileName, QSettings.IniFormat)
 
         def valToSave(wdg):
@@ -146,10 +171,21 @@ class MainWindow(QtWidgets.QMainWindow):
         config.endArray()
 
     @pyqtSlot()
-    def loadConfiguration(self, fileName=configName):
+    def loadNewConfiguration(self):
+        self.loadConfiguration("")
 
+    @pyqtSlot()
+    def loadConfiguration(self, fileName=etcConfigName):
+
+        if not fileName:
+            newfile, _filter = QFileDialog.getOpenFileName(
+                self, "IMBL processing configuration",
+                directory=self.ui.outPath.text())
+            if newfile:
+                fileName = newfile
         if not os.path.exists(fileName):
             return
+
         self.amLoading = True
         config = QSettings(fileName, QSettings.IniFormat)
 
@@ -324,7 +360,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 break
             attempt += 1
         if not cfgName:  # one more attempt for little earlier code
-            cfgName = os.popen('ls ' + ipath + os.sep + 'acquisition.*config*' +
+            cfgName = os.popen('ls ' + ipath + os.sep + 'acquisition.*conf*' +
                                ' | sort -V | tail -n 1').read().strip("\n")
         if not cfgName:
             self.ui.noConfigLabel.show()
@@ -625,12 +661,14 @@ class MainWindow(QtWidgets.QMainWindow):
     @pyqtSlot()
     def on_procAll_clicked(self):
         wdir = self.ui.outPath.text()
+        self.saveConfiguration(os.path.join(wdir, self.configName))
         self.common_test_proc(self.procParams(), wdir, self.ui.procAll)
 
     @pyqtSlot()
     def on_procThis_clicked(self):
         wdir = os.path.join(self.ui.outPath.text(),
                             self.ui.testSubDir.currentText())
+        self.saveConfiguration(os.path.join(wdir, self.configName))
         self.common_test_proc(self.procParams(), wdir, self.ui.procThis)
 
     @pyqtSlot()
@@ -653,7 +691,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.xtractExecute.setStyleSheet(warnStyle)
 
         self.xtrproc.setProgram("/bin/sh")
-        self.xtrproc.setArguments(("-c", 
+        self.xtrproc.setArguments(("-c",
                                    execPath + "/imbl-xtract-wrapper.sh " +
                                    self.ui.xtractIn.text() + " clean rec32fp"))
         wdir = os.path.join(self.ui.outPath.text(),
@@ -680,9 +718,9 @@ class MainWindow(QtWidgets.QMainWindow):
         maxProj = self.ui.maxProj.value()
         if maxProj == self.ui.maxProj.minimum():
             maxProj = self.ui.projections.value()
-        rangeOK = minProj <= maxProj
-        self.ui.minProj.setStyleSheet("" if rangeOK else warnStyle)
-        self.ui.maxProj.setStyleSheet("" if rangeOK else warnStyle)
+        nstl = "" if minProj <= maxProj else warnStyle
+        self.ui.minProj.setStyleSheet(nstl)
+        self.ui.maxProj.setStyleSheet(nstl)
 
     @pyqtSlot(int)
     def on_minProj_valueChanged(self):
