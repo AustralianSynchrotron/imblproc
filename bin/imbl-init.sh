@@ -80,8 +80,8 @@ range=$(getfromconfig scan range)
 pjs=$(getfromconfig scan ^steps)
 
 fshift=0
-if (( $range >= 360 ))  &&  $Fst  ; then
-  fshift=$(( 180 * $pjs / $range  ))
+if (( $(echo "$range > 360.0" | bc -l) ))  &&  $Fst  ; then
+  fshift=$( echo "180 * $pjs / $range" | bc )
 fi
 
 Ysteps=0
