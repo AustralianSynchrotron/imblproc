@@ -306,7 +306,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.expSample.addItem("Loading...")
         self.update()
         QtCore.QCoreApplication.processEvents()
-        samples = [name for name in os.listdir(eipath)
+        samples = [name for name in sorted(os.listdir(eipath))
                    if os.path.isdir(os.path.join(eipath, name))]
         self.ui.expSample.clear()
         self.ui.expSample.setStyleSheet('')
