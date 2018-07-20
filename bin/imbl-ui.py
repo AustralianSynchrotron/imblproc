@@ -465,10 +465,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.oStY.setRange(-hight, hight)
         self.ui.fStX.setRange(-width, width)
         self.ui.fStY.setRange(-hight, hight)
-        self.ui.fCropTop.setMaximum(hight*max(ys, zs))
-        self.ui.fCropBottom.setMaximum(hight*max(ys, zs))
-        self.ui.fCropRight.setMaximum(width*max(ys, zs))
-        self.ui.fCropLeft.setMaximum(width*max(ys, zs))
+        self.ui.fCropTop.setMaximum(hight*max(1,ys, zs))
+        self.ui.fCropBottom.setMaximum(hight*max(1,ys, zs))
+        self.ui.fCropRight.setMaximum(width*max(1,ys, zs))
+        self.ui.fCropLeft.setMaximum(width*max(1,ys, zs))
 
         self.ui.testSubDir.clear()
         sds = 'subdirs' in initDict
