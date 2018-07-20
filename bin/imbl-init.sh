@@ -118,7 +118,7 @@ if (( $Zsteps > 1 )) ; then
     Zlist="_"
   fi
 fi
-Zsize=$(echo $Zlist | wc -w)
+Zsize=$( wc -w <<< $Zlist )
 
 Ylist=""
 Ydirs="."
@@ -131,22 +131,22 @@ if (( $Ysteps > 1 )) ; then
     Ylist="_"
   fi
 fi
-Ysize=$(echo $Ylist | wc -w)
+Ysize=$( wc -w <<< $Ylist )
 
 
 outInitFile() {
-  echo filemask=\""${1}"\"
-  echo ipath=\""$ipath"\"
-  echo opath=\""$opath"\"
-  echo pjs=$pjs
-  echo scanrange=$range
-  echo fshift=$fshift
-  echo width=$width
-  echo hight=$hight
-  echo zs=$Zsteps
-  echo ys=$Ysteps
-  echo ystitch=$Ysize
-  echo zstitch=$Zsize
+  echo "filemask=\"${1}\""
+  echo "ipath=\"$ipath\""
+  echo "opath=\"$opath\""
+  echo "pjs=$pjs"
+  echo "scanrange=$range"
+  echo "fshift=$fshift"
+  echo "width=$width"
+  echo "hight=$hight"
+  echo "zs=$Zsteps"
+  echo "ys=$Ysteps"
+  echo "ystitch=$Ysize"
+  echo "zstitch=$Zsize"
 }
 
 
@@ -154,7 +154,7 @@ Sdirs=""
 initName=".initstitch"
 
 strip_ () {
-  echo $1 | sed -e 's:_ *$::g' -e 's:^ *_: :g'
+  sed -e 's:_ *$::g' -e 's:^ *_: :g' <<< $1
 }
 
 for Ydir in $Ydirs ; do
@@ -178,7 +178,7 @@ for Ydir in $Ydirs ; do
           done
         fi
       done
-      Slist="$(echo $Slist | sed -e 's:\.::g' -e 's:__:_:g')"
+      Slist="$( sed -e 's:\.::g' -e 's:__:_:g' <<< $Slist)"
 
       initfile="$Sdir/$initName"
       cat /dev/null > "$initfile"
@@ -189,11 +189,11 @@ for Ydir in $Ydirs ; do
   done
 done
 
-subdCount=$(echo $Sdirs | wc -w)
+subdCount=$( wc -w <<< $Sdirs)
 initfile="$initName"
 if (( $subdCount > 1 )) ; then
   cat /dev/null > "$initfile"
-  echo subdirs=$subdCount >>  "$initName"
+  echo "subdirs=$subdCount" >>  "$initName"
   outInitFile "$Sdirs" >>  "$initName"
 fi
 

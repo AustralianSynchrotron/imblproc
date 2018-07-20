@@ -93,12 +93,12 @@ xparams="$xparams"$'\n'"--indir $(realpath ${indir})"
 xparams="$xparams"$'\n'"--outdir $(realpath ${outdir})"
 
 if [ ! -z "$recFiles" ] ; then
-    xparams=$(echo "$xparams" | grep -v -- --file_prefix_ctrecon)$'\n'"--file_prefix_ctrecon $recFiles"
+    xparams=$( grep -v -- --file_prefix_ctrecon <<< "$xparams" )$'\n'"--file_prefix_ctrecon $recFiles"
 fi
 if [ ! -z "$sinFiles" ] ; then
-    xparams=$( echo "$xparams" | grep -v -- --file_prefix_sinograms)$'\n'"--file_prefix_sinograms $sinFiles"
+    xparams=$( grep -v -- --file_prefix_sinograms <<< "$xparams" )$'\n'"--file_prefix_sinograms $sinFiles"
 fi
-xparams=$( echo "$xparams" | grep -v -- --proj)$'\n'"--proj $projFiles"
+xparams=$( grep -v -- --proj <<< "$xparams" )$'\n'"--proj $projFiles"
 
 drop_caches
 xlictworkflow_local.sh $xparams

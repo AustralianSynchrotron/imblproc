@@ -37,7 +37,7 @@ printhelp() {
 
 chkf () {
   if [ ! -e "$1" ] ; then
-    echo "ERROR! Non existing" $2 "path: \"$1\"" >&2
+    echo "ERROR! Non existing $2 path: \"$1\"" >&2
     exit 1
   fi
 }
@@ -47,7 +47,7 @@ chkf "$initfile" init
 source "$initfile"
 
 
-nofSt=$(echo $filemask | wc -w)
+nofSt=$(wc -w <<< $filemask )
 if (( $nofSt == 0 )) ; then
   nofSt=1
 fi
@@ -104,7 +104,7 @@ while getopts "g:G:f:c:C:r:b:s:n:i:o:x:m:M:dthw" opt ; do
     r)  rotate=$OPTARG ; stParam="$stParam -r $rotate" ;;
     b)  binn=$OPTARG ; stParam="$stParam -b $binn" ;;
     s)  splits=$OPTARG
-        for sp in $(echo $splits | sed "s:,: :g")  ; do
+        for sp in $( sed "s:,: :g" <<< $splits )  ; do
           stParam="$stParam -s $sp"
         done
         ;;
@@ -199,7 +199,7 @@ if [ "$proj" == "all" ] ; then
     maxProj=$pjs
   fi
 
-  allopts="$(echo $allopts | sed 's all  g')"
+  allopts="$( sed 's all  g' <<< $allopts )"
   $0 $allopts  && # do df and bg
   seq $minProj $maxProj | parallel --eta "$0 $allopts {}"
   if [ -z "$xtParamFile" ] ; then
@@ -213,7 +213,7 @@ if [ "$proj" == "all" ] ; then
       mv clean/SAMPLE*$(printf \%0${nlen}i $minProj).tif .
       mv clean/SAMPLE*$(printf \%0${nlen}i $maxProj).tif .
       mv clean/SAMPLE*$(printf \%0${nlen}i $(( ( $minProj + $maxProj ) / 2 )) ).tif .
-      rm -rf clean
+      rm -rf clean/*
   fi
 
   exit $xret
