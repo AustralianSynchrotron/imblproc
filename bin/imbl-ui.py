@@ -578,16 +578,16 @@ class MainWindow(QtWidgets.QMainWindow):
         prms = str()
         if self.doYst or self.doZst:
             if self.doZst:
-                prms += "-g %i,%i " % (
+                prms += "-g %f,%f " % (
                   self.ui.iStX.value(), self.ui.iStY.value())
             else:
-                prms += "-g %i,%i " % (
+                prms += "-g %f,%f " % (
                   self.ui.oStX.value(), self.ui.oStY.value())
         if self.doYst and self.doZst:
-            prms += "-G %i,%i " % (
+            prms += "-G %f,%f " % (
                 self.ui.oStX.value(), self.ui.oStY.value())
         if self.doFnS:
-            prms += "-f %i,%i " % (
+            prms += "-f %f,%f " % (
                 self.ui.fStX.value(), self.ui.fStY.value())
         if 1 != self.ui.xBin.value() * self.ui.yBin.value():
             prms += "-b %i,%i " % (
@@ -597,7 +597,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.ui.imageMagick.text():
             prms += "-i \"%s\" " % self.ui.imageMagick.text()
         if 0.0 != self.ui.rotate.value():
-            prms += "-r %d " % self.ui.rotate.value()
+            prms += "-r %f " % self.ui.rotate.value()
         if self.ui.splits.rowCount() > 1:
             splits = []
             for crow in range(0, self.ui.splits.rowCount()-1):
