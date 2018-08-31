@@ -70,6 +70,7 @@ xtParamFile=""
 postT=""
 minProj=0
 maxProj=$pjs
+nlen=${#pjs}
 wipeClean=false
 
 if [ -z "$PROCRECURSIVE" ] ; then
@@ -209,7 +210,6 @@ if [ "$proj" == "all" ] ; then
   imbl-xtract-wrapper.sh $xtParamFile clean rec32fp 
   xret="$?"
   if [ "$xret" -eq "0" ] && $wipeClean ; then
-      nlen=${#pjs}
       mv clean/SAMPLE*$(printf \%0${nlen}i $minProj).tif .
       mv clean/SAMPLE*$(printf \%0${nlen}i $maxProj).tif .
       mv clean/SAMPLE*$(printf \%0${nlen}i $(( ( $minProj + $maxProj ) / 2 )) ).tif .
@@ -291,7 +291,7 @@ else # is a projection
     stParam="$stParam -D $imgdf"
   fi
 
-  pjnum=$( printf "%0${#pjs}i" $proj )
+  pjnum=$( printf "%0${nlen}i" $proj )
 
   oname="SAMPLE_T${pjnum}.tif"
   if $testme ; then
@@ -316,7 +316,7 @@ else # is a projection
     lsImgs="$lsImgs $imgf"
   done
   if (( $fshift >= 1 )) ; then
-    pjsnum=$( printf "%0${#pjs}i" $(( $proj + $fshift )) )
+    pjsnum=$( printf "%0${nlen}i" $(( $proj + $fshift )) )
     for imgm in $imagemask ; do
       imgf="$ipath/SAMPLE${imgm}T${pjsnum}.tif"
       chkf "$imgf" "flip projection"
