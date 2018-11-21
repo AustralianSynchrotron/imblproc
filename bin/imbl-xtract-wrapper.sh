@@ -62,7 +62,7 @@ fi
 
 if [ -z "$projFiles" ] ; then
 
-  nsplits=$(ls "${indir}/"SAMPLE*split* | sed 's .*\(_split[0-9]\+\).* \1 g' | sort | uniq 2> /dev/null )
+  nsplits=$(ls "${indir}/"SAMPLE*split* 2>/dev/null | sed 's .*\(_split[0-9]\+\).* \1 g' | sort | uniq)
   if [ -z "$nsplits" ] && ls "${indir}/"SAMPLE*tif > /dev/null ; then
     nsplits="_"
   fi
