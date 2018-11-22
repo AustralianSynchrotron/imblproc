@@ -202,7 +202,7 @@ if [ "$proj" == "all" ] ; then
 
   allopts="$( sed 's all  g' <<< $allopts )"
   $0 $allopts  && # do df and bg
-  echo "Starting parallel stitching."
+  echo "Starting parallel stitching in $PWD."
   seq $minProj $maxProj | parallel --bar "$0 $allopts {}"
   if [ -z "$xtParamFile" ] ; then
     exit $?
