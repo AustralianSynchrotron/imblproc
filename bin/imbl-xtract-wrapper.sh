@@ -70,10 +70,15 @@ if [ -z "$projFiles" ] ; then
     nsplits="_"
   fi
 
+  qparam=""
+  if $quiet ; then
+    qparam="-q"
+  fi
+
   retnum=0
   for spl in $nsplits ; do
       $0 -p "SAMPLE\w*${spl}\w*.tif" -s "sino${spl}_.tif" -r "recon${spl}_.tif" \
-          "$xtParamFile" "${indir}" "${outdir}" 
+         "$qparam" "$xtParamFile" "${indir}" "${outdir}" 
       if [ "$?" -ne "0" ] ; then
           retnum=1
       fi
