@@ -27,7 +27,7 @@ while getopts "p:r:s:hq" opt ; do
     p)  projFiles="$OPTARG" ;;
     r)  recFiles="$OPTARG" ;;
     s)  sinFiles="$OPTARG" ;;
-    q)  quiet=false ;;
+    q)  quiet=true ;;
     h)  printhelp ; exit 1 ;;
     \?) echo "Invalid option: -$OPTARG" >&2 ; exit 1 ;;
     :)  echo "Option -$OPTARG requires an argument." >&2 ; exit 1 ;;
