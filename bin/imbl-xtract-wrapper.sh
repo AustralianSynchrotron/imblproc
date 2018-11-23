@@ -7,6 +7,7 @@ printhelp() {
   echo "  -p STRING         RegExpt for projection files."
   echo "  -r STRING         Prefix for reconstructed files."
   echo "  -s STRING         Prefix for sinogram files."
+  echo "  -q                Suppres X-tract output."
 }
 
 chkf () {
@@ -19,12 +20,14 @@ chkf () {
 projFiles=""
 recFiles=""
 sinFiles=""
+quiet=false
 
-while getopts "p:r:s:h" opt ; do
+while getopts "p:r:s:hq" opt ; do
   case $opt in
     p)  projFiles="$OPTARG" ;;
     r)  recFiles="$OPTARG" ;;
     s)  sinFiles="$OPTARG" ;;
+    q)  quiet=false ;;
     h)  printhelp ; exit 1 ;;
     \?) echo "Invalid option: -$OPTARG" >&2 ; exit 1 ;;
     :)  echo "Option -$OPTARG requires an argument." >&2 ; exit 1 ;;
@@ -101,6 +104,11 @@ fi
 xparams=$( grep -v -- --proj <<< "$xparams" )$'\n'"--proj $projFiles"
 
 drop_caches
-xlictworkflow_local.sh $xparams
+if $quiet ; then
+  xlictworkflow_local.sh $xparams > /dev/null
+else
+  xlictworkflow_local.sh $xparams
+fi
+
 exit $?
 
