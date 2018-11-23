@@ -208,7 +208,8 @@ if [ "$proj" == "all" ] ; then
     exit $?
   fi
 
-  imbl-xtract-wrapper.sh $xtParamFile clean rec32fp 
+  echo "Starting CT reconstruction in $PWD"
+  imbl-xtract-wrapper.sh -q $xtParamFile clean rec32fp 
   xret="$?"
   if [ "$xret" -eq "0" ] && $wipeClean ; then
       mv clean/SAMPLE*$(printf \%0${nlen}i $minProj).tif .
