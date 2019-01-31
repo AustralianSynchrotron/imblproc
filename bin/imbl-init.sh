@@ -94,9 +94,9 @@ if [ "$(getfromconfig General doserialscans)" == "true" ] ; then
 fi
 
 if $MakeFF || [ ! -e "bg.tif" ] ; then
-  convert $(cat .listinput | grep BG | sed "s BG ${ipath}/BG g") \
+  convert $(cat .listinput | grep '^BG' | sed "s BG ${ipath}/BG g") \
           -quiet -evaluate-sequence Mean "bg.tif"
-  convert $(cat .listinput | grep DF | sed "s DF ${ipath}/DF g") \
+  convert $(cat .listinput | grep '^DF' | sed "s DF ${ipath}/DF g") \
           -quiet -evaluate-sequence Mean "df.tif"
 fi
 
