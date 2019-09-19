@@ -123,7 +123,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if not qcolor:
             qcolor = self.ui.console.palette().text().color()
         self.ui.console.setTextColor(qcolor)
-        self.ui.console.append(str(text).strip('\n'))
+        #self.ui.console.append(str(text).strip('\n'))
+        self.ui.console.setText(text)
 
     def addOutToConsole(self, text):
         self.addToConsole(text, QtCore.Qt.blue)
