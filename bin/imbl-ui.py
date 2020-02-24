@@ -43,6 +43,8 @@ class MainWindow(QtWidgets.QMainWindow):
         butt.clicked.connect(self.addToSplit)
         self.ui.splits.setCellWidget(0, 0, butt)
         self.ui.splits.setSpan(0, 0, 1, 2)
+        self.ui.splitSize.editingFinished.connect(self.ui.recalculateSplit)
+        self.ui.irregularSplit.toggled.connect(self.ui.recalculateSplit)
 
         saveBtn = QtWidgets.QPushButton("Save", self)
         saveBtn.setFlat(True)
@@ -90,6 +92,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.fCropRight,
             self.ui.fCropLeft,
             self.ui.testProjection,
+            self.ui.splitSize,
+            self.ui.irregularSplit,
             self.ui.testSubDir,
             self.ui.noRecFF,
             self.ui.xtractAfter,
@@ -213,11 +217,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         while self.ui.splits.rowCount() > 1:
                 self.remFromSplit(0)
-        splitsize = config.beginReadArray('splits')
+        splitize = config.beginReadArray('splits')
         for crow in range(0, splitsize):
             config.setArrayIndex(crow)
             self.addToSplit(config.value('pos', type=int))
         config.endArray()
+        self.recalculateSplit()
 
         self.amLoading = False
 
@@ -391,12 +396,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.update_initiate_state()
 
+
     @pyqtSlot()
     def on_outBrowse_clicked(self):
         newdir = QFileDialog.getExistingDirectory(
             self, "Output directory", os.path.dirname(self.ui.outPath.text()))
         if newdir:
             self.ui.outPath.setText(newdir)
+
 
     @pyqtSlot()
     @pyqtSlot(str)
@@ -466,10 +473,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.oStY.setRange(-hight, hight)
         self.ui.fStX.setRange(-width, width)
         self.ui.fStY.setRange(-hight, hight)
-        self.ui.fCropTop.setMaximum(hight*max(1,ys, zs))
-        self.ui.fCropBottom.setMaximum(hight*max(1,ys, zs))
-        self.ui.fCropRight.setMaximum(width*max(1,ys, zs))
-        self.ui.fCropLeft.setMaximum(width*max(1,ys, zs))
+        msz = max(1,ys, zs)
+        self.ui.splitSize.setMaximum(hight*msz)
+        self.ui.fCropTop.setMaximum(hight*msz)
+        self.ui.fCropBottom.setMaximum(hight*msz)
+        self.ui.fCropRight.setMaximum(width*msz)
+        self.ui.fCropLeft.setMaximum(width*msz)
+        self.ui.recalculateSplit()
 
         self.ui.testSubDir.clear()
         sds = 'subdirs' in initDict
@@ -484,7 +494,9 @@ class MainWindow(QtWidgets.QMainWindow):
         for tabIdx in range(1, self.ui.tabWidget.count()-1):
             self.ui.tabWidget.setTabEnabled(tabIdx, True)
 
+
     initproc = QProcess()
+
 
     @pyqtSlot()
     def on_initiate_clicked(self):
@@ -528,6 +540,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.ui.procAfterInit.isChecked():
             self.on_procAll_clicked()
 
+
     @pyqtSlot()
     def on_sameBin_clicked(self):
         if (self.ui.sameBin.isChecked()):
@@ -540,12 +553,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 pass
         self.ui.yBin.setEnabled(not self.ui.sameBin.isChecked())
 
+
     @pyqtSlot()
     def addToSplit(self, pos=0):
         nrow = self.ui.splits.rowCount() - 1
         self.ui.splits.insertRow(nrow)
         poss = QtWidgets.QSpinBox(self)
-        poss.setMaximum(self.ui.fCropTop.maximum())
+        poss.setMaximum(self.ui.splitSize.maximum())
         poss.setValue(pos)
         poss.editingFinished.connect(self.saveConfiguration)
         self.ui.splits.setCellWidget(nrow, 0, poss)
@@ -554,6 +568,7 @@ class MainWindow(QtWidgets.QMainWindow):
         butt.clicked.connect(self.remFromSplit)
         self.ui.splits.setCellWidget(nrow, 1, butt)
         self.saveConfiguration()
+
 
     @pyqtSlot()
     def remFromSplit(self, row=-1):
@@ -567,6 +582,31 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.splits.cellWidget(row, 1).destroy()
             self.ui.splits.removeRow(row)
         self.saveConfiguration()
+
+
+    @pyqtSlot()
+    def recalculateSplit(self):
+
+        self.ui.splitSize.setEnabled(self.ui.irregularSplit.isChecked())
+        self.ui.splits.setEnabled(not self.ui.irregularSplit.isChecked())
+
+        if self.ui.irregularSplit.isChecked() :
+            return
+
+        points = 0  if self.ui.splitSize.value() == 0  else \
+                 self.ui.splitSize.maximum() // self.ui.splitSize.value()
+        
+        for cpnt in ranges(0,points) :
+            cpos = (cpnt + 1 ) * points
+            pointWdg = self.ui.split.cellWidget(cpnt,0)
+            if pointWdg and pointWdg.isinstance(QtWidgets.QSpinBox) :
+                pointWdg.setValue(cpos)
+            else :
+                self.addToSplit(cpos)
+
+        while self.ui.splits.rowCount() - 1 != points :
+            self.remFromSplit(self.ui.splits.rowCount()-2)
+
 
     stitchproc = QProcess()
 
