@@ -22,7 +22,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>3</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tabInit">
        <attribute name="title">
@@ -264,6 +264,13 @@
                </property>
                <property name="maximum">
                 <number>999</number>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="2">
+              <widget class="QCheckBox" name="ignoreLog">
+               <property name="text">
+                <string>Ignore positions from log file</string>
                </property>
               </widget>
              </item>
