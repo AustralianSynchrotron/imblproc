@@ -7,6 +7,7 @@ printhelp() {
   echo "  -p STRING         RegExpt for projection files."
   echo "  -r STRING         Prefix for reconstructed files."
   echo "  -s STRING         Prefix for sinogram files."
+  echo "  -a FLOAT          Angle step."
   echo "  -q                Suppres X-tract output."
 }
 
@@ -20,13 +21,15 @@ chkf () {
 projFiles=""
 recFiles=""
 sinFiles=""
+step=""
 quiet=false
 
-while getopts "p:r:s:hq" opt ; do
+while getopts "p:r:s:a:hq" opt ; do
   case $opt in
     p)  projFiles="$OPTARG" ;;
     r)  recFiles="$OPTARG" ;;
     s)  sinFiles="$OPTARG" ;;
+    a)  step="$OPTARG" ;;
     q)  quiet=true ;;
     h)  printhelp ; exit 1 ;;
     \?) echo "Invalid option: -$OPTARG" >&2 ; exit 1 ;;
@@ -96,10 +99,13 @@ xparams="$(cat "$(realpath "$xtParamFile")" |
             sed 's/.* --/--/g' |
             grep -v 'Not set' |
             grep -v -- --indir |
-            grep -v -- --outdir)"
+            grep -v -- --outdir )"
 xparams="$xparams"$'\n'"--indir $(realpath ${indir})"
 xparams="$xparams"$'\n'"--outdir $(realpath ${outdir})"
 
+if [ ! -z "$step" ] ; then
+    xparams=$( grep -v -- --angle_step <<< "$xparams" )$'\n'"--angle_step $step"
+fi
 if [ ! -z "$recFiles" ] ; then
     xparams=$( grep -v -- --file_prefix_ctrecon <<< "$xparams" )$'\n'"--file_prefix_ctrecon $recFiles"
 fi

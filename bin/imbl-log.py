@@ -1,34 +1,57 @@
 #!/usr/bin/env python3
   
+import sys
 import re
 import numpy
+import argparse
+
+parser = argparse.ArgumentParser(description=
+  'Parses log file produced by the IMBL\'s ctgui to recalculate proper rotation positions.'
+  ' The file is read from the standart input and the result is sent to the standart output.')
+parser.add_argument('labels', type=str, nargs='*', default="",
+                    help='Parse only given labels.')
+parser.add_argument('-i', '--info', action='store_true',
+                    help='Output only information derived from the log')
+args = parser.parse_args()
+
 
 labels = []
 idx = {}
 pos = {}
 
+strcounter = 0
 label = ""
 try:
   while True:
+
+    strcounter = strcounter + 1
     strg = input()
+
     if "Acquisition finished" in strg :
       if label  and  len(pos[label]) == 0 :
         print("Empty set on label " + label + ".")
         sys.exit(1)
       label = ""
+
     elif "SAMPLE" in strg and "Acquisition started" in strg:
-      lres = re.search('SAMPLE_(.+?)_T', strg)
+      lres = re.search('SAMPLE_(.*?)_*T', strg)
       if lres:
-        if label  and  len(pos[label]) == 0 :
+        if label  and  len(pos[label]) < 2 :
           print("Empty set on label " + label + ".")
           sys.exit(1)
         label = lres.group(1)
+        if not label:
+          label = 'single'
         if label in labels :
           print("Label " + label + " already exists. Corrupt log file.")
           sys.exit(1)
-        labels.append(label)
-        idx[label] = []
-        pos[label] = []
+        if  args.labels  and not any( lbl in label for lbl in args.labels ) :
+          label = ""
+        else :
+          labels.append(label)
+          idx[label] = []
+          pos[label] = []
+
     elif label:
       try :
         stamp, cidx, cpos = strg.split()
@@ -36,7 +59,8 @@ try:
           idx[label].append(int(cidx))
           pos[label].append(float(cpos))
       except :
-        print("Err in log at string: " + strg)
+        print("Error in log at string %i: %s" %( strcounter, strg))
+
 except EOFError:
   pass
 
@@ -71,22 +95,17 @@ res = {}
 for label in labels:
   res[label] = numpy.interp(samples, pos[label], idx[label])
 
-#for cur in range(0, steps):
-#  print(cur, [ int( res[label][cur] ) for label in labels ])
-for label in labels:
-  for cur in range(0, steps):
-    print(label, cur, int(res[label][cur]))
-  
+def printInfo(lbl, strt, rng, pjs, stp) :
+  print("# %s: %f %f %i %f" % ( lbl, strt, rng, pjs, stp ) )  
 
-
-#print(step, steps)
-#print(len(samples), samples[0], samples[-1])
-#for label in labels:
-#  print(label)
-#  print(int(res[label][0]), int(res[label][-1]))
-#  print(len(pos[label]),
-#        pos[label][0], pos[label][-1],
-#        idx[label][0], idx[label][-1])
-
-
-
+print("# Set: start, range, projections, step")
+printInfo( "Common", start, stop - start, steps, step )
+if len(labels) > 1 :
+  for label in labels :
+    rangeL = pos[label][-1] - pos[label][0]
+    stepsL = idx[label][-1] - idx[label][0]
+    printInfo(label, pos[label][0], rangeL, stepsL, rangeL/stepsL)
+if not args.info :
+  for label in labels:
+    for cur in range(0, steps):
+      print(label, cur, int(res[label][cur]))

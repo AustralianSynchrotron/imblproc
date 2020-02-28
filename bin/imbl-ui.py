@@ -217,7 +217,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         while self.ui.splits.rowCount() > 1:
                 self.remFromSplit(0)
-        splitize = config.beginReadArray('splits')
+        splitsize = config.beginReadArray('splits')
         for crow in range(0, splitsize):
             config.setArrayIndex(crow)
             self.addToSplit(config.value('pos', type=int))
@@ -586,24 +586,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def recalculateSplit(self):
-
-        self.ui.splitSize.setEnabled(self.ui.irregularSplit.isChecked())
-        self.ui.splits.setEnabled(not self.ui.irregularSplit.isChecked())
-
+        self.ui.splitSize.setEnabled(not self.ui.irregularSplit.isChecked())
+        self.ui.splits.setEnabled(self.ui.irregularSplit.isChecked())
         if self.ui.irregularSplit.isChecked() :
             return
-
-        points = 0  if self.ui.splitSize.value() == 0  else \
-                 self.ui.splitSize.maximum() // self.ui.splitSize.value()
-        
-        for cpnt in ranges(0,points) :
-            cpos = (cpnt + 1 ) * points
-            pointWdg = self.ui.split.cellWidget(cpnt,0)
-            if pointWdg and pointWdg.isinstance(QtWidgets.QSpinBox) :
+        pixels = self.ui.splitSize.value()
+        points = 0  if  pixels == 0  else  self.ui.splitSize.maximum() // pixels        
+        for cpnt in range(points) :
+            cpos = (cpnt + 1 ) * pixels
+            pointWdg = self.ui.splits.cellWidget(cpnt,0)
+            if isinstance(pointWdg, QtWidgets.QSpinBox) :
                 pointWdg.setValue(cpos)
             else :
                 self.addToSplit(cpos)
-
         while self.ui.splits.rowCount() - 1 != points :
             self.remFromSplit(self.ui.splits.rowCount()-2)
 

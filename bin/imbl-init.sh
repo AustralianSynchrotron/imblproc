@@ -8,6 +8,7 @@ printhelp() {
   echo "  -y           Treat multiple Y's (if present) as independent scans."
   echo "  -z           Treat multiple Z's (if present) as independent scans."
   echo "  -f           Do not flip-and-stitch in 360deg scan."
+  echo "  -l           Use projection positions from the log file."
   echo "  -h           Prints this help."
 }
 
@@ -17,14 +18,16 @@ Yst=true
 Zst=true
 Fst=true
 opath=""
+uselog=false
 
-while getopts "yzfheo:" opt ; do
+while getopts "yzfhelo:" opt ; do
   case $opt in
     o) opath="$OPTARG" ;;
     e) MakeFF=false ;;
     y) Yst=false ;;
     z) Zst=false ;;
     f) Fst=false ;;
+    l) uselog=true ;;
     h) printhelp ; exit 0 ;;
     \?) echo "Invalid option: -$OPTARG" >&2 ; exit 1 ;;
     :)  echo "Option -$OPTARG requires an argument." >&2 ; exit 1 ;;
@@ -64,24 +67,14 @@ if [ ! -e "$conffile" ] ; then
   echo "No configuration file \"${ipath}/acquisition.\*config\*\" found in input path." >&2
   exit 1
 fi
-
 getfromconfig () {
   cat "$conffile" | egrep "${2}|\[${1}\]" | grep "\[${1}\]" -A 1 | grep "${2}" | cut -d'=' -f 2
 }
-
 ctversion=$(getfromconfig General version)
 if [ -z "$ctversion" ] ; then
     echo "Old version of the CT experiment detected." >&2
     echo "Use imbl4massive utilities to process" >&2
     exit 1
-fi
-
-range=$(getfromconfig scan range)
-pjs=$(getfromconfig scan ^steps)
-
-fshift=0
-if (( $(echo "$range >= 360.0" | bc -l) ))  &&  $Fst  ; then
-  fshift=$( echo "180 * $pjs / $range" | bc )
 fi
 
 Ysteps=0
@@ -105,7 +98,6 @@ hight=0
 if [ -e "bg.tif" ] ; then
   read width hight <<< $(identify "${opath}/bg.tif" | cut -d' ' -f 3 | sed 's/x/ /g')
 fi
-
 
 Zlist=""
 Zdirs="."
@@ -133,30 +125,68 @@ if (( $Ysteps > 1 )) ; then
 fi
 Ysize=$( wc -w <<< $Ylist )
 
+range=$(getfromconfig scan range)
+pjs=$(getfromconfig scan ^steps)
+step=$( echo "$range / $pjs " | bc )
+fshift=0
+if (( $(echo "$range >= 360.0" | bc -l) ))  &&  $Fst  ; then
+  fshift=$( echo "180 * $pjs / $range" | bc )
+fi
+
+logfile="$(sed 's configuration log g' <<< $conffile)" 
+if $uselog ; then
+  if [ ! -e "$logfile" ] ; then
+    echo "No log file \"${ipath}/$logfile\" found in input path." >&2
+    exit 1
+  fi
+  if ! cat "$logfile" | imbl-log.py -i > /dev/null ; then
+    echo "Error parsing log file \"${ipath}/$logfile\"." >&2
+    exit 1
+  fi
+fi
+
+
+initName=".initstitch"
+projName=".projections"
 
 outInitFile() {
-  echo "filemask=\"${1}\""
-  echo "ipath=\"$ipath\""
-  echo "opath=\"$opath\""
-  echo "pjs=$pjs"
-  echo "scanrange=$range"
-  echo "fshift=$fshift"
-  echo "width=$width"
-  echo "hight=$hight"
-  echo "zs=$Zsteps"
-  echo "ys=$Ysteps"
-  echo "ystitch=$Ysize"
-  echo "zstitch=$Zsize"
+
+  hrange=$range
+  hpjs=$pjs
+  hshift=$fshift
+  hstep=$step
+  if $uselog ; then
+    cat "$logfile" | imbl-log.py ${1} > "${2}/$projName"
+    read hrange hpjs hstep <<< $( cat "${2}/$projName" | grep '# Common' | cut -d' ' -f 4- )
+    if (( $hshift != 0 )) ; then
+      hfshift=$( echo "180 * $hpjs / $hrange" | bc )
+    fi
+  fi
+
+  echo -e \
+      "filemask=\"${1}\"\n" \
+      "ipath=\"$ipath\"\n" \
+      "opath=\"$opath\"\n" \
+      "pjs=$hpjs\n" \
+      "scanrange=$hrange\n" \
+      "step=$hstep\n" \
+      "fshift=$hshift\n" \
+      "width=$width\n" \
+      "hight=$hight\n" \
+      "zs=$Zsteps\n" \
+      "ys=$Ysteps\n" \
+      "ystitch=$Ysize\n" \
+      "zstitch=$Zsize\n" \
+    > "${2}/$initName"
+  
 }
-
-
-Sdirs=""
-initName=".initstitch"
 
 strip_ () {
   sed -e 's:_ *$::g' -e 's:^ *_: :g' <<< $1
 }
 
+
+Sdirs=""
 for Ydir in $Ydirs ; do
   for Zdir in $Zdirs ; do
 
@@ -165,36 +195,30 @@ for Ydir in $Ydirs ; do
     if ! mkdir -p "$Sdir/rec32fp" "$Sdir/clean" "$Sdir/rec8int" "$Sdir/tmp" ; then
       echo "Could not create output sub-directories in \"$PWD/$Sdir\"." >&2
       exit 1
-    else
-
-      Sdirs="$Sdirs $(realpath $Sdir --relative-to='.')"
-      Slist=""
-      for Ycur in $Ylist ; do
-        if [ -z "$Zlist" ] ; then
-          Slist="$Slist $(strip_ ${Ydir}${Ycur})"
-        else
-          for Zcur in $Zlist ; do
-            Slist="$Slist $(strip_ ${Ydir}${Ycur}_${Zdir}${Zcur})"
-          done
-        fi
-      done
-      Slist="$( sed -e 's:\.::g' -e 's:__:_:g' <<< $Slist)"
-
-      initfile="$Sdir/$initName"
-      cat /dev/null > "$initfile"
-      outInitFile "$Slist" >>  "$initfile"
-
     fi
 
+    Sdirs="$Sdirs $(realpath $Sdir --relative-to='.')"
+    Slist=""
+    for Ycur in $Ylist ; do
+      if [ -z "$Zlist" ] ; then
+        Slist="$Slist $(strip_ ${Ydir}${Ycur})"
+      else
+        for Zcur in $Zlist ; do
+          Slist="$Slist $(strip_ ${Ydir}${Ycur}_${Zdir}${Zcur})"
+        done
+      fi
+    done
+    Slist="$( sed -e 's:\.::g' -e 's:__:_:g' <<< $Slist)"
+    
+    outInitFile "$Slist" "$Sdir" 
+    
   done
 done
 
 subdCount=$( wc -w <<< $Sdirs)
-initfile="$initName"
 if (( $subdCount > 1 )) ; then
-  cat /dev/null > "$initfile"
-  echo "subdirs=$subdCount" >>  "$initName"
-  outInitFile "$Sdirs" >>  "$initName"
+  echo "subdirs=$subdCount" >  "$initName"
+  outInitFile "$Sdirs" . 
 fi
 
 

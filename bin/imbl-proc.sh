@@ -4,16 +4,16 @@ printhelp() {
   echo "Usage: $0 [OPTIONS] [PROJECTION]"
   echo "OPTIONS:"
   echo "Stitching options."
-  echo "  Two numbers are  the origin of the second image in the coordinate system of"
-  echo "  the first one. Same as produced by the pairwise-stitching plugin of ImageJ."
   echo "  -g X,Y            Origin of the first stitch."
   echo "  -G X,Y            Origin of the second stitch (in 2D scans)."
   echo "  -f X,Y            Origin of the flip-and-stitch (in 360deg scans)."
+  echo "  X and Y numbers are  the origin of the second image in the coordinate system of"
+  echo "  the first one. Same as produced by the pairwise-stitching plugin of ImageJ."
   echo "Cropping options."
-  echo "  Four numbers give cropping from the edges of the images:"
-  echo "  top,left,bottom,right."
   echo "  -c T,L,B,R        Crop source images."
   echo "  -C T,L,B,R        Crop final image."
+  echo "  T, L, B and R numbers give cropping from the edges of the images:"
+  echo "  top,left,bottom,right."
   echo "Other options."
   echo "  -r ANGLE          Rotate projections."
   echo "  -b INT[,INT]      Binning factor(s). If second number is given, then two"
@@ -45,7 +45,6 @@ chkf () {
 initfile=".initstitch"
 chkf "$initfile" init
 source "$initfile"
-
 
 nofSt=$(wc -w <<< $filemask )
 if (( $nofSt == 0 )) ; then
@@ -209,7 +208,11 @@ if [ "$proj" == "all" ] ; then
   fi
 
   echo "Starting CT reconstruction in $PWD"
-  imbl-xtract-wrapper.sh -q $xtParamFile clean rec32fp 
+  addOpt=""
+  if [ ! -z "$step" ] ; then
+    addOpt="-d $step"
+  fi
+  imbl-xtract-wrapper.sh $addOpt "$xtParamFile" clean rec32fp
   xret="$?"
   if [ "$xret" -eq "0" ] && $wipeClean ; then
       mv clean/SAMPLE*$(printf \%0${nlen}i $minProj).tif .
@@ -263,6 +266,19 @@ if [ ! -z "$imagick" ] ; then
 fi
 
 
+projfile=".projections"
+imgnum() {
+  lbl=$( sed -e 's:_$::g' -e 's:^_: :g' <<< $1 )
+  if [ -z "$lbl" ] ; then
+    lbl="single"
+  fi
+  inum=$( cat "$projfile" | grep -v '#' | grep "${lbl} ${2}" | cut -d' ' -f 3 2> /dev/null )
+  if [ -z "${inum}" ] ; then
+    inum=${2}
+  fi
+  printf "%0${nlen}i" $inum
+}
+
 if [ -z "$proj" ] ; then  # is bg and df
 
   if $testme ; then
@@ -313,14 +329,13 @@ else # is a projection
 
   lsImgs=""
   for imgm in $imagemask ; do
-    imgf="$ipath/SAMPLE${imgm}T$pjnum.tif"
+    imgf="$ipath/SAMPLE${imgm}T$(imgnum $imgm $proj).tif"
     chkf "$imgf" projection
     lsImgs="$lsImgs $imgf"
   done
   if (( $fshift >= 1 )) ; then
-    pjsnum=$( printf "%0${nlen}i" $(( $proj + $fshift )) )
     for imgm in $imagemask ; do
-      imgf="$ipath/SAMPLE${imgm}T${pjsnum}.tif"
+      imgf="$ipath/SAMPLE${imgm}T$(imgnum $imgm $(( $proj + $fshift )) ).tif"
       chkf "$imgf" "flip projection"
       lsImgs="$lsImgs $imgf"
     done
