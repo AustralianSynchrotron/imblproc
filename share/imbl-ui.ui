@@ -145,27 +145,6 @@
            </item>
            <item row="6" column="1" rowspan="2">
             <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,0,0">
-             <item row="3" column="0">
-              <widget class="QLabel" name="label_5">
-               <property name="text">
-                <string>Projections</string>
-               </property>
-              </widget>
-             </item>
-             <item row="5" column="0">
-              <widget class="QLabel" name="zlabel">
-               <property name="text">
-                <string>Innear series [Z]</string>
-               </property>
-              </widget>
-             </item>
-             <item row="4" column="0">
-              <widget class="QLabel" name="ylabel">
-               <property name="text">
-                <string>Outer series [Y]</string>
-               </property>
-              </widget>
-             </item>
              <item row="2" column="0">
               <widget class="QLabel" name="label_3">
                <property name="text">
@@ -173,20 +152,20 @@
                </property>
               </widget>
              </item>
-             <item row="4" column="2">
-              <widget class="QCheckBox" name="yIndependent">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
+             <item row="6" column="1">
+              <widget class="QSpinBox" name="zs">
+               <property name="readOnly">
+                <bool>true</bool>
                </property>
-               <property name="text">
-                <string>treat Y series as independent samples</string>
+               <property name="buttonSymbols">
+                <enum>QAbstractSpinBox::NoButtons</enum>
+               </property>
+               <property name="maximum">
+                <number>999</number>
                </property>
               </widget>
              </item>
-             <item row="5" column="2">
+             <item row="6" column="2">
               <widget class="QCheckBox" name="zIndependent">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
@@ -196,19 +175,6 @@
                </property>
                <property name="text">
                 <string>treat Z series as independent samples</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="2">
-              <widget class="QCheckBox" name="notFnS">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="text">
-                <string>scan is NOT 180deg flip-and-stitch</string>
                </property>
               </widget>
              </item>
@@ -228,6 +194,66 @@
                </property>
               </widget>
              </item>
+             <item row="5" column="0">
+              <widget class="QLabel" name="ylabel">
+               <property name="text">
+                <string>Outer series [Y]</string>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="2">
+              <widget class="QCheckBox" name="yIndependent">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>treat Y series as independent samples</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="2">
+              <widget class="QCheckBox" name="notFnS">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>scan is NOT 180deg flip-and-stitch</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QLabel" name="label_5">
+               <property name="text">
+                <string>Projections</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="0">
+              <widget class="QLabel" name="zlabel">
+               <property name="text">
+                <string>Innear series [Z]</string>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="1">
+              <widget class="QSpinBox" name="ys">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="buttonSymbols">
+                <enum>QAbstractSpinBox::NoButtons</enum>
+               </property>
+               <property name="maximum">
+                <number>999</number>
+               </property>
+              </widget>
+             </item>
              <item row="3" column="1">
               <widget class="QSpinBox" name="projections">
                <property name="readOnly">
@@ -241,21 +267,15 @@
                </property>
               </widget>
              </item>
-             <item row="5" column="1">
-              <widget class="QSpinBox" name="zs">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="buttonSymbols">
-                <enum>QAbstractSpinBox::NoButtons</enum>
-               </property>
-               <property name="maximum">
-                <number>999</number>
+             <item row="4" column="0">
+              <widget class="QLabel" name="label_33">
+               <property name="text">
+                <string>Angle step</string>
                </property>
               </widget>
              </item>
              <item row="4" column="1">
-              <widget class="QSpinBox" name="ys">
+              <widget class="QSpinBox" name="step">
                <property name="readOnly">
                 <bool>true</bool>
                </property>
@@ -263,14 +283,14 @@
                 <enum>QAbstractSpinBox::NoButtons</enum>
                </property>
                <property name="maximum">
-                <number>999</number>
+                <number>999999999</number>
                </property>
               </widget>
              </item>
-             <item row="3" column="2">
+             <item row="3" column="2" rowspan="2">
               <widget class="QCheckBox" name="ignoreLog">
                <property name="text">
-                <string>Ignore positions from log file</string>
+                <string>Ignore corrections from log file</string>
                </property>
               </widget>
              </item>
