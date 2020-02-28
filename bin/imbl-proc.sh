@@ -1,5 +1,5 @@
 #!/bin/bash
-
+ 
 printhelp() {
   echo "Usage: $0 [OPTIONS] [PROJECTION]"
   echo "OPTIONS:"

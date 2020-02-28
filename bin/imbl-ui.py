@@ -2,6 +2,7 @@
 
 import sys
 import os
+import re
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import pyqtSlot, QSettings, QProcess, QEventLoop, QTimer
@@ -66,6 +67,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.expSample,
             self.ui.inPath,
             self.ui.outPath,  # must come early in loading
+            self.ui.ignoreLog,
+            self.ui.step,
             self.ui.notFnS,
             self.ui.yIndependent,
             self.ui.zIndependent,
@@ -114,10 +117,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 swdg.currentTextChanged.connect(self.saveConfiguration)
 
         self.ui.notFnS.clicked.connect(self.needReinitiation)
+        self.ui.ignoreLog.clicked.connect(self.needReinitiation)
         self.ui.yIndependent.clicked.connect(self.needReinitiation)
         self.ui.zIndependent.clicked.connect(self.needReinitiation)
         self.ui.xtractAfter.toggled.connect(self.on_xtractIn_textChanged)
         self.ui.expUpdate.clicked.connect(self.on_expPath_textChanged)
+        self.ui.ignoreLog.toggled.connect(self.on_inPath_textChanged)
 
         QtCore.QTimer.singleShot(100, self.loadConfiguration)
 
@@ -341,6 +346,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.inPath.setText(newdir)
 
     @pyqtSlot(str)
+    @pyqtSlot(bool)
     def on_inPath_textChanged(self):
 
         QtCore.QCoreApplication.processEvents()  # to update ui.inPath
@@ -349,6 +355,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.oldConfigLabel.hide()
         self.ui.initiate.setEnabled(False)
         self.ui.inPath.setStyleSheet('')
+        self.ui.ignoreLog.hide()
 
         ipath = self.ui.inPath.text()
         if not os.path.isdir(ipath):
@@ -377,11 +384,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.oldConfigLabel.show()
             return
 
-        scanrange = cfg.value('scan/range', type=float)
-        self.ui.scanRange.setValue(scanrange)
-        self.ui.notFnS.setVisible(scanrange >= 360)
-        self.ui.projections.setValue(cfg.value('scan/steps', type=int))
-
         serialScan = cfg.value('doserialscans', type=bool)
         self.ui.yIndependent.setVisible(serialScan)
         self.ui.ylabel.setVisible(serialScan)
@@ -393,6 +395,24 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.zlabel.setVisible(twodScan)
         self.ui.zs.setVisible(twodScan)
         self.ui.zs.setValue(cfg.value('serial/innearseries/nofsteps', type=int))
+
+        fromlog = False
+        logName = re.sub(r"\.config.*", ".log", cfgName)
+        self.ui.ignoreLog.setVisible(os.path.exists(logName))
+        logInfo = []
+        if os.path.exists(logName) and not self.ui.ignoreLog.isChecked() :
+            logInfo = os.popen('cat "' + logName + '" | imbl-log.py -i' +
+                               ' | grep \'# Common\' | cut -d\' \' -f 4- ' ).read().strip("\n").split()
+            if len(logInfo) == 3 :
+                fromlog = True
+
+        scanrange = float(logInfo[0]) if fromlog else cfg.value('scan/range', type=float)
+        self.ui.scanRange.setText(str(scanrange))
+        self.ui.notFnS.setVisible(scanrange >= 360)
+        projections = int(logInfo[1]) if fromlog else cfg.value('scan/steps', type=int)
+        self.ui.projections.setText(str(projections))
+        step = float(logInfo[2]) if fromlog else scanrange / projections
+        self.ui.step.setText(str(step))
 
         self.update_initiate_state()
 
@@ -436,17 +456,19 @@ class MainWindow(QtWidgets.QMainWindow):
             zs = initDict['zs']
             ystitch = initDict['ystitch']
             zstitch = initDict['zstitch']
+            step = initDict['step'] if 'step' in initDict else ''
         except KeyError:
             return
 
         self.ui.inPath.setText(ipath)
 
         self.doFnS = scanrange >= 360 and fshift > 0
-        self.ui.scanRange.setValue(scanrange)
+        self.ui.scanRange.setText(str(scanrange))
+        self.ui.step.setText(str(step))
         self.ui.notFnS.setChecked(not self.doFnS)
         self.ui.fStLbl.setVisible(self.doFnS)
         self.ui.fStWdg.setVisible(self.doFnS)
-        self.ui.projections.setValue(pjs)
+        self.ui.projections.setText(str(pjs))
 
         self.doYst = ys > 1 and ystitch > 1
         self.ui.yIndependent.setChecked(not self.doYst)
@@ -689,7 +711,7 @@ class MainWindow(QtWidgets.QMainWindow):
         minProj = self.ui.minProj.value()
         maxProj = self.ui.maxProj.value()
         if maxProj == self.ui.maxProj.minimum():
-            maxProj = self.ui.projections.value()
+            maxProj = int(self.ui.projections.text())
         ars += " -m %i -M %i " % (minProj, maxProj)
         ars += " all"
         return ars
@@ -753,7 +775,7 @@ class MainWindow(QtWidgets.QMainWindow):
         minProj = self.ui.minProj.value()
         maxProj = self.ui.maxProj.value()
         if maxProj == self.ui.maxProj.minimum():
-            maxProj = self.ui.projections.value()
+            maxProj = int(self.ui.projections.text())
         nstl = "" if minProj <= maxProj else warnStyle
         self.ui.minProj.setStyleSheet(nstl)
         self.ui.maxProj.setStyleSheet(nstl)

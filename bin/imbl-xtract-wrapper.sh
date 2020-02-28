@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 printhelp() {
   echo "Usage: $0 [OPTIONS] <X-tract param file> <input dir> <output dir>"
   echo "OPTIONS:"

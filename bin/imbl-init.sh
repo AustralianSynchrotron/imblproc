@@ -145,7 +145,6 @@ if $uselog ; then
   fi
 fi
 
-
 initName=".initstitch"
 projName=".projections"
 
