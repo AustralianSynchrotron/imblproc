@@ -99,7 +99,7 @@ def printInfo(lbl, strt, rng, pjs, stp) :
   print("# %s: %f %f %i %f" % ( lbl, strt, rng, pjs, stp ) )  
 
 print("# Set: start, range, projections, step")
-printInfo( "Common", start, stop - start, steps, step )
+printInfo( "Common", start, stop - start, steps, step)
 if len(labels) > 1 :
   for label in labels :
     rangeL = pos[label][-1] - pos[label][0]

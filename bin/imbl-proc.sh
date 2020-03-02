@@ -42,6 +42,7 @@ chkf () {
   fi
 }
 
+projfile=".projections"
 initfile=".initstitch"
 chkf "$initfile" init
 source "$initfile"
@@ -210,7 +211,7 @@ if [ "$proj" == "all" ] ; then
   echo "Starting CT reconstruction in $PWD"
   addOpt=""
   if [ ! -z "$step" ] ; then
-    addOpt="-d $step"
+    addOpt=" -a $step "
   fi
   imbl-xtract-wrapper.sh $addOpt "$xtParamFile" clean rec32fp
   xret="$?"
@@ -266,18 +267,6 @@ if [ ! -z "$imagick" ] ; then
 fi
 
 
-projfile=".projections"
-imgnum() {
-  lbl=$( sed -e 's:_$::g' -e 's:^_: :g' <<< $1 )
-  if [ -z "$lbl" ] ; then
-    lbl="single"
-  fi
-  inum=$( cat "$projfile" | grep -v '#' | grep "${lbl} ${2}" | cut -d' ' -f 3 2> /dev/null )
-  if [ -z "${inum}" ] ; then
-    inum=${2}
-  fi
-  printf "%0${nlen}i" $inum
-}
 
 if [ -z "$proj" ] ; then  # is bg and df
 
@@ -326,6 +315,20 @@ else # is a projection
       imagemask="$imagemask _${finm}_"
     done
   fi
+
+
+  imgnum() {
+    lbl=$( sed -e 's:_$::g' -e 's:^_::g' <<< $1 )
+    if [ -z "$lbl" ] ; then
+      lbl="single"
+    fi
+    inum=$( cat "$projfile" | grep -v '#' | grep "${lbl} ${2} " | cut -d' ' -f 3 2> /dev/null )
+    if [ -z "${inum}" ] ; then
+      inum=${2}
+    fi
+    printf "%0${nlen}i" $inum
+  }
+
 
   lsImgs=""
   for imgm in $imagemask ; do

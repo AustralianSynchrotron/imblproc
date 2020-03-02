@@ -150,33 +150,41 @@ projName=".projections"
 
 outInitFile() {
 
+  hmask="${1}"
   hrange=$range
   hpjs=$pjs
   hshift=$fshift
   hstep=$step
   if $uselog ; then
-    cat "$logfile" | imbl-log.py ${1} > "${2}/$projName"
+    cat "$logfile" | imbl-log.py $hmask > "${2}/$projName"
     read hrange hpjs hstep <<< $( cat "${2}/$projName" | grep '# Common' | cut -d' ' -f 4- )
     if (( $hshift != 0 )) ; then
       hfshift=$( echo "180 * $hpjs / $hrange" | bc )
     fi
   fi
 
-  echo -e \
-      "filemask=\"${1}\"\n" \
-      "ipath=\"$ipath\"\n" \
-      "opath=\"$opath\"\n" \
-      "pjs=$hpjs\n" \
-      "scanrange=$hrange\n" \
-      "step=$hstep\n" \
-      "fshift=$hshift\n" \
-      "width=$width\n" \
-      "hight=$hight\n" \
-      "zs=$Zsteps\n" \
-      "ys=$Ysteps\n" \
-      "ystitch=$Ysize\n" \
-      "zstitch=$Zsize\n" \
-    > "${2}/$initName"
+  filemask="$hmask"
+  if [ ! -z "$3" ] ; then
+    filemask="${3}"
+  fi
+  
+  echoInfo() {
+    echo "filemask=\"$filemask\""
+    echo "ipath=\"$ipath\""
+    echo "opath=\"$opath\""
+    echo "pjs=$hpjs"
+    echo "scanrange=$hrange"
+    echo "step=$hstep"
+    echo "fshift=$hshift"
+    echo "width=$width"
+    echo "hight=$hight"
+    echo "zs=$Zsteps"
+    echo "ys=$Ysteps"
+    echo "ystitch=$Ysize"
+    echo "zstitch=$Zsize"
+  }
+
+  echoInfo > "${2}/$initName"
   
 }
 
@@ -216,8 +224,8 @@ done
 
 subdCount=$( wc -w <<< $Sdirs)
 if (( $subdCount > 1 )) ; then
-  echo "subdirs=$subdCount" >  "$initName"
-  outInitFile "$Sdirs" . 
+  outInitFile "" . "$Sdirs"
+  echo "subdirs=$subdCount" >>  "$initName"
 fi
 
 

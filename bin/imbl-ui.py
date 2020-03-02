@@ -132,8 +132,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if not qcolor:
             qcolor = self.ui.console.palette().text().color()
         self.ui.console.setTextColor(qcolor)
-        #self.ui.console.append(str(text).strip('\n'))
-        self.ui.console.setText(text)
+        self.ui.console.append(str(text).strip('\n'))
+        #self.ui.console.setText(text)
 
     def addOutToConsole(self, text):
         self.addToConsole(text, QtCore.Qt.blue)
@@ -235,12 +235,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.addToConsole("Executing command:")
         self.addToConsole(proc.program() + " "
-                          + ' '.join([ar for ar in proc.arguments()]))
+                          + ' '.join([ar for ar in proc.arguments()]),
+                          QtCore.Qt.green)
         if proc.workingDirectory() and \
            not os.path.samefile(proc.workingDirectory(), os.getcwd()):
-            self.addToConsole("in \"%s\""
-                              % os.path.realpath(proc.workingDirectory()))
-
+            self.addToConsole("in ")
+            self.addToConsole(os.path.realpath(proc.workingDirectory()), QtCore.Qt.green)
         eloop = QEventLoop(self)
         proc.finished.connect(eloop.quit)
         proc.readyReadStandardOutput.connect(eloop.quit)
@@ -443,7 +443,11 @@ class MainWindow(QtWidgets.QMainWindow):
         if not os.path.exists(initiatedFile):
             return
         initDict = dict()
-        exec(open(initiatedFile).read(), initDict)
+        try:
+            exec(open(initiatedFile).read(), initDict)
+        except :
+            self.addErrToConsole("Corrupt init file \"%s\"" % initiatedFile)
+            return
         try:
             filemask = initDict['filemask']
             ipath = initDict['ipath']
@@ -456,7 +460,7 @@ class MainWindow(QtWidgets.QMainWindow):
             zs = initDict['zs']
             ystitch = initDict['ystitch']
             zstitch = initDict['zstitch']
-            step = initDict['step'] if 'step' in initDict else ''
+            step = initDict['step'] if 'step' in initDict else self.ui.step.text()
         except KeyError:
             return
 
@@ -546,6 +550,8 @@ class MainWindow(QtWidgets.QMainWindow):
             command += " -z "
         if self.ui.noNewFF.isChecked():
             command += " -e "
+        if not self.ui.ignoreLog.isChecked():
+            command += " -l "        
         command += " -o \"%s\" " % opath
         command += self.ui.inPath.text()
 
