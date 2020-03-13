@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export PATH="$(dirname "$(realpath "$0")" ):$PATH"
+
 printhelp() {
   echo "Usage: $0 [OPTIONS] <SAMPLE PATH>"
   echo "OPTIONS:"

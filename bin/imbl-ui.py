@@ -677,6 +677,7 @@ class MainWindow(QtWidgets.QMainWindow):
                  self.ui.fCropBottom.value(), self.ui.fCropRight.value())
         if sum(crops):
             prms += " -C %i,%i,%i,%i " % crops
+        prms += "-v"
         prms += ars
 
         disableWdgs = (*self.configObjects,

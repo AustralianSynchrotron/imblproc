@@ -1,4 +1,6 @@
 #!/bin/bash
+
+export PATH="$(dirname "$(realpath "$0")" ):$PATH"
  
 printhelp() {
   echo "Usage: $0 [OPTIONS] [PROJECTION]"
@@ -32,6 +34,8 @@ printhelp() {
   echo "                    the parameters read from the given parameters file."
   echo "  -w                Delete projections folder (clean) after X-tract processing."
   echo "  -t                Test mode: keeps intermediate images in tmp directory."
+  echo "  -v                Verbose mode: show progress."
+  echo "  -V                Very verbose mode: show progress bar."
   echo "  -h                Prints this help."
 }
 
@@ -72,12 +76,13 @@ minProj=0
 maxProj=$pjs
 nlen=${#pjs}
 wipeClean=false
+verbose=0
 
 if [ -z "$PROCRECURSIVE" ] ; then
   echo "$allopts" >> ".proc.history"
 fi
 
-while getopts "g:G:f:c:C:r:b:s:n:i:o:x:m:M:dthw" opt ; do
+while getopts "g:G:f:c:C:r:b:s:n:i:o:x:m:M:dthwvV" opt ; do
   case $opt in
     g)  origin=$OPTARG
         if (( $nofSt < 2 )) ; then
@@ -132,6 +137,8 @@ while getopts "g:G:f:c:C:r:b:s:n:i:o:x:m:M:dthw" opt ; do
     w)  wipeClean=true ;;
     d)  ffcorrection=false ;;
     t)  testme=true ;;
+    v)  verbose=1 ;;
+    V)  verbose=2 ;;
     h)  printhelp ; exit 1 ;;
     \?) echo "Invalid option: -$OPTARG" >&2 ; exit 1 ;;
     :)  echo "Option -$OPTARG requires an argument." >&2 ; exit 1 ;;
@@ -202,8 +209,14 @@ if [ "$proj" == "all" ] ; then
 
   allopts="$( sed 's all  g' <<< $allopts )"
   $0 $allopts  && # do df and bg
+  popts=""
+  if [ "$verbose" -eq 1 ] ; then
+    popts="--eta"
+  elif [ "$verbose" -eq 2 ] ; then
+    popts="--bar"
+  fi
   echo "Starting parallel stitching in $PWD."
-  seq $minProj $maxProj | parallel --bar "$0 $allopts {}"
+  seq $minProj $maxProj | parallel $popts "$0 $allopts {}"
   if [ -z "$xtParamFile" ] ; then
     exit $?
   fi
