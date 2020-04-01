@@ -1,0 +1,44 @@
+http://gamon.webfactional.com/regexnumericrangegenerator/
+
+the location for stiching software:
+/data/imbl/13393g/output
+
+full data for 0m
+proj0*([0-9]|1[0-9]|2[0-3])[0-9]{2}.tif
+halfing data
+proj0*([0-9]|1[0-9]|2[0-3])[0-9][02468].tif
+-------------------------------------------------------
+
+
+full data for 6m
+proj0*([0-9]|[1-3][0-9]|4[0-7])[0-9]{2}.tif
+---------------------------------------------
+halfing data
+proj0*([0-9]|[1-3][0-9]|4[0-7])[0-9][02468].tif
+-------------------------------------------------------
+every fourth data
+proj0*([0-9]|[1-3][0-9]|4[0-7])([02468][048]|[13579][26]).tif
+
+
+for 1200 projection
+proj0*([0-9]|[1-8][0-9]|9[0-9]|[1-8][0-9]{2}|9[0-8][0-9]|99[0-9]|1[01][0-9]{2}|1200).tif
+
+
+full data for 2450projection
+proj0*([0-9]|1[0-9]|2[0-4])[0-9]{2}.tif
+halfing data
+proj0*([0-9]|1[0-9]|2[0-4])[0-9][02468].tif
+
+full data for 4900projection
+proj0*([0-9]|[1-3][0-9]|4[0-8])[0-9]{2}.tif
+halfing data
+proj0*([0-9]|[1-3][0-9]|4[0-8])[0-9][02468].tif
+every fourth data
+proj0*([0-9]|[1-3][0-9]|4[0-8])([02468][048]|[13579][26]).tif
+
+./startpy.sh
+./IMBLPreProc IMBL_preproc.txt
+
+for every fourth numeric suffix in the range 0000-9999
+SAMPLE_Y0_T0*([0-9]{2})(00|04|08|12|16|20|24|28|32|36|40|44|48|52|56|60|64|68|72|76|80|84|88|92|96).tif
+
