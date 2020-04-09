@@ -70,6 +70,7 @@ class MainWindow(QtWidgets.QMainWindow):
     stepU = 0
     tilesWU = 1
     tilesHU = 1
+    proc = QProcess()
 
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -79,7 +80,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.showWdg(errLabel, False)
         self.ui.distanceR.addItems(list(distances))
         self.ui.energyR.addItems(list(energies))
-
+        self.proc.setProgram("/bin/bash")
+        
         if isdir(dataPath) :
             selection = self.ui.expSelect
             selection.setEnabled(False)
@@ -98,10 +100,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 selection.addItem("<none>")
 
         self.configObjects = (
+            self.ui.outAuto,
             self.ui.expPath,
             self.ui.inPath,
             self.ui.outPath,
-            self.ui.outAuto,
             self.ui.trimL,
             self.ui.trimR,
             self.ui.trimT,
@@ -343,19 +345,19 @@ class MainWindow(QtWidgets.QMainWindow):
             twodScans = serialScan and valFromConfig('serial/2d', bool)
             iSteps = valFromConfig('serial/innearseries/nofsteps', int)
             oSteps = valFromConfig('serial/outerseries/nofsteps', int)
-            tilesWU = 1 if not serialScan else oSteps if not twodScans else iSteps
-            setVText(self.ui.tilesW, tilesWU, int)
-            tilesHU = 1 if not serialScan or not twodScans else oSteps
-            setVText(self.ui.tilesH, tilesHU, int)
+            self.tilesWU = 1 if not serialScan else oSteps if not twodScans else iSteps
+            setVText(self.ui.tilesW, self.tilesWU, int)
+            self.tilesHU = 1 if not serialScan or not twodScans else oSteps
+            setVText(self.ui.tilesH, self.tilesHU, int)
             arc = valFromConfig('scan/range', float)
             setVText(self.ui.arc, arc, float)
             setVText(self.ui.arcR, arc, float)
             projections = valFromConfig('scan/steps', int)
             setVText(self.ui.projections, projections, int)
             setVText(self.ui.projectionsR, projections, int)
-            stepU = arc/projections
-            setVText(self.ui.step, stepU , float)
-            setVText(self.ui.stepR, stepU, float)
+            self.stepU = arc/projections
+            setVText(self.ui.step, self.stepU , float)
+            setVText(self.ui.stepR, self.stepU, float)
         except:
             self.showWdg(self.ui.errBadConfig, True)
             return
@@ -406,59 +408,62 @@ class MainWindow(QtWidgets.QMainWindow):
         self.addToConsole(text, QtCore.Qt.red)
 
 
-    def execInBg(self, proc):
+    def execInBg(self, command):
 
         self.addToConsole("Executing command:")
-        self.addToConsole(proc.program() + " " + ' '.join([ar for ar in proc.arguments()]), QtCore.Qt.green)
+        self.addToConsole(command, QtCore.Qt.green)
+        self.proc.setArguments(("-c", command))
 
         eloop = QEventLoop(self)
-        proc.finished.connect(eloop.quit)
-        proc.readyReadStandardOutput.connect(eloop.quit)
-        proc.readyReadStandardError.connect(eloop.quit)
+        self.proc.finished.connect(eloop.quit)
+        self.proc.readyReadStandardOutput.connect(eloop.quit)
+        self.proc.readyReadStandardError.connect(eloop.quit)
 
-        proc.start()
-        proc.waitForStarted(500)
+        self.proc.start()
+        self.proc.waitForStarted(500)
         while True:
-            self.addOutToConsole(proc.readAllStandardOutput()
+            self.addOutToConsole(self.proc.readAllStandardOutput()
                                  .data().decode(sys.getdefaultencoding()))
-            self.addErrToConsole(proc.readAllStandardError()
+            self.addErrToConsole(self.proc.readAllStandardError()
                                  .data().decode(sys.getdefaultencoding()))
-            if proc.state():
+            if self.proc.state():
                 eloop.exec_()
             else:
                 break
-        self.addToConsole("Stopped with exit status %i" % proc.exitCode())
+        self.addToConsole("Stopped with exit status %i" % self.proc.exitCode())
 
 
     @pyqtSlot()
     def onStitch(self):
         inPath = self.ui.inPath.text()
         outPath = self.ui.outPath.text()
-        os.mkdir(outPath)
+        if not exists(outPath):
+            os.mkdir(outPath)
         parsedLogName =  join(outPath, ".parsed.log")
-        os.open("cat " + self.logName + " | imbl-log.py -s " + stepU + " > " + parsedLogName)
+        self.execInBg("cat " + self.logName + " | imbl-log.py -s " + str(self.stepU) + " > " + parsedLogName)
         fakeInPath = join(outPath, "fakeInput")
-        os.mkdir(outPath)
-        os.open("cat " + parsedLogName + " | grep -v '#' "
-                + " | parallel ' read lbl idx num <<< {} ; "
-                             + " ln -s " + join(inPath, "SAMPLE_${lbl}_T$(printf %04i ${num}).tif") + " "
-                                         + join(fakeInPath, "SAMPLE_${lbl}_T$(printf %04i ${idx}).tif") + "'")
-        os.open(" ls " + join(inPath, "BG") + "* " + join(inPath, "DF") + "* "
-                + " | parallel 'ln -s  $(realpath {}) " + join(outPath, "fakeInput") + os.path.sep + "'")
+        if not exists(fakeInPath):
+            os.mkdir(fakeInPath)
+        #self.execInBg("cat " + parsedLogName + " | grep -v '#' "
+        #              + " | parallel ' read lbl idx num <<< {} ; "
+        #                           + " ln -s " + join(inPath, "SAMPLE_${lbl}_T$(printf %04i ${num}).tif") + " "
+        #                                       + join(fakeInPath, "SAMPLE_${lbl}_T$(printf %04i ${idx}).tif") + "'")
+        #self.execInBg(" ls " + join(inPath, "BG") + "* " + join(inPath, "DF") + "* "
+        #              + " | parallel 'ln -s  $(realpath {}) " + join(outPath, "fakeInput") + os.path.sep + "'")
         preProcConfig = join(outPath , "IMBL_preproc.txt")
-        os.open("cat " + join(execPath, "../share/imblproc/IMBL_preproc.txt.template")
-                + " | sed -e 's REPLACEWITH_inPath " + inPath + " g' "
-                + "       -e 's REPLACEWITH_outPath " + outPath + " g' "
-                + "       -e 's REPLACEWITH_prefixBG " + ("BG_Y" if self.tilesH > 1 else "BG_") + " g' "
-                + "       -e 's REPLACEWITH_prefixS " + ("SAMPLE_Y" if self.tilesH > 1 else "SAMPLE_") + " g' "
-                + "       -e 's REPLACEWITH_tilesW " + tilesWU + " g' "
-                + "       -e 's REPLACEWITH_overlap " + distances(self.ui.distanceR.currentText()).overlap + " g' "
-                + "       -e 's REPLACEWITH_trimL " + str(self.ui.trimL.value()) + " g' "
-                + "       -e 's REPLACEWITH_trimR " + str(self.ui.trimR.value()) + " g' "
-                + "       -e 's REPLACEWITH_trimT " + str(self.ui.trimT.value()) + " g' "
-                + "       -e 's REPLACEWITH_trimB " + str(self.ui.trimB.value()) + " g' "
-                + " > " + preProcConfig )
-        os.open("echo " + preProcExec + " " + preProcConfig)
+        os.popen("cat " + join(execPath, "../share/imblproc/IMBL_preproc.txt.template") 
+                 + " | sed -e 's REPLACEWITH_inPath " + inPath + " g' "
+                 + "       -e 's REPLACEWITH_outPath " + outPath + " g' "
+                 + "       -e 's REPLACEWITH_prefixBG " + ("BG_Y" if self.tilesHU > 1 else "BG_") + " g' "
+                 + "       -e 's REPLACEWITH_prefixS " + ("SAMPLE_Y" if self.tilesHU > 1 else "SAMPLE_") + " g' "
+                 + "       -e 's REPLACEWITH_tilesW " + str(self.tilesWU) + " g' "
+                 + "       -e 's REPLACEWITH_overlap " + str(distances[self.ui.distanceR.currentText()].overlap) + " g' "
+                 + "       -e 's REPLACEWITH_trimL " + str(self.ui.trimL.value()) + " g' "
+                 + "       -e 's REPLACEWITH_trimR " + str(self.ui.trimR.value()) + " g' "
+                 + "       -e 's REPLACEWITH_trimT " + str(self.ui.trimT.value()) + " g' "
+                 + "       -e 's REPLACEWITH_trimB " + str(self.ui.trimB.value()) + " g' "
+                 + " > " + preProcConfig )
+        self.execInBg("echo " + preProcExec + " " + preProcConfig)
 
 
     @pyqtSlot()
