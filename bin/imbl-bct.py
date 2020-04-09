@@ -81,7 +81,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.distanceR.addItems(list(distances))
         self.ui.energyR.addItems(list(energies))
         self.proc.setProgram("/bin/bash")
-        
+
         if isdir(dataPath) :
             selection = self.ui.expSelect
             selection.setEnabled(False)
@@ -131,7 +131,7 @@ class MainWindow(QtWidgets.QMainWindow):
         def onSelect(lineEdit):
             newPath = self.sender().currentData()
             setVText(lineEdit, newPath, str)
-        def outAutoSet():
+        def outAutoSet(correctOut=True):
             iPath = self.ui.inPath.text()
             oPath = re.sub(r'/input/', r'/output/', iPath)
             inhasin = basename(dirname(iPath)) == "input"
@@ -139,12 +139,12 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.outAuto.setEnabled(inhasin)
             if not self.ui.outAuto.isChecked() or not inhasin:
                 return
-            if self.sender() == self.ui.outPath :
-                self.ui.outAuto.setStyleSheet("" if self.ui.outPath.text() == oPath else badStyle)
-            else:
+            if correctOut :
                 self.ui.outPath.blockSignals(True)
                 setVText(self.ui.outPath, oPath, str)
                 self.ui.outPath.blockSignals(False)
+            self.ui.outAuto.setStyleSheet(
+                "" if self.ui.outPath.text() == oPath or not self.ui.outAuto.isChecked() else badStyle)
         self.ui.expBrowse.clicked.connect(lambda: onBrowse("Experiment", self.ui.expPath))
         self.ui.expSelect.activated.connect(lambda: onSelect(self.ui.expPath))
         self.ui.expPath.textChanged.connect(self.onNewExperiment)
@@ -153,7 +153,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.inPath.textChanged.connect(lambda: (self.onNewSample(), outAutoSet()))
         self.ui.outBrowse.clicked.connect(lambda: onBrowse("Sample output", self.ui.outPath))
         self.ui.outAuto.toggled.connect(outAutoSet)
-        self.ui.outPath.textChanged.connect(outAutoSet)
+        self.ui.outPath.textChanged.connect(lambda: outAutoSet(False))
         self.ui.goStitch.clicked.connect(self.onStitch)
         self.ui.testRing.clicked.connect(self.onTestRing)
         self.ui.goRec.clicked.connect(self.onRec)
@@ -223,14 +223,11 @@ class MainWindow(QtWidgets.QMainWindow):
             if not config.contains(nm):
                 return
             elif isinstance(wdg, QtWidgets.QLineEdit):
-                wdg.setText(config.value(nm, type=str))
-                wdg.textChanged.emit(wdg.text())
+                setVText(wdg, config.value(nm, type=str), str)
             elif isinstance(wdg, QtWidgets.QCheckBox):
                 wdg.setChecked(config.value(nm, type=bool))
-                wdg.toggled.emit(wdg.isChecked())
             elif isinstance(wdg, QtWidgets.QAbstractSpinBox):
                 wdg.setValue(config.value(nm, type=float))
-                wdg.valueChanged.emit(wdg.value())
             elif isinstance(wdg, QtWidgets.QComboBox):
                 didx = wdg.findText(config.value(nm, type=str))
                 if didx >= 0:
@@ -239,6 +236,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for swdg in self.configObjects:
             valToLoad(swdg)
         self.amLoading = False
+        self.update()
 
 
     @pyqtSlot()
@@ -451,7 +449,7 @@ class MainWindow(QtWidgets.QMainWindow):
         #self.execInBg(" ls " + join(inPath, "BG") + "* " + join(inPath, "DF") + "* "
         #              + " | parallel 'ln -s  $(realpath {}) " + join(outPath, "fakeInput") + os.path.sep + "'")
         preProcConfig = join(outPath , "IMBL_preproc.txt")
-        os.popen("cat " + join(execPath, "../share/imblproc/IMBL_preproc.txt.template") 
+        os.popen("cat " + join(execPath, "../share/imblproc/IMBL_preproc.txt.template")
                  + " | sed -e 's REPLACEWITH_inPath " + inPath + " g' "
                  + "       -e 's REPLACEWITH_outPath " + outPath + " g' "
                  + "       -e 's REPLACEWITH_prefixBG " + ("BG_Y" if self.tilesHU > 1 else "BG_") + " g' "
