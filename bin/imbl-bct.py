@@ -15,13 +15,14 @@ from pathlib import Path
 from os.path import isdir, dirname, basename, exists, join
 
 execPath = dirname(os.path.realpath(__file__)) + os.path.sep
-#dataPath = "/data/imbl" # on ASCI
-dataPath = "/mnt/ct" # test on dj-station
+dataPath = "/data/imbl" # on ASCI
+#dataPath = "/mnt/ct" # test on dj-station
 #dataPath = "/mnt/tmp/data" # real on dj-station from home
 #dataPath = "/mnt/asci.data" # real on dj-station from work
 
 badStyle = "color: rgb(255, 0, 0)"
-preProcExec = "/user/home/Desktop/IMBLPreProc"
+#preProcExec = "/user/home/Desktop/IMBLPreProc" # Alaleh
+preProcExec = "/user/home/usr/bin/IMBLPreProc" # mine
 configName = ".imbl-bct"
 
 class DistDeps:
@@ -442,18 +443,21 @@ class MainWindow(QtWidgets.QMainWindow):
         fakeInPath = join(outPath, "fakeInput")
         if not exists(fakeInPath):
             os.mkdir(fakeInPath)
-        #self.execInBg("cat " + parsedLogName + " | grep -v '#' "
-        #              + " | parallel ' read lbl idx num <<< {} ; "
-        #                           + " ln -s " + join(inPath, "SAMPLE_${lbl}_T$(printf %04i ${num}).tif") + " "
-        #                                       + join(fakeInPath, "SAMPLE_${lbl}_T$(printf %04i ${idx}).tif") + "'")
-        #self.execInBg(" ls " + join(inPath, "BG") + "* " + join(inPath, "DF") + "* "
-        #              + " | parallel 'ln -s  $(realpath {}) " + join(outPath, "fakeInput") + os.path.sep + "'")
+        self.execInBg("cat " + parsedLogName + " | grep -v '#' "
+                      + " | parallel ' read lbl idx num <<< {} ; "
+                                   + " ln -sf " + join(inPath, "SAMPLE_${lbl}_T$(printf %04i ${num}).tif") + " "
+                                               + join(fakeInPath, "SAMPLE_${lbl}_T$(printf %04i ${idx}).tif") + "'")
+        self.execInBg(" ls " + join(inPath, "BG") + "* " + join(inPath, "DF") + "* "
+                      + " | parallel 'ln -sf  $(realpath {}) " + join(outPath, "fakeInput") + os.path.sep + "'")
         preProcConfig = join(outPath , "IMBL_preproc.txt")
+        stitchedPath = join(outPath, "stitched")
+        if not exists(stitchedPath):
+            os.mkdir(stitchedPath)
         os.popen("cat " + join(execPath, "../share/imblproc/IMBL_preproc.txt.template")
-                 + " | sed -e 's REPLACEWITH_inPath " + inPath + " g' "
-                 + "       -e 's REPLACEWITH_outPath " + outPath + " g' "
-                 + "       -e 's REPLACEWITH_prefixBG " + ("BG_Y" if self.tilesHU > 1 else "BG_") + " g' "
-                 + "       -e 's REPLACEWITH_prefixS " + ("SAMPLE_Y" if self.tilesHU > 1 else "SAMPLE_") + " g' "
+                 + " | sed -e 's REPLACEWITH_inPath " + fakeInPath + "/ g' "
+                 + "       -e 's REPLACEWITH_outPath " + stitchedPath + "/ g' "
+                 + "       -e 's REPLACEWITH_prefixBG " + ("BG_Y" if self.tilesWU > 1 else "BG_") + " g' "
+                 + "       -e 's REPLACEWITH_prefixS " + ("SAMPLE_Y" if self.tilesWU > 1 else "SAMPLE_") + " g' "
                  + "       -e 's REPLACEWITH_tilesW " + str(self.tilesWU) + " g' "
                  + "       -e 's REPLACEWITH_overlap " + str(distances[self.ui.distanceR.currentText()].overlap) + " g' "
                  + "       -e 's REPLACEWITH_trimL " + str(self.ui.trimL.value()) + " g' "
@@ -461,7 +465,7 @@ class MainWindow(QtWidgets.QMainWindow):
                  + "       -e 's REPLACEWITH_trimT " + str(self.ui.trimT.value()) + " g' "
                  + "       -e 's REPLACEWITH_trimB " + str(self.ui.trimB.value()) + " g' "
                  + " > " + preProcConfig )
-        self.execInBg("echo " + preProcExec + " " + preProcConfig)
+        self.execInBg(preProcExec + " " + preProcConfig)
 
 
     @pyqtSlot()
