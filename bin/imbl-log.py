@@ -6,12 +6,15 @@ import numpy
 import argparse
 
 parser = argparse.ArgumentParser(description=
-  'Parses log file produced by the IMBL\'s ctgui to recalculate proper rotation positions.'
+ 'Parses log file produced by the IMBL\'s ctgui to recalculate proper rotation positions.'
   ' The file is read from the standart input and the result is sent to the standart output.')
 parser.add_argument('labels', type=str, nargs='*', default="",
                     help='Parse only given labels.')
 parser.add_argument('-i', '--info', action='store_true',
                     help='Output only information derived from the log')
+parser.add_argument('-s', '--step', type=float, default=0,
+                    help='Use the step size matching the configuration file.' +
+                         ' By fddefault it uses the step derived from the log file.')
 args = parser.parse_args()
 
 
@@ -84,11 +87,12 @@ for label in labels:
     del pos[label][-1]
     del idx[label][-1]
 
-step = 0
-for label in labels:
-  step = step + ( pos[label][-1] - pos[label][0] ) / ( idx[label][-1] - idx[label][0] )
-step = step / len(labels)
-steps = max( [ idx[label][-1] - idx[label][0] for label in labels ] ) 
+step = args.step
+if not step :
+  for label in labels:
+    step = step + ( pos[label][-1] - pos[label][0] ) / ( idx[label][-1] - idx[label][0] )
+  step = step / len(labels)
+steps = max( [ idx[label][-1] - idx[label][0] for label in labels ] )
 samples = [ start + step * cur  for cur in range(0, steps)  ]
 
 res = {}
@@ -96,7 +100,7 @@ for label in labels:
   res[label] = numpy.interp(samples, pos[label], idx[label])
 
 def printInfo(lbl, strt, rng, pjs, stp) :
-  print("# %s: %f %f %i %f" % ( lbl, strt, rng, pjs, stp ) )  
+  print("# %s: %f %f %i %f" % ( lbl, strt, rng, pjs, stp ) )
 
 print("# Set: start, range, projections, step")
 printInfo( "Common", start, stop - start, steps, step)

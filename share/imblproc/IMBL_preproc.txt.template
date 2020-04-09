@@ -1,17 +1,17 @@
 // input folder including path (must end with '/')
-/data/imbl/15674h/input/2496406L_32keV_6m_4mGy/
+REPLACEWITH_inPath
 // output folder including path (must end with '/')
-/data/imbl/15674h/output/2496406L_32keV_6m_4mGy/stitched/
+REPLACEWITH_outPath
 // RegEx for dark-field images
 DF.*
 // prefix for flat-field images
-BG_Y
+REPLACEWITH_prefixBG
 // prefix for sample images
-SAMPLE_Y
-//number of scans and vertical step (in pixel) 
-2, 263
+REPLACEWITH_prefixS
+//number of scans and vertical step (in pixel)
+REPLACEWITH_tilesW, REPLACEWITH_overlap
 // trimming parameters (for ALL images): left, right, top, bottom
-146, 97, 15, 4
+REPLACEWITH_trimL, REPLACEWITH_trimR, REPLACEWITH_trimT, REPLACEWITH_trimB
 // median filter parameters for bad detector pixels correction: size, low and high thresholds
 //Hama5, 0.5, 1.5
 5, 0.2, 1.5

@@ -6,8 +6,20 @@ printhelp() {
   echo "  -p STRING         RegExpt for projection files."
   echo "  -r STRING         Prefix for reconstructed files."
   echo "  -s STRING         Prefix for sinogram files."
-  echo "  -a FLOAT          Angle step."
+  echo "  -a FLOAT          Angle step (deg)."
+  echo "  -S FLOAT          Pixel size (mum)."
+  echo "  -P BOOL           Perform / not phase extraction (0 for no or 1 for yes)."
+  echo "  -d FLOAT          Sample to detector distance (mum)."
+  echo "  -D FLOAT          Delta to beta ratio for phase extraction."
+  echo "  -R INT            Ring artefact size (odd number, 0 - no ring filter)."
+  echo "  -F INT            CT filter:"
+  echo "                      0 - Ramp (standard),"
+  echo "                      1 - Shepp-Logan,"
+  echo "                      2 - Cosine,"
+  echo "                      3 - Hamming,"
+  echo "                      4 - Hann."
   echo "  -q                Suppres X-tract output."
+  echo "  -h                Print this help."
 }
 
 chkf () {
@@ -21,14 +33,29 @@ projFiles=""
 recFiles=""
 sinFiles=""
 step=""
+pixel_size=""
+phase_extraction_pbi=""
+phase_extraction_pbi_rprime=""
+phase_extraction_delta_to_beta=""
+ring_filter_sinogram=""
+ring_filter_sinogram_size=""
+recon_filter=""
 quiet=false
 
-while getopts "p:r:s:a:hq" opt ; do
+while getopts "p:r:s:a:S:P:d:D:R:F:hq" opt ; do
   case $opt in
     p)  projFiles="$OPTARG" ;;
     r)  recFiles="$OPTARG" ;;
     s)  sinFiles="$OPTARG" ;;
     a)  step="$OPTARG" ;;
+    S)  pixel_size="$OPTARG" ;;
+    P)  phase_extraction_pbi="$OPTARG" ;;
+    d)  phase_extraction_pbi_rprime="$OPTARG" ;;
+    D)  phase_extraction_delta_to_beta="$OPTARG" ;;
+    R)  ring_filter_sinogram_size="$OPTARG" ;
+        ring_filter_sinogram=$(( $ring_filter_sinogram_size > 0 ? 1 : 0 ))
+        ;;
+    F)  recon_filter = "$OPTARG" ;;
     q)  quiet=true ;;
     h)  printhelp ; exit 1 ;;
     \?) echo "Invalid option: -$OPTARG" >&2 ; exit 1 ;;
@@ -80,7 +107,7 @@ if [ -z "$projFiles" ] ; then
   retnum=0
   for spl in $nsplits ; do
       $(realpath "$0") -p "SAMPLE\w*${spl}\w*.tif" -s "sino${spl}_.tif" -r "recon${spl}_.tif" \
-         $qparam "$xtParamFile" "${indir}" "${outdir}" 
+         $qparam "$xtParamFile" "${indir}" "${outdir}"
       if [ "$?" -ne "0" ] ; then
           retnum=1
       fi
@@ -102,16 +129,24 @@ xparams="$(cat "$(realpath "$xtParamFile")" |
 xparams="$xparams"$'\n'"--indir $(realpath ${indir})"
 xparams="$xparams"$'\n'"--outdir $(realpath ${outdir})"
 
-if [ ! -z "$step" ] ; then
-    xparams=$( grep -v -- --angle_step <<< "$xparams" )$'\n'"--angle_step $step"
-fi
-if [ ! -z "$recFiles" ] ; then
-    xparams=$( grep -v -- --file_prefix_ctrecon <<< "$xparams" )$'\n'"--file_prefix_ctrecon $recFiles"
-fi
-if [ ! -z "$sinFiles" ] ; then
-    xparams=$( grep -v -- --file_prefix_sinograms <<< "$xparams" )$'\n'"--file_prefix_sinograms $sinFiles"
-fi
-xparams=$( grep -v -- --proj <<< "$xparams" )$'\n'"--proj $projFiles"
+setXparam() {
+  if [ ! -z "$1" ] ; then
+      xparams=$( grep -v -- --"$2" <<< "$xparams" )$'\n'"--$2 $1"
+  fi
+}
+setXparam "$projFiles" proj
+setXparam "$recFiles" file_prefix_ctrecon
+setXparam "$sinFiles" file_prefix_sinograms
+setXparam "$step" angle_step
+setXparam "$pixel_size" pixel_size
+setXparam "$phase_extraction_pbi" phase_extraction_pbi
+setXparam "$phase_extraction_pbi_rprime" phase_extraction_pbi_rprime
+setXparam "$phase_extraction_delta_to_beta" phase_extraction_delta_to_beta
+setXparam "$ring_filter_sinogram" ring_filter_sinogram
+setXparam "$ring_filter_sinogram_size" ring_filter_sinogram_size
+setXparam "$recon_filter" recon_filter
+
+
 
 drop_caches
 if $quiet ; then

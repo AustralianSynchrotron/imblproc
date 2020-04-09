@@ -11,7 +11,6 @@ from PyQt5.uic import loadUi
 
 from subprocess import Popen
 from pathlib import Path
-
 # sys.path.append("..")
 # from share import ui_imbl
 
@@ -27,7 +26,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
         super(MainWindow, self).__init__()
-        self.ui = loadUi(execPath + '../share/imbl-ui.ui', self)
+        self.ui = loadUi(execPath + '../share/imblproc/imbl-ui.ui', self)
         # self.ui = ui_imbl.Ui_MainWindow()
         # self.ui.setupUi(self)
         self.on_individualIO_toggled()
@@ -401,8 +400,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.ignoreLog.setVisible(os.path.exists(logName))
         logInfo = []
         if os.path.exists(logName) and not self.ui.ignoreLog.isChecked() :
-            logInfo = os.popen('cat "' + logName + '" | imbl-log.py -i' +
-                               ' | grep \'# Common\' | cut -d\' \' -f 4- ' ).read().strip("\n").split()
+            logInfo = os.popen('cat "' + logName + '"'
+                                + ' | ' + execPath + 'imbl-log.py -i'
+                                + ' | grep \'# Common\' '
+                                + ' | cut -d\' \' -f 4- ' ) \
+                            .read().strip("\n").split()
             if len(logInfo) == 3 :
                 fromlog = True
 
@@ -757,7 +759,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.xtrproc.setProgram("/bin/sh")
         self.xtrproc.setArguments(("-c",
-                                   execPath + "/imbl-xtract-wrapper.sh " +
+                                   execPath + "imbl-xtract-wrapper.sh " +
                                    self.ui.xtractIn.text() + " clean rec32fp"))
         wdir = os.path.join(self.ui.outPath.text(),
                             self.ui.testSubDir.currentText())
