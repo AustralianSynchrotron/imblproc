@@ -111,7 +111,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.trimB,
             self.ui.energyR,
             self.ui.distanceR,
-            self.ui.doseR,
             self.ui.testRing,
             self.ui.set1,
             self.ui.set2,
@@ -141,9 +140,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if not self.ui.outAuto.isChecked() or not inhasin:
                 return
             if correctOut :
-                self.ui.outPath.blockSignals(True)
                 setVText(self.ui.outPath, oPath, str)
-                self.ui.outPath.blockSignals(False)
             self.ui.outAuto.setStyleSheet(
                 "" if self.ui.outPath.text() == oPath or not self.ui.outAuto.isChecked() else badStyle)
         self.ui.expBrowse.clicked.connect(lambda: onBrowse("Experiment", self.ui.expPath))
@@ -155,8 +152,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.outBrowse.clicked.connect(lambda: onBrowse("Sample output", self.ui.outPath))
         self.ui.outAuto.toggled.connect(outAutoSet)
         self.ui.outPath.textChanged.connect(lambda: outAutoSet(False))
+        self.ui.ring.valueChanged[int].connect(lambda val:
+            self.ui.ring.setStyleSheet("" if not val or val % 2 else badStyle))
         self.ui.goStitch.clicked.connect(self.onStitch)
-        self.ui.testRing.clicked.connect(self.onTestRing)
+        self.ui.testRing.clicked.connect(self.onRec)
         self.ui.goRec.clicked.connect(self.onRec)
 
         QtCore.QTimer.singleShot(100, self.loadConfiguration)
@@ -309,7 +308,7 @@ class MainWindow(QtWidgets.QMainWindow):
             setVText(self.ui.sample, parsed[0], str)
             displayParsed(self.ui.energy, self.ui.energyR, parsed[1], float)
             displayParsed(self.ui.distance, self.ui.distanceR, parsed[2], float)
-            displayParsed(self.ui.dose, self.ui.doseR, parsed[3], float)
+            setVText(self.ui.dose, parsed[3], float)
             if not self.ui.distance.styleSheet() :
                 zeroDistance = self.ui.distanceR.currentText() == "0"
                 self.ui.set1.setChecked(True)
@@ -364,7 +363,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.logName = re.sub(r"\.config.*", ".log", cfgName)
         if exists(self.logName):
             logInfo = os.popen('cat "' + self.logName + '"'
-                                + ' | ' + execPath + 'imbl-log.py -i'
+                                + ' | ' + join(execPath, 'imbl-log.py -i')
                                 + ' | grep \'# Common\' '
                                 + ' | cut -d\' \' -f 4- ' ) \
                             .read().strip("\n").split()
@@ -439,16 +438,18 @@ class MainWindow(QtWidgets.QMainWindow):
         if not exists(outPath):
             os.mkdir(outPath)
         parsedLogName =  join(outPath, ".parsed.log")
-        self.execInBg("cat " + self.logName + " | imbl-log.py -s " + str(self.stepU) + " > " + parsedLogName)
+        self.execInBg("cat " + self.logName
+                      + " | " + join(execPath, "imbl-log.py") + " -s " + str(self.stepU)
+                      + " > " + parsedLogName)
         fakeInPath = join(outPath, "fakeInput")
         if not exists(fakeInPath):
             os.mkdir(fakeInPath)
         self.execInBg("cat " + parsedLogName + " | grep -v '#' "
                       + " | parallel ' read lbl idx num <<< {} ; "
                                    + " ln -sf " + join(inPath, "SAMPLE_${lbl}_T$(printf %04i ${num}).tif") + " "
-                                               + join(fakeInPath, "SAMPLE_${lbl}_T$(printf %04i ${idx}).tif") + "'")
+                                                + join(fakeInPath, "SAMPLE_${lbl}_T$(printf %04i ${idx}).tif") + "'")
         self.execInBg(" ls " + join(inPath, "BG") + "* " + join(inPath, "DF") + "* "
-                      + " | parallel 'ln -sf  $(realpath {}) " + join(outPath, "fakeInput") + os.path.sep + "'")
+                      + " | parallel 'ln -sf  $(realpath {}) " + fakeInPath + os.path.sep + "'")
         preProcConfig = join(outPath , "IMBL_preproc.txt")
         stitchedPath = join(outPath, "stitched")
         if not exists(stitchedPath):
@@ -466,16 +467,54 @@ class MainWindow(QtWidgets.QMainWindow):
                  + "       -e 's REPLACEWITH_trimB " + str(self.ui.trimB.value()) + " g' "
                  + " > " + preProcConfig )
         self.execInBg(preProcExec + " " + preProcConfig)
-
-
-    @pyqtSlot()
-    def onTestRing(self):
-        pass
+        os.popen("rm -rf " + fakeInPath)
 
 
     @pyqtSlot()
     def onRec(self):
-        pass
+        stitchedPath = join(outPath, "stitched")
+        fakeInPath = join(outPath, "fakeInput")
+        if not exists(fakeInPath):
+            os.mkdir(fakeInPath)
+        dist = self.ui.distanceR.currentText()
+        enrg = self.ui.energyR.currentText()
+        commonExec = join(execPath, 'imbl-xtract-wrapper.sh')
+        commonParameters = " -p proj\w+.tif " \
+                         + " -r rec.tif " \
+                         + " -e " + enrg \
+                         + " -S " + distances[dist].pixelSize \
+                         + " -P " + ("0" if dist == "0" else "1" ) \
+                         + " -d " + distances[dist].rPrime \
+                         + " -D " + energies[enrg] \
+                         + " -R " + str(self.ui.ring.value()) \
+                         + " -F " + ("4" if dist == "0" else "0" ) \
+                         + join(execPath, "../share/imblproc/params_ctworkflow.txt ")
+
+        if self.sender() is self.ui.testRing :
+            recDir = join(outPath, "rec_test")
+            if not exists(recDir):
+                os.mkdir(recDir)
+            self.execInBg( commonExec
+                           + " -a " + self.stepU
+                           + commonParameters + " " + stitchedPath + " " + recDir )
+        else :
+            for stepN in [1, 2, 4] :
+                stepC = str(stepN)
+                if not hasattr(self.ui, "set" + stepC) or not eval("self.ui.set" + stepC).isChecked():
+                    continue
+                recDir = join(outPath, "rec_" + stepC)
+                if not exists(recDir):
+                    os.mkdir(recDir)
+                self.execInBg("seq -w 0 " + stepC + " " + str(int(180/self.stepU))
+                              + " | parallel 'ln -sf  $(realpath " + stitchedPath + "/proj{}.tif) "
+                                              + fakeInPath + os.path.sep + "'")
+                self.execInBg( commonExec
+                               + " -a " + self.stepU * stepN
+                               + commonParameters + " " + fakeInPath + " " + recDir )
+                os.popen("rm -rf " + fakeInPath + "/*")
+
+
+
 
 
 

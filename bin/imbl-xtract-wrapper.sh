@@ -3,23 +3,25 @@
 printhelp() {
   echo "Usage: $0 [OPTIONS] <X-tract param file> <input dir> <output dir>"
   echo "OPTIONS:"
-  echo "  -p STRING         RegExpt for projection files."
-  echo "  -r STRING         Prefix for reconstructed files."
-  echo "  -s STRING         Prefix for sinogram files."
-  echo "  -a FLOAT          Angle step (deg)."
-  echo "  -S FLOAT          Pixel size (mum)."
-  echo "  -P BOOL           Perform / not phase extraction (0 for no or 1 for yes)."
-  echo "  -d FLOAT          Sample to detector distance (mum)."
-  echo "  -D FLOAT          Delta to beta ratio for phase extraction."
-  echo "  -R INT            Ring artefact size (odd number, 0 - no ring filter)."
-  echo "  -F INT            CT filter:"
-  echo "                      0 - Ramp (standard),"
-  echo "                      1 - Shepp-Logan,"
-  echo "                      2 - Cosine,"
-  echo "                      3 - Hamming,"
-  echo "                      4 - Hann."
-  echo "  -q                Suppres X-tract output."
-  echo "  -h                Print this help."
+  echo "  -p STRING           RegExpt for projection files."
+  echo "  -r STRING           Prefix for reconstructed files."
+  echo "  -s STRING           Prefix for sinogram files."
+  echo "  -e FLOAT            Energy (kEv)."
+  echo "  -a FLOAT            Angle step (deg)."
+  echo "  -S FLOAT            Pixel size (mum)."
+  echo "  -P BOOL             Perform / not phase extraction (0 for no or 1 for yes)."
+  echo "  -d FLOAT            Sample to detector distance (mum)."
+  echo "  -D FLOAT            Delta to beta ratio for phase extraction."
+  echo "  -R INT              Ring artefact size (odd number, 0 - no ring filter)."
+  echo "  -T INT,INT,INT,INT  Sub-region: first X, last X, first Y, last Y."
+  echo "  -F INT              CT filter:"
+  echo "                        0 - Ramp (standard),"
+  echo "                        1 - Shepp-Logan,"
+  echo "                        2 - Cosine,"
+  echo "                        3 - Hamming,"
+  echo "                        4 - Hann."
+  echo "  -q                  Suppres X-tract output."
+  echo "  -h                  Print this help."
 }
 
 chkf () {
@@ -41,12 +43,15 @@ ring_filter_sinogram=""
 ring_filter_sinogram_size=""
 recon_filter=""
 quiet=false
+trim_region=""
+energy=""
 
-while getopts "p:r:s:a:S:P:d:D:R:F:hq" opt ; do
+while getopts "p:r:s:e:a:S:P:d:D:R:F:T:hq" opt ; do
   case $opt in
     p)  projFiles="$OPTARG" ;;
     r)  recFiles="$OPTARG" ;;
     s)  sinFiles="$OPTARG" ;;
+    e)  energy="$OPTARG" ;;
     a)  step="$OPTARG" ;;
     S)  pixel_size="$OPTARG" ;;
     P)  phase_extraction_pbi="$OPTARG" ;;
@@ -55,6 +60,7 @@ while getopts "p:r:s:a:S:P:d:D:R:F:hq" opt ; do
     R)  ring_filter_sinogram_size="$OPTARG" ;
         ring_filter_sinogram=$(( $ring_filter_sinogram_size > 0 ? 1 : 0 ))
         ;;
+    T)  trim_region  = "$OPTARG" ;; # IFS=',' read startx startY sizeX sizeY <<< "$OPTARG" ;;
     F)  recon_filter = "$OPTARG" ;;
     q)  quiet=true ;;
     h)  printhelp ; exit 1 ;;
@@ -137,6 +143,7 @@ setXparam() {
 setXparam "$projFiles" proj
 setXparam "$recFiles" file_prefix_ctrecon
 setXparam "$sinFiles" file_prefix_sinograms
+setXparam "$energy" energy
 setXparam "$step" angle_step
 setXparam "$pixel_size" pixel_size
 setXparam "$phase_extraction_pbi" phase_extraction_pbi
@@ -145,6 +152,7 @@ setXparam "$phase_extraction_delta_to_beta" phase_extraction_delta_to_beta
 setXparam "$ring_filter_sinogram" ring_filter_sinogram
 setXparam "$ring_filter_sinogram_size" ring_filter_sinogram_size
 setXparam "$recon_filter" recon_filter
+setXparam "$trim_region" trim_region
 
 
 
