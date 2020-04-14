@@ -71,7 +71,12 @@ class MainWindow(QtWidgets.QMainWindow):
     stepU = 0
     tilesWU = 1
     tilesHU = 1
+    outPath = ""
+    fakeInPath = ""
+    stitchedPath = ""
+    stitchedSizes = False
     proc = QProcess()
+
 
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -131,27 +136,15 @@ class MainWindow(QtWidgets.QMainWindow):
         def onSelect(lineEdit):
             newPath = self.sender().currentData()
             setVText(lineEdit, newPath, str)
-        def outAutoSet(correctOut=True):
-            iPath = self.ui.inPath.text()
-            oPath = re.sub(r'/input/', r'/output/', iPath)
-            inhasin = basename(dirname(iPath)) == "input"
-            self.ui.outAuto.setStyleSheet("")
-            self.ui.outAuto.setEnabled(inhasin)
-            if not self.ui.outAuto.isChecked() or not inhasin:
-                return
-            if correctOut :
-                setVText(self.ui.outPath, oPath, str)
-            self.ui.outAuto.setStyleSheet(
-                "" if self.ui.outPath.text() == oPath or not self.ui.outAuto.isChecked() else badStyle)
         self.ui.expBrowse.clicked.connect(lambda: onBrowse("Experiment", self.ui.expPath))
         self.ui.expSelect.activated.connect(lambda: onSelect(self.ui.expPath))
         self.ui.expPath.textChanged.connect(self.onNewExperiment)
         self.ui.inBrowse.clicked.connect(lambda: onBrowse("Sample input", self.ui.inPath))
         self.ui.inSelect.activated.connect(lambda: onSelect(self.ui.inPath))
-        self.ui.inPath.textChanged.connect(lambda: (self.onNewSample(), outAutoSet()))
+        self.ui.inPath.textChanged.connect(lambda: (self.onNewSample(), self.setOutPath()))
         self.ui.outBrowse.clicked.connect(lambda: onBrowse("Sample output", self.ui.outPath))
-        self.ui.outAuto.toggled.connect(outAutoSet)
-        self.ui.outPath.textChanged.connect(lambda: outAutoSet(False))
+        self.ui.outAuto.toggled.connect(self.setOutPath)
+        self.ui.outPath.textChanged.connect(lambda: self.setOutPath(False))
         self.ui.ring.valueChanged[int].connect(lambda val:
             self.ui.ring.setStyleSheet("" if not val or val % 2 else badStyle))
         self.ui.goStitch.clicked.connect(self.onStitch)
@@ -388,6 +381,23 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.goRec.setEnabled(True)
 
 
+    def setOutPath(self, correctOut=True):
+        iPath = self.ui.inPath.text()
+        oPath = re.sub(r'/input/', r'/output/', iPath)
+        inhasin = basename(dirname(iPath)) == "input"
+        self.ui.outAuto.setStyleSheet("")
+        self.ui.outAuto.setEnabled(inhasin)
+        if not self.ui.outAuto.isChecked() or not inhasin:
+            return
+        if correctOut :
+            setVText(self.ui.outPath, oPath, str)
+        self.ui.outAuto.setStyleSheet(
+            "" if self.ui.outPath.text() == oPath or not self.ui.outAuto.isChecked() else badStyle)
+        self.outPath = self.ui.outPath.text()
+        self.self.stitchedPath = join(outPath, "stitched")
+        self.self.fakeInPath = join(outPath, "fakeInput")
+
+
     def addToConsole(self, text, qcolor=None):
         if not text:
             return
@@ -433,30 +443,30 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def onStitch(self):
+        self.stitchedSizes = False
         inPath = self.ui.inPath.text()
-        outPath = self.ui.outPath.text()
-        if not exists(outPath):
-            os.mkdir(outPath)
-        parsedLogName =  join(outPath, ".parsed.log")
+        if not exists(self.outPath):
+            os.mkdir(self.outPath)
+        parsedLogName =  join(self.outPath, ".parsed.log")
         self.execInBg("cat " + self.logName
                       + " | " + join(execPath, "imbl-log.py") + " -s " + str(self.stepU)
                       + " > " + parsedLogName)
-        fakeInPath = join(outPath, "fakeInput")
-        if not exists(fakeInPath):
-            os.mkdir(fakeInPath)
+        self.fakeInPath = join(self.outPath, "fakeInput")
+        if not exists(self.fakeInPath):
+            os.mkdir(self.fakeInPath)
         self.execInBg("cat " + parsedLogName + " | grep -v '#' "
                       + " | parallel ' read lbl idx num <<< {} ; "
                                    + " ln -sf " + join(inPath, "SAMPLE_${lbl}_T$(printf %04i ${num}).tif") + " "
-                                                + join(fakeInPath, "SAMPLE_${lbl}_T$(printf %04i ${idx}).tif") + "'")
+                                                + join(self.fakeInPath, "SAMPLE_${lbl}_T$(printf %04i ${idx}).tif") + "'")
         self.execInBg(" ls " + join(inPath, "BG") + "* " + join(inPath, "DF") + "* "
-                      + " | parallel 'ln -sf  $(realpath {}) " + fakeInPath + os.path.sep + "'")
-        preProcConfig = join(outPath , "IMBL_preproc.txt")
-        stitchedPath = join(outPath, "stitched")
-        if not exists(stitchedPath):
-            os.mkdir(stitchedPath)
+                      + " | parallel 'ln -sf  $(realpath {}) " + self.fakeInPath + os.path.sep + "'")
+        preProcConfig = join(self.outPath , "IMBL_preproc.txt")
+        self.stitchedPath = join(self.outPath, "stitched")
+        if not exists(self.stitchedPath):
+            os.mkdir(self.stitchedPath)
         os.popen("cat " + join(execPath, "../share/imblproc/IMBL_preproc.txt.template")
-                 + " | sed -e 's REPLACEWITH_inPath " + fakeInPath + "/ g' "
-                 + "       -e 's REPLACEWITH_outPath " + stitchedPath + "/ g' "
+                 + " | sed -e 's REPLACEWITH_inPath " + self.fakeInPath + "/ g' "
+                 + "       -e 's REPLACEWITH_outPath " + self.stitchedPath + "/ g' "
                  + "       -e 's REPLACEWITH_prefixBG " + ("BG_Y" if self.tilesWU > 1 else "BG_") + " g' "
                  + "       -e 's REPLACEWITH_prefixS " + ("SAMPLE_Y" if self.tilesWU > 1 else "SAMPLE_") + " g' "
                  + "       -e 's REPLACEWITH_tilesW " + str(self.tilesWU) + " g' "
@@ -467,15 +477,21 @@ class MainWindow(QtWidgets.QMainWindow):
                  + "       -e 's REPLACEWITH_trimB " + str(self.ui.trimB.value()) + " g' "
                  + " > " + preProcConfig )
         self.execInBg(preProcExec + " " + preProcConfig)
-        os.popen("rm -rf " + fakeInPath)
+        os.popen("rm -rf " + self.fakeInPath)
+        lastImage = "proj%i.tif" %i int(180/self.stepU)
+        if os.exists(lastImage) :
+            self.stitchedSizes = os.popen('identify ' + lastImage + ' 2> /dev/null' + ' | cut -d\' \' -f 3' )
+                                   .read().strip("\n").split('x')
 
 
     @pyqtSlot()
     def onRec(self):
-        stitchedPath = join(outPath, "stitched")
-        fakeInPath = join(outPath, "fakeInput")
-        if not exists(fakeInPath):
-            os.mkdir(fakeInPath)
+        if not self.stitchedSizes :
+            self.onStitch()
+        if not self.stitchedSizes :
+            return
+        if not exists(self.fakeInPath):
+            os.mkdir(self.fakeInPath)
         dist = self.ui.distanceR.currentText()
         enrg = self.ui.energyR.currentText()
         commonExec = join(execPath, 'imbl-xtract-wrapper.sh')
@@ -487,31 +503,39 @@ class MainWindow(QtWidgets.QMainWindow):
                          + " -d " + distances[dist].rPrime \
                          + " -D " + energies[enrg] \
                          + " -R " + str(self.ui.ring.value()) \
-                         + " -F " + ("4" if dist == "0" else "0" ) \
+                         + " -F " + distances[dist].ctFilter \
                          + join(execPath, "../share/imblproc/params_ctworkflow.txt ")
+                         + self.fakeInPath
 
+        def prepareFakeIn(stp) :
+            self.execInBg("seq -w 0 " + stp + " " + str(int(180/self.stepU))
+                          + " | parallel 'ln -sf  $(realpath " + self.stitchedPath + "/proj{}.tif) "
+                              + self.fakeInPath + os.path.sep + "'")
         if self.sender() is self.ui.testRing :
-            recDir = join(outPath, "rec_test")
+            prepareFakeIn("1")
+            recDir = join(self.outPath, "rec_test")
             if not exists(recDir):
                 os.mkdir(recDir)
+            halfH = self.stitchedSizes[1] // 2
             self.execInBg( commonExec
                            + " -a " + self.stepU
-                           + commonParameters + " " + stitchedPath + " " + recDir )
+                           + " -T " + "%i,%i,%i,%i" % 0, self.stitchedSizes[0]-1, halfH - 50, halfH + 50
+                           + commonParameters + " " + recDir)
+            os.popen("rm -rf " + self.fakeInPath + "/*")
         else :
             for stepN in [1, 2, 4] :
                 stepC = str(stepN)
+                prepareFakeIn(stepC)
                 if not hasattr(self.ui, "set" + stepC) or not eval("self.ui.set" + stepC).isChecked():
                     continue
-                recDir = join(outPath, "rec_" + stepC)
+                recDir = join(self.outPath, "rec_" + stepC)
                 if not exists(recDir):
                     os.mkdir(recDir)
-                self.execInBg("seq -w 0 " + stepC + " " + str(int(180/self.stepU))
-                              + " | parallel 'ln -sf  $(realpath " + stitchedPath + "/proj{}.tif) "
-                                              + fakeInPath + os.path.sep + "'")
                 self.execInBg( commonExec
                                + " -a " + self.stepU * stepN
-                               + commonParameters + " " + fakeInPath + " " + recDir )
-                os.popen("rm -rf " + fakeInPath + "/*")
+                               + commonParameters + " " + recDir )
+                os.popen("rm -rf " + self.fakeInPath + "/*")
+        os.popen("rm -rf " + self.fakeInPath)
 
 
 
