@@ -478,9 +478,9 @@ class MainWindow(QtWidgets.QMainWindow):
                  + " > " + preProcConfig )
         self.execInBg(preProcExec + " " + preProcConfig)
         os.popen("rm -rf " + self.fakeInPath)
-        lastImage = "proj%i.tif" %i int(180/self.stepU)
+        lastImage = "proj%i.tif" % int(180/self.stepU)
         if os.exists(lastImage) :
-            self.stitchedSizes = os.popen('identify ' + lastImage + ' 2> /dev/null' + ' | cut -d\' \' -f 3' )
+            self.stitchedSizes = os.popen('identify ' + lastImage + ' 2> /dev/null' + ' | cut -d\' \' -f 3' ) \
                                    .read().strip("\n").split('x')
 
 
@@ -504,7 +504,7 @@ class MainWindow(QtWidgets.QMainWindow):
                          + " -D " + energies[enrg] \
                          + " -R " + str(self.ui.ring.value()) \
                          + " -F " + distances[dist].ctFilter \
-                         + join(execPath, "../share/imblproc/params_ctworkflow.txt ")
+                         + join(execPath, "../share/imblproc/params_ctworkflow.txt ") \
                          + self.fakeInPath
 
         def prepareFakeIn(stp) :
