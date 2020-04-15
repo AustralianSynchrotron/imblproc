@@ -14,7 +14,11 @@ parser.add_argument('-i', '--info', action='store_true',
                     help='Output only information derived from the log')
 parser.add_argument('-s', '--step', type=float, default=0,
                     help='Use the step size matching the configuration file.' +
-                         ' By fddefault it uses the step derived from the log file.')
+                         ' By default it uses the step derived from the log file.')
+parser.add_argument('-m', '--max_angle', type=float, default=0,
+                    help='Output only projections up to the given angle.')
+parser.add_argument('-M', '--max_proj', type=int, default=0,
+                    help='Output only projections up to the given number.')
 args = parser.parse_args()
 
 
@@ -111,5 +115,10 @@ if len(labels) > 1 :
     printInfo(label, pos[label][0], rangeL, stepsL, rangeL/stepsL)
 if not args.info :
   for label in labels:
-    for cur in range(0, steps):
+    upperEnd = steps
+    if args.max_proj:
+      upperEnd = min(upperEnd, args.max_proj)
+    if args.max_angle:
+      upperEnd = min(upperEnd, int(args.max_angle/step))
+    for cur in range(0, upperEnd+1):
       print(label, cur, int(res[label][cur]))

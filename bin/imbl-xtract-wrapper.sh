@@ -60,8 +60,8 @@ while getopts "p:r:s:e:a:S:P:d:D:R:F:T:hq" opt ; do
     R)  ring_filter_sinogram_size="$OPTARG" ;
         ring_filter_sinogram=$(( $ring_filter_sinogram_size > 0 ? 1 : 0 ))
         ;;
-    T)  trim_region  = "$OPTARG" ;; # IFS=',' read startx startY sizeX sizeY <<< "$OPTARG" ;;
-    F)  recon_filter = "$OPTARG" ;;
+    T)  trim_region="$OPTARG" ;; # IFS=',' read startx startY sizeX sizeY <<< "$OPTARG" ;;
+    F)  recon_filter="$OPTARG" ;;
     q)  quiet=true ;;
     h)  printhelp ; exit 1 ;;
     \?) echo "Invalid option: -$OPTARG" >&2 ; exit 1 ;;

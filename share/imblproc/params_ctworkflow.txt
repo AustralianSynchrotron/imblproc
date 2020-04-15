@@ -13,7 +13,7 @@ Not set
 0.1001
 
 -cor, --cor_method:
-0
+2
 
 -corm, --cor_manual:
 3.2
@@ -31,7 +31,7 @@ DF-\d+.tif
 30
 
 -fa, --average_filter:
-1
+0
 
 -fb, --flat_size_batch:
 Not set
@@ -64,7 +64,7 @@ Not set
 1
 
 -fz, --zingers_filter:
-1
+0
 
 -fzs, --zingers_filter_size:
 9
@@ -157,10 +157,10 @@ SAMPLE\w+.tif
 Not set
 
 -rm, --recon_method:
-0
+1
 
 -rmu, --recon_out_mu:
-1
+0
 
 -rodt, --recon_output_data_type:
 Not set

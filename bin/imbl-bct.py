@@ -12,7 +12,7 @@ from PyQt5.uic import loadUi
 
 from subprocess import Popen
 from pathlib import Path
-from os.path import isdir, dirname, basename, exists, join
+from os.path import isdir, isfile, dirname, basename, exists, join
 
 execPath = dirname(os.path.realpath(__file__)) + os.path.sep
 dataPath = "/data/imbl" # on ASCI
@@ -30,7 +30,7 @@ class DistDeps:
         self.__dict__.update(locals())
 distances = { # distance : overlap, pixelSize, rPrime, ctFilter
     "0" : DistDeps("253", "99"  , "0"       , "4"),
-    "6" : DistDeps("263", "94.8", "57480000", "0")}
+    "6" : DistDeps("263", "94.8", "5748000", "0")}
 
 energies = {# energy : delta-to-beta
     "26" : "200",
@@ -71,7 +71,6 @@ class MainWindow(QtWidgets.QMainWindow):
     stepU = 0
     tilesWU = 1
     tilesHU = 1
-    outPath = ""
     fakeInPath = ""
     stitchedPath = ""
     stitchedSizes = False
@@ -207,7 +206,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 directory=self.ui.outPath.text())
             if newfile:
                 fileName = newfile
-        if not exists(fileName):
+        if not isfile(fileName):
             return
         config = QSettings(fileName, QSettings.IniFormat)
 
@@ -347,6 +346,7 @@ class MainWindow(QtWidgets.QMainWindow):
             setVText(self.ui.projections, projections, int)
             setVText(self.ui.projectionsR, projections, int)
             self.stepU = arc/projections
+            self.updasteStitchedSizes()
             setVText(self.ui.step, self.stepU , float)
             setVText(self.ui.stepR, self.stepU, float)
         except:
@@ -354,7 +354,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         self.logName = re.sub(r"\.config.*", ".log", cfgName)
-        if exists(self.logName):
+        if isfile(self.logName):
             logInfo = os.popen('cat "' + self.logName + '"'
                                 + ' | ' + join(execPath, 'imbl-log.py -i')
                                 + ' | grep \'# Common\' '
@@ -381,21 +381,32 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.goRec.setEnabled(True)
 
 
+    def updasteStitchedSizes(self):
+        self.stitchedSizes = False
+        if not self.stepU:
+            return
+        lastImage = join(self.stitchedPath, "proj%i.tif" % int(180/self.stepU))
+        if not isfile(lastImage) :
+            return
+        self.stitchedSizes = [ int(sz) for sz in 
+            os.popen('identify ' + lastImage + ' 2> /dev/null' + ' | cut -d\' \' -f 3' ) \
+              .read().strip("\n").split('x') ]
+
+
     def setOutPath(self, correctOut=True):
         iPath = self.ui.inPath.text()
         oPath = re.sub(r'/input/', r'/output/', iPath)
         inhasin = basename(dirname(iPath)) == "input"
         self.ui.outAuto.setStyleSheet("")
         self.ui.outAuto.setEnabled(inhasin)
-        if not self.ui.outAuto.isChecked() or not inhasin:
-            return
-        if correctOut :
+        if correctOut and self.ui.outAuto.isChecked() :
             setVText(self.ui.outPath, oPath, str)
         self.ui.outAuto.setStyleSheet(
             "" if self.ui.outPath.text() == oPath or not self.ui.outAuto.isChecked() else badStyle)
-        self.outPath = self.ui.outPath.text()
-        self.self.stitchedPath = join(outPath, "stitched")
-        self.self.fakeInPath = join(outPath, "fakeInput")
+        oPath = self.ui.outPath.text()
+        self.fakeInPath = join(oPath, "fakeInput")
+        self.stitchedPath = join(oPath, "stitched")
+        self.updasteStitchedSizes()
 
 
     def addToConsole(self, text, qcolor=None):
@@ -445,13 +456,14 @@ class MainWindow(QtWidgets.QMainWindow):
     def onStitch(self):
         self.stitchedSizes = False
         inPath = self.ui.inPath.text()
-        if not exists(self.outPath):
-            os.mkdir(self.outPath)
-        parsedLogName =  join(self.outPath, ".parsed.log")
+        oPath = self.ui.outPath.text()
+        if not exists(oPath):
+            os.mkdir(oPath)
+        parsedLogName =  join(oPath, ".parsed.log")
         self.execInBg("cat " + self.logName
-                      + " | " + join(execPath, "imbl-log.py") + " -s " + str(self.stepU)
+                      + " | " + join(execPath, "imbl-log.py") + " -m 180 -s " + str(self.stepU)
                       + " > " + parsedLogName)
-        self.fakeInPath = join(self.outPath, "fakeInput")
+        self.fakeInPath = join(oPath, "fakeInput")
         if not exists(self.fakeInPath):
             os.mkdir(self.fakeInPath)
         self.execInBg("cat " + parsedLogName + " | grep -v '#' "
@@ -460,8 +472,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                                 + join(self.fakeInPath, "SAMPLE_${lbl}_T$(printf %04i ${idx}).tif") + "'")
         self.execInBg(" ls " + join(inPath, "BG") + "* " + join(inPath, "DF") + "* "
                       + " | parallel 'ln -sf  $(realpath {}) " + self.fakeInPath + os.path.sep + "'")
-        preProcConfig = join(self.outPath , "IMBL_preproc.txt")
-        self.stitchedPath = join(self.outPath, "stitched")
+        preProcConfig = join(oPath , "IMBL_preproc.txt")
         if not exists(self.stitchedPath):
             os.mkdir(self.stitchedPath)
         os.popen("cat " + join(execPath, "../share/imblproc/IMBL_preproc.txt.template")
@@ -478,24 +489,20 @@ class MainWindow(QtWidgets.QMainWindow):
                  + " > " + preProcConfig )
         self.execInBg(preProcExec + " " + preProcConfig)
         os.popen("rm -rf " + self.fakeInPath)
-        lastImage = "proj%i.tif" % int(180/self.stepU)
-        if os.exists(lastImage) :
-            self.stitchedSizes = os.popen('identify ' + lastImage + ' 2> /dev/null' + ' | cut -d\' \' -f 3' ) \
-                                   .read().strip("\n").split('x')
+        self.updasteStitchedSizes()
 
 
     @pyqtSlot()
     def onRec(self):
+        oPath = self.ui.outPath.text()
         if not self.stitchedSizes :
             self.onStitch()
         if not self.stitchedSizes :
             return
-        if not exists(self.fakeInPath):
-            os.mkdir(self.fakeInPath)
         dist = self.ui.distanceR.currentText()
         enrg = self.ui.energyR.currentText()
         commonExec = join(execPath, 'imbl-xtract-wrapper.sh')
-        commonParameters = " -p proj\w+.tif " \
+        commonParameters = " -p 'proj\w+.tif' " \
                          + " -r rec.tif " \
                          + " -e " + enrg \
                          + " -S " + distances[dist].pixelSize \
@@ -503,37 +510,41 @@ class MainWindow(QtWidgets.QMainWindow):
                          + " -d " + distances[dist].rPrime \
                          + " -D " + energies[enrg] \
                          + " -R " + str(self.ui.ring.value()) \
-                         + " -F " + distances[dist].ctFilter \
-                         + join(execPath, "../share/imblproc/params_ctworkflow.txt ") \
-                         + self.fakeInPath
+                         + " -F " + distances[dist].ctFilter + " " \
+                         + join(execPath, "../share/imblproc/params_ctworkflow.txt")
 
-        def prepareFakeIn(stp) :
-            self.execInBg("seq -w 0 " + stp + " " + str(int(180/self.stepU))
-                          + " | parallel 'ln -sf  $(realpath " + self.stitchedPath + "/proj{}.tif) "
-                              + self.fakeInPath + os.path.sep + "'")
         if self.sender() is self.ui.testRing :
-            prepareFakeIn("1")
-            recDir = join(self.outPath, "rec_test")
+            recDir = join(oPath, "rec_test")
             if not exists(recDir):
                 os.mkdir(recDir)
             halfH = self.stitchedSizes[1] // 2
             self.execInBg( commonExec
-                           + " -a " + self.stepU
-                           + " -T " + "%i,%i,%i,%i" % 0, self.stitchedSizes[0]-1, halfH - 50, halfH + 50
-                           + commonParameters + " " + recDir)
+                           + " -a " + str(self.stepU)
+                           + " -T " + "%i,%i,%i,%i" % 
+                                      ( 0, self.stitchedSizes[0]-1, halfH - 50, halfH + 50) 
+                           + commonParameters + " " + self.stitchedPath + " " + recDir)
             os.popen("rm -rf " + self.fakeInPath + "/*")
         else :
             for stepN in [1, 2, 4] :
                 stepC = str(stepN)
-                prepareFakeIn(stepC)
                 if not hasattr(self.ui, "set" + stepC) or not eval("self.ui.set" + stepC).isChecked():
                     continue
-                recDir = join(self.outPath, "rec_" + stepC)
+                iPath = self.stitchedPath
+                if stepN != 1:
+                    if not exists(self.fakeInPath):
+                        os.mkdir(self.fakeInPath)
+                    else :
+                        os.popen("rm -rf " + self.fakeInPath + "/*")                    
+                    self.execInBg("seq -w 0 " + stepC + " " + str(int(180/self.stepU))
+                          + " | parallel 'ln -sf  $(realpath " + self.stitchedPath + "/proj{}.tif) "
+                          + self.fakeInPath + os.path.sep + "'")
+                    iPath = self.fakeInPath
+                recDir = join(oPath, "rec_" + stepC)
                 if not exists(recDir):
                     os.mkdir(recDir)
                 self.execInBg( commonExec
-                               + " -a " + self.stepU * stepN
-                               + commonParameters + " " + recDir )
+                               + " -a " + str(self.stepU * stepN)
+                               + commonParameters + " " + iPath + " " + recDir )
                 os.popen("rm -rf " + self.fakeInPath + "/*")
         os.popen("rm -rf " + self.fakeInPath)
 
