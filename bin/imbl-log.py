@@ -84,10 +84,10 @@ minPos = min (start, stop)
 maxPos = max (start, stop)
 
 for label in labels:
-  while not minPos <= pos[label][0] <= maxPos :
+  while not minPos <= pos[label][1] <= maxPos :
     del pos[label][0]
     del idx[label][0]
-  while not minPos <= pos[label][-1] <= maxPos :
+  while not minPos <= pos[label][-2] <= maxPos :
     del pos[label][-1]
     del idx[label][-1]
 
@@ -96,9 +96,12 @@ if not step :
   for label in labels:
     step = step + ( pos[label][-1] - pos[label][0] ) / ( idx[label][-1] - idx[label][0] )
   step = step / len(labels)
-steps = max( [ idx[label][-1] - idx[label][0] for label in labels ] )
-samples = [ start + step * cur  for cur in range(0, steps)  ]
-
+samples = []
+cpos = start
+while minPos <= cpos <= maxPos :
+  samples.append(cpos)
+  cpos = start + step * len(samples)
+steps = len(samples)
 res = {}
 for label in labels:
   res[label] = numpy.interp(samples, pos[label], idx[label])
@@ -113,12 +116,14 @@ if len(labels) > 1 :
     rangeL = pos[label][-1] - pos[label][0]
     stepsL = idx[label][-1] - idx[label][0]
     printInfo(label, pos[label][0], rangeL, stepsL, rangeL/stepsL)
-if not args.info :
-  for label in labels:
-    upperEnd = steps
-    if args.max_proj:
-      upperEnd = min(upperEnd, args.max_proj)
-    if args.max_angle:
-      upperEnd = min(upperEnd, int(args.max_angle/step))
-    for cur in range(0, upperEnd+1):
-      print(label, cur, int(res[label][cur]))
+if args.info :
+  sys.exit(0)
+for label in labels:
+  upperEnd = steps
+  if args.max_proj:
+    upperEnd = min(upperEnd, args.max_proj)
+  if args.max_angle:
+    upperEnd = min(upperEnd, int(args.max_angle/step))
+  for cur in range(0, upperEnd):
+    print(label, cur, int(res[label][cur]))
+
