@@ -138,11 +138,11 @@ fi
 logfile="$(sed 's configuration log g' <<< $conffile)" 
 if $uselog ; then
   if [ ! -e "$logfile" ] ; then
-    echo "No log file \"${ipath}/$logfile\" found in input path." >&2
+    echo "No log file \"$logfile\" found in input path." >&2
     exit 1
   fi
   if ! cat "$logfile" | imbl-log.py -i > /dev/null ; then
-    echo "Error parsing log file \"${ipath}/$logfile\"." >&2
+    echo "Error parsing log file \"$logfile\"." >&2
     exit 1
   fi
 fi

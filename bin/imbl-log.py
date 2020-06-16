@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 
+from __future__ import print_function
 import sys
 import re
 import numpy
 import argparse
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
 
 parser = argparse.ArgumentParser(description=
  'Parses log file produced by the IMBL\'s ctgui to recalculate proper rotation positions.'
@@ -36,21 +41,23 @@ try:
 
     if "Acquisition finished" in strg :
       if label  and  len(pos[label]) == 0 :
-        print("Empty set on label " + label + ".")
-        sys.exit(1)
+        eprint("Warning: empty set on label " + label + ".")
+        labels.pop(-1)
+        idx.pop(label)
+        pos.pop(label)
       label = ""
 
     elif "SAMPLE" in strg and "Acquisition started" in strg:
       lres = re.search('SAMPLE_(.*?)_*T', strg)
       if lres:
         if label  and  len(pos[label]) < 2 :
-          print("Empty set on label " + label + ".")
+          eprint("Empty set on label " + label + ".")
           sys.exit(1)
         label = lres.group(1)
         if not label:
           label = 'single'
         if label in labels :
-          print("Label " + label + " already exists. Corrupt log file.")
+          eprint("Label " + label + " already exists. Corrupt log file.")
           sys.exit(1)
         if  args.labels  and not any( lbl in label for lbl in args.labels ) :
           label = ""
@@ -66,13 +73,13 @@ try:
           idx[label].append(int(cidx))
           pos[label].append(float(cpos))
       except :
-        print("Error in log at string %i: %s" %( strcounter, strg))
+        eprint("Error in log at string %i: %s" %( strcounter, strg))
 
 except EOFError:
   pass
 
 if len(labels) == 0 :
-  print("Empty or corrupt log.")
+  eprint("Empty or corrupt log.")
   sys.exit(1)
 
 starts = [ pos[label][ 0] for label in labels ]
