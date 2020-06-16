@@ -385,7 +385,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stitchedSizes = False
         if not self.stepU:
             return
-        lastImage = join(self.stitchedPath, "proj%i.tif" % int(180/self.stepU))
+        lastImage = join(self.stitchedPath, "proj%i.tif" % int(180/self.stepU -1))
         if not isfile(lastImage) :
             return
         self.stitchedSizes = [ int(sz) for sz in 
@@ -536,8 +536,10 @@ class MainWindow(QtWidgets.QMainWindow):
                     else :
                         os.popen("rm -rf " + self.fakeInPath + "/*")                    
                     self.execInBg("seq -w 0 " + stepC + " " + str(int(180/self.stepU))
-                          + " | parallel 'ln -sf  $(realpath " + self.stitchedPath + "/proj{}.tif) "
-                          + self.fakeInPath + os.path.sep + "'")
+                          + " | parallel ' src=$(realpath " + self.stitchedPath + "/proj{}.tif) ; " \
+                                       + " if [ -e \"$src\" ] ; then " \
+                                       + "   ln -sf  ${src} " + self.fakeInPath + os.path.sep + ";"\
+                                       + " fi" + "'" )
                     iPath = self.fakeInPath
                 recDir = join(oPath, "rec_" + stepC)
                 if not exists(recDir):
