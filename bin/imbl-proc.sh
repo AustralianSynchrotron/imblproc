@@ -360,7 +360,7 @@ else # is a projection
   stImgs=""
   if [ ! -z "$imagick" ] ; then
     for imgf in $lsImgs ; do
-      pimgf="tmp/$(basename $imgf)"
+      pimgf="tmp/T$(imgnum $imgm $proj)_$(basename $imgf)"
       convert -quiet "$imgf" $imagick "$pimgf"
       chkf "$pimgf" "im-processed"
       stImgs="$stImgs $pimgf"
