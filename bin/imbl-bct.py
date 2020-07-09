@@ -22,7 +22,8 @@ dataPath = "/data/imbl" # on ASCI
 
 badStyle = "color: rgb(255, 0, 0)"
 #preProcExec = "/user/home/Desktop/IMBLPreProc" # Alaleh
-preProcExec = "/user/home/usr/bin/IMBLPreProc" # mine
+#preProcExec = "/user/home/usr/bin/IMBLPreProc" # mine
+preProcExec = join(execPath, "../share/imblproc/IMBLPreProc") # universal
 configName = ".imbl-bct"
 
 class DistDeps:
