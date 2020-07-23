@@ -469,8 +469,11 @@ class MainWindow(QtWidgets.QMainWindow):
             os.mkdir(self.fakeInPath)
         self.execInBg("cat " + parsedLogName + " | grep -v '#' "
                       + " | parallel ' read lbl idx num <<< {} ; "
-                                   + " ln -sf " + join(inPath, "SAMPLE_${lbl}_T$(printf %04i ${num}).tif") + " "
-                                                + join(self.fakeInPath, "SAMPLE_${lbl}_T$(printf %04i ${idx}).tif") + "'")
+                                   + " projbase=\"${lbl}_\" ; "
+                                   + " if [ \"${lbl}\" = \"single\" ] ; then projbase=\"\" ; fi ; "
+                                   + " projbase=\"SAMPLE_${projbase}T\" ; "
+                                   + " ln -sf " + join(inPath, "${projbase}$(printf %04i ${num}).tif") + " "
+                                                + join(self.fakeInPath, "${projbase}$(printf %04i ${idx}).tif") + "'")
         self.execInBg(" ls " + join(inPath, "BG") + "* " + join(inPath, "DF") + "* "
                       + " | parallel 'ln -sf  $(realpath {}) " + self.fakeInPath + os.path.sep + "'")
         preProcConfig = join(oPath , "IMBL_preproc.txt")

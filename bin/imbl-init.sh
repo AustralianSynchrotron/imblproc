@@ -62,9 +62,12 @@ fi
 
 cd "${opath}"
 
-ls -c "$ipath/" > .listinput
+listfile=".listinput"
+if $MakeFF || [ ! -e "$listfile" ] ; then
+  ls -c "$ipath/" > "$listfile"
+fi
 
-conffile="$ipath/$( cat .listinput | egrep 'acquisition.*config.*' | sort -V | tail -n 1 )"
+conffile="$ipath/$( cat "$listfile" | egrep 'acquisition.*config.*' | sort -V | tail -n 1 )"
 if [ ! -e "$conffile" ] ; then
   echo "No configuration file \"${ipath}/acquisition.\*config\*\" found in input path." >&2
   exit 1
@@ -89,9 +92,9 @@ if [ "$(getfromconfig General doserialscans)" == "true" ] ; then
 fi
 
 if $MakeFF || [ ! -e "bg.tif" ] ; then
-  convert $(cat .listinput | grep '^BG' | sed "s BG ${ipath}/BG g") \
+  convert $(cat "$listfile" | grep '^BG' | sed "s BG ${ipath}/BG g") \
           -quiet -evaluate-sequence Mean "bg.tif"
-  convert $(cat .listinput | grep '^DF' | sed "s DF ${ipath}/DF g") \
+  convert $(cat "$listfile" | grep '^DF' | sed "s DF ${ipath}/DF g") \
           -quiet -evaluate-sequence Mean "df.tif"
 fi
 
