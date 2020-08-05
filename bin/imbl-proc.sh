@@ -335,7 +335,7 @@ else # is a projection
     if [ -z "$lbl" ] ; then
       lbl="single"
     fi
-    inum=$( cat "$projfile" | grep -v '#' | grep "${lbl} ${2} " | cut -d' ' -f 3 2> /dev/null )
+    inum=$( ( cat "$projfile" | grep -v '#' | grep "${lbl} ${2} " | cut -d' ' -f 3 ) 2> /dev/null )
     if [ -z "${inum}" ] ; then
       inum=${2}
     fi
