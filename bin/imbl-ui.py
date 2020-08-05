@@ -552,7 +552,7 @@ class MainWindow(QtWidgets.QMainWindow):
             command += " -z "
         if self.ui.noNewFF.isChecked():
             command += " -e "
-        if not self.ui.ignoreLog.isChecked():
+        if not self.ui.ignoreLog.isChecked() and self.ui.ignoreLog.isVisible() :
             command += " -l "        
         command += " -o \"%s\" " % opath
         command += self.ui.inPath.text()
