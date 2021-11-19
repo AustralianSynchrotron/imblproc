@@ -72,9 +72,11 @@ if [ ! -e "$conffile" ] ; then
   echo "No configuration file \"${ipath}/acquisition.\*config\*\" found in input path." >&2
   exit 1
 fi
+
 getfromconfig () {
   cat "$conffile" | egrep "${2}|\[${1}\]" | grep "\[${1}\]" -A 1 | grep "${2}" | cut -d'=' -f 2
 }
+
 ctversion=$(getfromconfig General version)
 if [ -z "$ctversion" ] ; then
     echo "Old version of the CT experiment detected." >&2
@@ -82,12 +84,17 @@ if [ -z "$ctversion" ] ; then
     exit 1
 fi
 
-Ysteps=0
-Zsteps=0
-if [ "$(getfromconfig General doserialscans)" == "true" ] ; then
-  Ysteps=$(getfromconfig serial outerseries\\\\nofsteps)
-  if [ "$(getfromconfig serial 2d)" == "true" ] ; then
-    Zsteps=$(getfromconfig serial innearseries\\\\nofsteps)
+logfile="$(sed 's configuration log g' <<< $conffile)" 
+logi=""
+if $uselog ; then
+  if [ ! -e "$logfile" ] ; then
+    echo "No log file \"$logfile\" found in input path." >&2
+    exit 1
+  fi
+  logi=$(cat "$logfile" | imbl-log.py -i) 
+  if (( "$?" )) ; then
+    echo "Error parsing log file \"$logfile\"." >&2
+    exit 1
   fi
 fi
 
@@ -104,12 +111,25 @@ if [ -e "bg.tif" ] ; then
   read width hight <<< $(identify "${opath}/bg.tif" | cut -d' ' -f 3 | sed 's/x/ /g')
 fi
 
+Ysteps=0
+Zsteps=0
+if [ "$(getfromconfig General doserialscans)" == "true" ] ; then
+  Ysteps=$(getfromconfig serial outerseries\\\\nofsteps)
+  if [ "$(getfromconfig serial 2d)" == "true" ] ; then
+    Zsteps=$(getfromconfig serial innearseries\\\\nofsteps)
+  fi
+fi
+
 Zlist=""
 Zdirs="."
 if (( $Zsteps > 1 )) ; then
-  while read Zcur ; do
-    Zlist="$Zlist Z$Zcur"
-  done < <(seq -w 0 $(( $Zsteps - 1 )) )
+  if $uselog ; then 
+    Zlist="$( sed -e '1,2d' -e 's :  g' -e 's .*\(Z[0-9]*\).* \1 g' <<< "$logi" | sort | uniq )"
+  else
+    while read Zcur ; do
+      Zlist="$Zlist Z$Zcur"
+    done < <(seq -w 0 $(( $Zsteps - 1 )) )
+  fi
   if ! $Zst ; then
     Zdirs="$Zlist"
     Zlist="_"
@@ -120,9 +140,13 @@ Zsize=$( wc -w <<< $Zlist )
 Ylist=""
 Ydirs="."
 if (( $Ysteps > 1 )) ; then
-  while read Ycur ; do
-    Ylist="$Ylist Y$Ycur"
-  done < <(seq -w 0 $(( $Ysteps - 1 )) )
+  if $uselog ; then 
+    Ylist="$( sed -e '1,2d' -e 's :  g' -e 's .*\(Y[0-9]*\).* \1 g' <<< "$logi" | sort | uniq )"
+  else
+    while read Ycur ; do
+      Ylist="$Ylist Y$Ycur"
+    done < <(seq -w 0 $(( $Ysteps - 1 )) )
+  fi
   if ! $Yst ; then
     Ydirs="$Ylist"
     Ylist="_"
@@ -138,17 +162,6 @@ if (( $(echo "$range >= 360.0" | bc -l) ))  &&  $Fst  ; then
   fshift=$( echo "180 * $pjs / $range" | bc )
 fi
 
-logfile="$(sed 's configuration log g' <<< $conffile)" 
-if $uselog ; then
-  if [ ! -e "$logfile" ] ; then
-    echo "No log file \"$logfile\" found in input path." >&2
-    exit 1
-  fi
-  if ! cat "$logfile" | imbl-log.py -i > /dev/null ; then
-    echo "Error parsing log file \"$logfile\"." >&2
-    exit 1
-  fi
-fi
 
 initName=".initstitch"
 projName=".projections"

@@ -6,6 +6,7 @@ printhelp() {
   echo "  -p STRING           RegExpt for projection files."
   echo "  -r STRING           Prefix for reconstructed files."
   echo "  -s STRING           Prefix for sinogram files."
+  echo "  -c FLOAT            Center of rotation correction."
   echo "  -e FLOAT            Energy (kEv)."
   echo "  -a FLOAT            Angle step (deg)."
   echo "  -S FLOAT            Pixel size (mum)."
@@ -31,6 +32,9 @@ chkf () {
   fi
 }
 
+
+qparam=""
+
 projFiles=""
 recFiles=""
 sinFiles=""
@@ -41,27 +45,30 @@ phase_extraction_pbi_rprime=""
 phase_extraction_delta_to_beta=""
 ring_filter_sinogram=""
 ring_filter_sinogram_size=""
+cor=""
 recon_filter=""
 quiet=false
 trim_region=""
 energy=""
 
-while getopts "p:r:s:e:a:S:P:d:D:R:F:T:hq" opt ; do
+while getopts "p:r:s:c:e:a:S:P:d:D:R:F:T:hq" opt ; do
   case $opt in
     p)  projFiles="$OPTARG" ;;
     r)  recFiles="$OPTARG" ;;
     s)  sinFiles="$OPTARG" ;;
-    e)  energy="$OPTARG" ;;
-    a)  step="$OPTARG" ;;
-    S)  pixel_size="$OPTARG" ;;
-    P)  phase_extraction_pbi="$OPTARG" ;;
-    d)  phase_extraction_pbi_rprime="$OPTARG" ;;
-    D)  phase_extraction_delta_to_beta="$OPTARG" ;;
+    c)  cor="$OPTARG" ; qparam="${qparam} -c $OPTARG " ;;
+    e)  energy="$OPTARG" ; qparam="${qparam} -e $OPTARG " ;;
+    a)  step="$OPTARG" ; qparam="${qparam} -a $OPTARG " ;;
+    S)  pixel_size="$OPTARG" ; qparam="${qparam} -S $OPTARG " ;;
+    P)  phase_extraction_pbi="$OPTARG" ; qparam="${qparam} -P $OPTARG " ;;
+    d)  phase_extraction_pbi_rprime="$OPTARG" ; qparam="${qparam} -d $OPTARG " ;;
+    D)  phase_extraction_delta_to_beta="$OPTARG" ; qparam="${qparam} -D $OPTARG " ;;
     R)  ring_filter_sinogram_size="$OPTARG" ;
         ring_filter_sinogram=$(( $ring_filter_sinogram_size > 0 ? 1 : 0 ))
+        qparam="${qparam} -R $OPTARG " 
         ;;
-    T)  trim_region="$OPTARG" ;; # IFS=',' read startx startY sizeX sizeY <<< "$OPTARG" ;;
-    F)  recon_filter="$OPTARG" ;;
+    T)  trim_region="$OPTARG" ; qparam="${qparam} -T $OPTARG "  ;; # IFS=',' read startx startY sizeX sizeY <<< "$OPTARG" ;;
+    F)  recon_filter="$OPTARG" ; qparam="${qparam} -F $OPTARG " ;;
     q)  quiet=true ;;
     h)  printhelp ; exit 1 ;;
     \?) echo "Invalid option: -$OPTARG" >&2 ; exit 1 ;;
@@ -69,7 +76,6 @@ while getopts "p:r:s:e:a:S:P:d:D:R:F:T:hq" opt ; do
   esac
 done
 shift $(( $OPTIND - 1 ))
-
 
 xtParamFile="${1}"
 if [ -z "${xtParamFile}" ] ; then
@@ -105,11 +111,6 @@ if [ -z "$projFiles" ] ; then
     nsplits="_"
   fi
 
-  qparam=""
-  if $quiet ; then
-    qparam="-q"
-  fi
-
   retnum=0
   for spl in $nsplits ; do
       $(realpath "$0") -p "SAMPLE\w*${spl}\w*.tif" -s "sino${spl}_.tif" -r "recon${spl}_.tif" \
@@ -123,8 +124,6 @@ if [ -z "$projFiles" ] ; then
 
 fi
 
-
-
 xparams="$(cat "$(realpath "$xtParamFile")" |
             perl -p -e 's/:\n/ /g' |
             grep -- -- |
@@ -136,14 +135,17 @@ xparams="$xparams"$'\n'"--indir $(realpath ${indir})"
 xparams="$xparams"$'\n'"--outdir $(realpath ${outdir})"
 
 setXparam() {
-  if [ ! -z "$1" ] ; then
+  if [ ! -z "$1" ] && [ ! -z "$2" ] ; then
       xparams=$( grep -v -- --"$2" <<< "$xparams" )$'\n'"--$2 $1"
   fi
 }
 setXparam "$projFiles" proj
 setXparam "$recFiles" file_prefix_ctrecon
 setXparam "$sinFiles" file_prefix_sinograms
-setXparam "$energy" energy
+if [ ! -z "$cor" ] ; then
+  setXparam 0 cor_method
+  setXparam "$cor" cor_manual
+fi
 setXparam "$step" angle_step
 setXparam "$pixel_size" pixel_size
 setXparam "$phase_extraction_pbi" phase_extraction_pbi

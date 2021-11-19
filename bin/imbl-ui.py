@@ -760,6 +760,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.xtrproc.setProgram("/bin/sh")
         self.xtrproc.setArguments(("-c",
                                    execPath + "imbl-xtract-wrapper.sh " +
+                                   " -a " + self.ui.step.text() + " " +
                                    self.ui.xtractIn.text() + " clean rec32fp"))
         wdir = os.path.join(self.ui.outPath.text(),
                             self.ui.testSubDir.currentText())

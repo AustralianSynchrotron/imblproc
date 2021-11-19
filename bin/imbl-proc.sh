@@ -262,9 +262,11 @@ fi
 
 imgbg="$opath/bg.tif"
 imgdf="$opath/df.tif"
+imgdb="$opath/db.tif"
 if [ ! -z "$imagick" ] ; then
   pimgbg="tmp/$(basename $imgbg)"
   pimgdf="tmp/$(basename $imgdf)"
+  pimgdb="tmp/$(basename $imgdb)"
   if $testme  ||  [ -z "$proj" ]  ||  [ ! -e "$pimgbg" ]  ||  [ ! -e "$pimgdf" ] ; then
     if [ -e "$imgbg" ] ; then
       convert -quiet "$imgbg" $imagick "$pimgbg"
@@ -274,9 +276,14 @@ if [ ! -z "$imagick" ] ; then
       convert -quiet "$imgdf" $imagick "$pimgdf"
       chkf "$pimgdf" "im-processed dark field"
     fi
+    if [ -e "$imgdb" ] ; then
+      convert -quiet "$imgdb" $imagick "$pimgdb"
+      chkf "$pimgdb" "im-processed dark field for background"
+    fi
   fi
   imgbg="$pimgbg"
   imgdf="$pimgdf"
+  imgdb="$pimgdb"
 fi
 
 
@@ -300,6 +307,11 @@ if [ -z "$proj" ] ; then  # is bg and df
   done
   ctas proj -o clean/DF.tif $stParam $stImgs
 
+  stImgs=""
+  for (( icur=0 ; icur < $nofSt ; icur++ )) ; do
+    stImgs="$stImgs $imgdb"
+  done
+  ctas proj -o clean/DB.tif $stParam $stImgs
 
 else # is a projection
 
@@ -310,6 +322,10 @@ else # is a projection
   if [ -e $imgdf ]  &&  $ffcorrection ; then
     stParam="$stParam -D $imgdf"
   fi
+  if [ -e $imgdb ]  &&  $ffcorrection ; then
+    stParam="$stParam -F $imgdb"
+  fi
+
 
   pjnum=$( printf "%0${nlen}i" $proj )
 
@@ -328,6 +344,15 @@ else # is a projection
       imagemask="$imagemask _${finm}_"
     done
   fi
+
+  flip_shift() {
+    lbl=$( sed -e 's:_$::g' -e 's:^_::g' <<< $1 )
+    if [ -z "$lbl" ] ; then
+      lbl="single"
+    fi
+    ang=$( ( cat "$projfile" | grep '#' | grep "${lbl}" | cut -d' ' -f 6 ) 2> /dev/null )
+    echo "scale=0 ; 180.0 / $ang" | bc
+  }
 
 
   imgnum() {
@@ -351,7 +376,7 @@ else # is a projection
   done
   if (( $fshift >= 1 )) ; then
     for imgm in $imagemask ; do
-      imgf="$ipath/SAMPLE${imgm}T$(imgnum $imgm $(( $proj + $fshift )) ).tif"
+      imgf="$ipath/SAMPLE${imgm}T$(( 10#$(imgnum $imgm $proj) + $(flip_shift $imgm) )).tif"
       chkf "$imgf" "flip projection"
       lsImgs="$lsImgs $imgf"
     done

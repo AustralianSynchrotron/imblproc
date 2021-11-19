@@ -116,7 +116,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.trimB,
             self.ui.energyR,
             self.ui.distanceR,
-            self.ui.testRing,
+            self.ui.ring,
+            self.ui.autoCor,
+            self.ui.cor,
             self.ui.set1,
             self.ui.set2,
             self.ui.set4 )
@@ -148,7 +150,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.ring.valueChanged[int].connect(lambda val:
             self.ui.ring.setStyleSheet("" if not val or val % 2 else badStyle))
         self.ui.goStitch.clicked.connect(self.onStitch)
-        self.ui.testRing.clicked.connect(self.onRec)
+        self.ui.testMe.clicked.connect(self.onRec)
         self.ui.goRec.clicked.connect(self.onRec)
 
         QtCore.QTimer.singleShot(100, self.loadConfiguration)
@@ -304,8 +306,8 @@ class MainWindow(QtWidgets.QMainWindow):
             setVText(self.ui.dose, parsed[3], float)
             if not self.ui.distance.styleSheet() :
                 zeroDistance = self.ui.distanceR.currentText() == "0"
-                self.ui.set1.setChecked(True)
-                self.ui.set2.setChecked(not zeroDistance)
+                self.ui.set1.setChecked(not zeroDistance)
+                self.ui.set2.setChecked(True)
                 self.ui.set4.setChecked(not zeroDistance)
         else:
             self.showWdg(self.ui.errFolderName, True)
@@ -367,6 +369,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 setVText(self.ui.stepR, logInfo[2], float)
             else:
                 self.showWdg(self.ui.errBadLog, True)
+                self.addErrToConsole("Missformated log file " + self.logName)
         else :
             self.showWdg(self.ui.errNoLog, True)
 
@@ -441,16 +444,22 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.proc.start()
         self.proc.waitForStarted(500)
+
+        accOut = ""
+        accErr = ""
         while True:
-            self.addOutToConsole(self.proc.readAllStandardOutput()
-                                 .data().decode(sys.getdefaultencoding()))
-            self.addErrToConsole(self.proc.readAllStandardError()
-                                 .data().decode(sys.getdefaultencoding()))
+            rdstr = self.proc.readAllStandardOutput().data().decode(sys.getdefaultencoding())
+            accOut += rdstr
+            self.addOutToConsole(rdstr)
+            rdstr = self.proc.readAllStandardError().data().decode(sys.getdefaultencoding())
+            self.addErrToConsole(rdstr)
+            accErr += rdstr
             if self.proc.state():
                 eloop.exec_()
             else:
                 break
         self.addToConsole("Stopped with exit status %i" % self.proc.exitCode())
+        return self.proc.exitCode(), accOut, accErr
 
 
     @pyqtSlot()
@@ -515,18 +524,20 @@ class MainWindow(QtWidgets.QMainWindow):
                          + " -D " + energies[enrg] \
                          + " -R " + str(self.ui.ring.value()) \
                          + " -F " + distances[dist].ctFilter + " " \
+                         + ( "" if self.ui.autoCor.isChecked() else " -c %f " % self.ui.cor.value() ) \
                          + join(execPath, "../share/imblproc/params_ctworkflow.txt")
 
-        if self.sender() is self.ui.testRing :
+        xout=""
+        if self.sender() is self.ui.testMe :
             recDir = join(oPath, "rec_test")
             if not exists(recDir):
                 os.mkdir(recDir)
-            halfH = self.stitchedSizes[1] // 2
-            self.execInBg( commonExec
-                           + " -a " + str(self.stepU)
-                           + " -T " + "%i,%i,%i,%i" % 
-                                      ( 0, self.stitchedSizes[0]-1, halfH - 50, halfH + 50) 
-                           + commonParameters + " " + self.stitchedPath + " " + recDir)
+            halfH = self.stitchedSizes[1] // 2            
+            _ , xout , _ = self.execInBg( \
+                commonExec
+                    + " -a " + str(self.stepU)
+                    + " -T " + "%i,%i,%i,%i" % ( 0, self.stitchedSizes[0]-1, halfH - 50, halfH + 50) 
+                    + commonParameters + " " + self.stitchedPath + " " + recDir)
             os.popen("rm -rf " + self.fakeInPath + "/*")
         else :
             for stepN in [1, 2, 4] :
@@ -548,11 +559,21 @@ class MainWindow(QtWidgets.QMainWindow):
                 recDir = join(oPath, "rec_" + stepC)
                 if not exists(recDir):
                     os.mkdir(recDir)
-                self.execInBg( commonExec
-                               + " -a " + str(self.stepU * stepN)
-                               + commonParameters + " " + iPath + " " + recDir )
+                _ , xout , _ = self.execInBg( commonExec \
+                        + " -a " + str(self.stepU * stepN)
+                        + commonParameters + " " + iPath + " " + recDir )
                 os.popen("rm -rf " + self.fakeInPath + "/*")
         os.popen("rm -rf " + self.fakeInPath)
+
+
+        cor = re.search('<< *COR= *(.*) *>>', xout)
+        if cor:
+            try:
+                fcor = float(cor.group(1))
+                float(cor.group(1))
+                self.ui.cor.setValue(fcor)
+            except ValueError:
+                pass
 
 
 
