@@ -2,6 +2,12 @@
 
 export PATH="$(dirname "$(realpath "$0")" ):$PATH"
 
+convert_inuse="convert"
+if command -v convert.fp &> /dev/null ; then
+  convert_inuse="convert.fp"
+fi
+
+
 printhelp() {
   echo "Usage: $0 [OPTIONS] <SAMPLE PATH>"
   echo "OPTIONS:"
@@ -21,6 +27,7 @@ Zst=true
 Fst=true
 opath=""
 uselog=false
+H5data="/entry/data/data"
 
 while getopts "yzfhelo:" opt ; do
   case $opt in
@@ -98,11 +105,38 @@ if $uselog ; then
   fi
 fi
 
+format=$(getfromconfig General imageFormat)
+if [ "$format" == 'HDF&5' ] ; then # to correct the bug in the data acquisition software
+  format="HDF5"
+fi
+
+toHDFctas() {
+  listfmt=""
+  while read fl ; do
+    if [ "$format" == "HDF5" ] ; then
+      listfmt="$listfmt $fl:$H5data:$1 "
+    else 
+      listfmt="$listfmt $fl "
+    fi
+  done
+  echo $listfmt
+}
+
 if $MakeFF || [ ! -e "bg.tif" ] ; then
-  convert $(cat "$listfile" | grep '^BG' | sed "s BG ${ipath}/BG g") \
-          -quiet -evaluate-sequence Mean "bg.tif"
-  convert $(cat "$listfile" | grep '^DF' | sed "s DF ${ipath}/DF g") \
-          -quiet -evaluate-sequence Mean "df.tif"
+
+  listi="$( cat "$listfile" | grep '^BG' | sed "s BG ${ipath}/BG g" | toHDFctas )"
+  if [ ! -z "$listi" ] ; then
+    ctas 3d22d -o bg.tif -b 1:1:0 $listi
+  fi
+  listi="$( cat "$listfile" | grep '^DF.*.h*' | sed "s DF ${ipath}/DF g" | toHDFctas )"
+  if [ ! -z "$listi" ] ; then
+    ctas 3d22d -o df.tif -b 1:1:0 $listi
+  fi
+  listi="$( cat "$listfile" | grep '^GF.*.h*' | sed "s GF ${ipath}/GF g" | toHDFctas )"
+  if [ ! -z "$listi" ] ; then
+    ctas 3d22d -o gf.tif -b 1:1:0 $listi
+  fi
+
 fi
 
 width=0
@@ -200,6 +234,8 @@ outInitFile() {
     echo "ys=$Ysteps"
     echo "ystitch=$Ysize"
     echo "zstitch=$Zsize"
+    echo "format=\"$format\""
+    echo "H5data=\"$H5data\""
   }
 
   echoInfo > "${2}/$initName"

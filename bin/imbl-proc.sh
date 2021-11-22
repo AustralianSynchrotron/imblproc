@@ -1,7 +1,12 @@
 #!/bin/bash
 
 export PATH="$(dirname "$(realpath "$0")" ):$PATH"
- 
+
+convert_inuse="convert"
+if command -v convert.fp &> /dev/null ; then
+  convert_inuse="convert.fp"
+fi
+
 printhelp() {
   echo "Usage: $0 [OPTIONS] [PROJECTION]"
   echo "OPTIONS:"
@@ -262,11 +267,11 @@ fi
 
 imgbg="$opath/bg.tif"
 imgdf="$opath/df.tif"
-imgdb="$opath/db.tif"
+imggf="$opath/gf.tif"
 if [ ! -z "$imagick" ] ; then
   pimgbg="tmp/$(basename $imgbg)"
   pimgdf="tmp/$(basename $imgdf)"
-  pimgdb="tmp/$(basename $imgdb)"
+  pimgdb="tmp/$(basename $imggf)"
   if $testme  ||  [ -z "$proj" ]  ||  [ ! -e "$pimgbg" ]  ||  [ ! -e "$pimgdf" ] ; then
     if [ -e "$imgbg" ] ; then
       convert -quiet "$imgbg" $imagick "$pimgbg"
@@ -276,14 +281,14 @@ if [ ! -z "$imagick" ] ; then
       convert -quiet "$imgdf" $imagick "$pimgdf"
       chkf "$pimgdf" "im-processed dark field"
     fi
-    if [ -e "$imgdb" ] ; then
-      convert -quiet "$imgdb" $imagick "$pimgdb"
-      chkf "$pimgdb" "im-processed dark field for background"
+    if [ -e "$imggf" ] ; then
+      convert -quiet "$imggf" $imagick "$pimggf"
+      chkf "$pimggf" "im-processed dark field for background"
     fi
   fi
   imgbg="$pimgbg"
   imgdf="$pimgdf"
-  imgdb="$pimgdb"
+  imggf="$pimggf"
 fi
 
 
@@ -295,23 +300,23 @@ if [ -z "$proj" ] ; then  # is bg and df
     exit 1
   fi
 
-  stImgs=""
+  stbgs=""
+  stdfs=""
+  stgfs=""
   for (( icur=0 ; icur < $nofSt ; icur++ )) ; do
-    stImgs="$stImgs $imgbg"
+    stbgs="$stImgs $imgbg"
+    stdfs="$stImgs $imgbg"
+    stgfs="$stImgs $imgbg"
   done
-  ctas proj -o clean/BG.tif $stParam $stImgs
-
-  stImgs=""
-  for (( icur=0 ; icur < $nofSt ; icur++ )) ; do
-    stImgs="$stImgs $imgdf"
-  done
-  ctas proj -o clean/DF.tif $stParam $stImgs
-
-  stImgs=""
-  for (( icur=0 ; icur < $nofSt ; icur++ )) ; do
-    stImgs="$stImgs $imgdb"
-  done
-  ctas proj -o clean/DB.tif $stParam $stImgs
+  if [ -e "$imgbg" ] ; then
+    ctas proj -o clean/BG.tif $stParam $stbgs
+  fi
+  if [ -e "$imgdf" ] ; then
+    ctas proj -o clean/DF.tif $stParam $stdfs
+  fi
+  if [ -e "$imggf" ] ; then
+    ctas proj -o clean/GF.tif $stParam $stgfs
+  fi
 
 else # is a projection
 
@@ -322,8 +327,8 @@ else # is a projection
   if [ -e $imgdf ]  &&  $ffcorrection ; then
     stParam="$stParam -D $imgdf"
   fi
-  if [ -e $imgdb ]  &&  $ffcorrection ; then
-    stParam="$stParam -F $imgdb"
+  if [ -e $imggf ]  &&  $ffcorrection ; then
+    stParam="$stParam -F $imggf"
   fi
 
 
@@ -343,6 +348,9 @@ else # is a projection
     for finm in $filemask ; do
       imagemask="$imagemask _${finm}_"
     done
+  fi
+  if [ "$format" == "HDF5" ] ; then  
+    imagemask=$( sed 's:_\>::g'  <<< ${imagemask} )
   fi
 
   flip_shift() {
@@ -370,23 +378,32 @@ else # is a projection
 
   lsImgs=""
   for imgm in $imagemask ; do
-    imgf="$ipath/SAMPLE${imgm}T$(imgnum $imgm $proj).tif"
-    chkf "$imgf" projection
+    if [ "$format" == "TIFF" ] ; then
+      imgf="$ipath/SAMPLE${imgm}T$(imgnum $imgm $proj).tif"
+      chkf "$imgf" projection
+    elif [ "$format" == "HDF5" ] ; then
+      imgf="$ipath/SAMPLE${imgm}.hdf:$H5data:$proj"
+    fi
     lsImgs="$lsImgs $imgf"
   done
   if (( $fshift >= 1 )) ; then
     for imgm in $imagemask ; do
-      imgf="$ipath/SAMPLE${imgm}T$(( 10#$(imgnum $imgm $proj) + $(flip_shift $imgm) )).tif"
-      chkf "$imgf" "flip projection"
-      lsImgs="$lsImgs $imgf"
+      prnm="$(( 10#$(imgnum $imgm $proj) + $(flip_shift $imgm) ))"
+      if [ "$format" == "TIFF" ] ; then
+        imgf="$ipath/SAMPLE${imgm}T$(imgnum $imgm $prnm).tif"
+        chkf "$imgf" "flip projection"
+        lsImgs="$lsImgs $imgf"
+      elif [ "$format" == "HDF5" ] ; then
+        imgf="$ipath/SAMPLE${imgm}.hdf:$H5data:${prnm}"
+      fi
     done
   fi
 
   stImgs=""
-  if [ ! -z "$imagick" ] ; then
+  if [ "$format" == "TIFF" ]  &&  [ ! -z "$imagick" ] ; then
     for imgf in $lsImgs ; do
       pimgf="tmp/T$(imgnum $imgm $proj)_$(basename $imgf)"
-      convert -quiet "$imgf" $imagick "$pimgf"
+      $convert_inuse -quiet "$imgf" $imagick "$pimgf"
       chkf "$pimgf" "im-processed"
       stImgs="$stImgs $pimgf"
     done
