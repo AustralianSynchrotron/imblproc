@@ -48,7 +48,7 @@ try:
       label = ""
 
     elif "SAMPLE" in strg and "Acquisition started" in strg:
-      lres = re.search('SAMPLE_(.*?)_*T', strg)
+      lres = re.search('SAMPLE_(.*?)(\.|_*T)', strg)
       if lres:
         if label  and  len(pos[label]) < 2 :
           eprint("Empty set on label " + label + ".")

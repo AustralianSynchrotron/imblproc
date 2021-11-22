@@ -98,7 +98,7 @@ if $uselog ; then
     echo "No log file \"$logfile\" found in input path." >&2
     exit 1
   fi
-  logi=$(cat "$logfile" | imbl-log.py -i) 
+  logi=$(cat "$logfile" | imbl-log.py -i)   
   if (( "$?" )) ; then
     echo "Error parsing log file \"$logfile\"." >&2
     exit 1
