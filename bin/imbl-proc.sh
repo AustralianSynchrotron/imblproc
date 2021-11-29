@@ -51,6 +51,7 @@ chkf () {
   fi
 }
 
+format="TIFF" # default
 projfile=".projections"
 initfile=".initstitch"
 chkf "$initfile" init
