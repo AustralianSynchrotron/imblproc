@@ -126,15 +126,15 @@ if $MakeFF || [ ! -e "bg.tif" ] ; then
 
   listi="$( cat "$listfile" | grep '^BG' | sed "s BG ${ipath}/BG g" | toHDFctas )"
   if [ ! -z "$listi" ] ; then
-    ctas 3d22d -o bg.tif -b 1:1:0 $listi
+    ctas v2v -o bg.tif -b 1:1:0 $listi
   fi
   listi="$( cat "$listfile" | grep '^DF.*.h*' | sed "s DF ${ipath}/DF g" | toHDFctas )"
   if [ ! -z "$listi" ] ; then
-    ctas 3d22d -o df.tif -b 1:1:0 $listi
+    ctas v2v -o df.tif -b 1:1:0 $listi
   fi
   listi="$( cat "$listfile" | grep '^GF.*.h*' | sed "s GF ${ipath}/GF g" | toHDFctas )"
   if [ ! -z "$listi" ] ; then
-    ctas 3d22d -o gf.tif -b 1:1:0 $listi
+    ctas v2v -o gf.tif -b 1:1:0 $listi
   fi
 
 fi
