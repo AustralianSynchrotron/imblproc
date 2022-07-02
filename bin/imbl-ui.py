@@ -761,7 +761,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.xtrproc.setArguments(("-c",
                                    execPath + "imbl-xtract-wrapper.sh " +
                                    " -a " + self.ui.step.text() + " " +
-                                   self.ui.xtractIn.text() + " clean rec32fp"))
+                                   self.ui.xtractIn.text() + " clean rec"))
         wdir = os.path.join(self.ui.outPath.text(),
                             self.ui.testSubDir.currentText())
         self.xtrproc.setWorkingDirectory(wdir)

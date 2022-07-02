@@ -17,6 +17,8 @@ parser.add_argument('labels', type=str, nargs='*', default="",
                     help='Parse only given labels.')
 parser.add_argument('-i', '--info', action='store_true',
                     help='Output only information derived from the log')
+parser.add_argument('-t', '--table', action='store_true',
+                    help='Output data in the new table format')
 parser.add_argument('-s', '--step', type=float, default=0,
                     help='Use the step size matching the configuration file.' +
                          ' By default it uses the step derived from the log file.')
@@ -48,23 +50,25 @@ try:
       label = ""
 
     elif "SAMPLE" in strg and "Acquisition started" in strg:
-      lres = re.search('SAMPLE_(.*?)(\.|_*T)', strg)
-      if lres:
-        if label  and  len(pos[label]) < 2 :
-          eprint("Empty set on label " + label + ".")
-          sys.exit(1)
-        label = lres.group(1)
-        if not label:
-          label = 'single'
-        if label in labels :
-          eprint("Label " + label + " already exists. Corrupt log file.")
-          sys.exit(1)
-        if  args.labels  and not any( lbl in label for lbl in args.labels ) :
-          label = ""
-        else :
-          labels.append(label)
-          idx[label] = []
-          pos[label] = []
+      if label  and  len(pos[label]) < 2 :
+        eprint("Empty set on label " + label + ".")
+        sys.exit(1)      
+      lres = re.search('\"SAMPLE(.*?)\"', strg) 
+      if (not lres):
+        eprint("Can't find sample in acquisition string \"" + strg + "\".")
+        sys.exit(1)      
+      label = lres.group(1).removesuffix("_T").strip("_")
+      if not label:
+        label = 'single'
+      if label in labels :
+        eprint("Label " + label + " already exists. Corrupt log file.")
+        sys.exit(1)
+      if  args.labels  and not any( lbl in label for lbl in args.labels ) :
+        label = ""
+      else :
+        labels.append(label)
+        idx[label] = []
+        pos[label] = []
 
     elif label:
       try :
@@ -125,12 +129,20 @@ if len(labels) > 1 :
     printInfo(label, pos[label][0], rangeL, stepsL, rangeL/stepsL)
 if args.info :
   sys.exit(0)
-for label in labels:
-  upperEnd = steps
-  if args.max_proj:
-    upperEnd = min(upperEnd, args.max_proj)
-  if args.max_angle:
-    upperEnd = min(upperEnd, int(args.max_angle/step))
+
+upperEnd = steps
+if args.max_proj: 
+  upperEnd = min(upperEnd, args.max_proj)
+if args.max_angle:
+  upperEnd = min(upperEnd, int(args.max_angle/step))  
+
+if args.table :
   for cur in range(0, upperEnd):
-    print(label, cur, int(res[label][cur]))
+    for label in labels:  
+      print(int(round(res[label][cur])), end = ' ')
+    print("")
+else:
+  for label in labels:
+    for cur in range(0, upperEnd):
+      print(label, cur, int(round(res[label][cur])))
 

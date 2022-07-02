@@ -253,7 +253,7 @@ for Ydir in $Ydirs ; do
 
     Sdir="$Ydir/$Zdir"
 
-    if ! mkdir -p "$Sdir/rec32fp" "$Sdir/clean" "$Sdir/rec8int" "$Sdir/tmp" ; then
+    if ! mkdir -p "$Sdir/rec" "$Sdir/clean" "$Sdir/tmp" ; then
       echo "Could not create output sub-directories in \"$PWD/$Sdir\"." >&2
       exit 1
     fi

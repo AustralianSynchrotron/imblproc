@@ -14,33 +14,31 @@ printhelp() {
   echo "  -g X,Y            Origin of the first stitch."
   echo "  -G X,Y            Origin of the second stitch (in 2D scans)."
   echo "  -f X,Y            Origin of the flip-and-stitch (in 360deg scans)."
-  echo "  X and Y numbers are  the origin of the second image in the coordinate system of"
-  echo "  the first one. Same as produced by the pairwise-stitching plugin of ImageJ."
-  echo "Cropping options."
+  echo "     X and Y numbers are  the origin of the second image in the coordinate system of"
+  echo "     the first one. Same as produced by the pairwise-stitching plugin of ImageJ."
   echo "  -c T,L,B,R        Crop source images."
   echo "  -C T,L,B,R        Crop final image."
-  echo "  T, L, B and R numbers give cropping from the edges of the images:"
-  echo "  top,left,bottom,right."
+  echo "     T, L, B and R numbers give cropping from the edges of the images:"
+  echo "     top,left,bottom,right."
   echo "Other options."
   echo "  -r ANGLE          Rotate projections."
   echo "  -b INT[,INT]      Binning factor(s). If second number is given, then two"
   echo "                    independent binnings in X and Y coordinates; same otherwise."
   echo "  -s INT[,INT...]   Split point(s). If given, then final projection is"
   echo "                    horizontally split and fractions are named with _N postfix."
-  echo "  -n RAD            Reduce noise removing peaks (same as imagick's -median option)."
-  echo "  -i STRING         If given then source images, before any further processing, are"
-  echo "                    piped through imagemagick with this string as the parameters."
-  echo "                    The results are used instead of the original source images."
-  echo "                    Make sure you know how to use it correctly."
-  echo "  -m INT            First projection to be processed with \"all\"."
-  echo "  -M INT            Last projection to be processed with \"all\"."
+#  echo "  -n RAD            Reduce noise removing peaks (same as imagick's -median option)."
+#  echo "  -i STRING         If given then source images, before any further processing, are"
+#  echo "                    piped through imagemagick with this string as the parameters."
+#  echo "                    The results are used instead of the original source images."
+#  echo "                    Make sure you know how to use it correctly."
+  echo "  -m INT            First projection to be processed."
+  echo "  -M INT            Last projection to be processed."
   echo "  -d                Does not perform flat field correction on the images."
   echo "  -x STRING         Chain stitching with the X-tract reconstruction with"
   echo "                    the parameters read from the given parameters file."
   echo "  -w                Delete projections folder (clean) after X-tract processing."
-  echo "  -t                Test mode: keeps intermediate images in tmp directory."
+  echo "  -t INT            Test mode: keeps intermediate images for the projection in tmp."
   echo "  -v                Verbose mode: show progress."
-  echo "  -V                Very verbose mode: show progress bar."
   echo "  -h                Prints this help."
 }
 
@@ -64,6 +62,7 @@ fi
 secondsize=$(( $zstitch > 1 ? $ystitch : 0 ))
 
 allopts="$@"
+gmask=""
 crop="0,0,0,0"
 cropFinal="0,0,0,0"
 binn=1
@@ -72,24 +71,24 @@ origin="0,0"
 originSecond="0,0"
 originFlip="0,0"
 split=""
-testme=false
+testme=""
 ffcorrection=true
-imagick=""
+#imagick=""
 stParam=""
 xtParamFile=""
 postT=""
 minProj=0
-maxProj=$pjs
+maxProj=$(( $pjs - 1 ))
 nlen=${#pjs}
 wipeClean=false
-verbose=0
 
-if [ -z "$PROCRECURSIVE" ] ; then
-  echo "$allopts" >> ".proc.history"
-fi
+echo "$allopts" >> ".proc.history"
 
-while getopts "g:G:f:c:C:r:b:s:n:i:o:x:m:M:dthwvV" opt ; do
+
+#while getopts "g:G:f:c:C:r:b:s:n:i:o:x:m:M:dthwvV" opt ; do
+while getopts "k:g:G:f:c:C:r:b:s:o:x:m:M:dt:hwvV" opt ; do
   case $opt in
+    k)  mask=$OPTARG;;
     g)  origin=$OPTARG
         if (( $nofSt < 2 )) ; then
           echo "ERROR! Accordingly to the init file there is nothing to stitch." >&2
@@ -111,17 +110,17 @@ while getopts "g:G:f:c:C:r:b:s:n:i:o:x:m:M:dthwvV" opt ; do
           exit 1
         fi
         ;;
-    c)  crop=$OPTARG ; stParam="$stParam -c $crop" ;;
-    C)  cropFinal=$OPTARG ; stParam="$stParam -C $cropFinal" ;;
-    r)  rotate=$OPTARG ; stParam="$stParam -r $rotate" ;;
-    b)  binn=$OPTARG ; stParam="$stParam -b $binn" ;;
+    r)  rotate=$OPTARG ;    stParam="$stParam --rotate $rotate" ;;
+    c)  crop=$OPTARG ;      stParam="$stParam --crop $crop" ;;
+    C)  cropFinal=$OPTARG ; stParam="$stParam --crop-final $cropFinal" ;;
+    b)  binn=$OPTARG ;      stParam="$stParam --binn $binn" ;;
     s)  splits=$OPTARG
         for sp in $( sed "s:,: :g" <<< $splits )  ; do
-          stParam="$stParam -s $sp"
+          stParam="$stParam --split $sp"
         done
         ;;
-    n)  imagick="$imagick -median $OPTARG" ;;
-    i)  imagick="$imagick $OPTARG" ;;
+    #n)  imagick="$imagick -median $OPTARG" ;;
+    #i)  imagick="$imagick $OPTARG" ;;
     m)  minProj=$OPTARG
         if [ ! "$minProj" -eq "$minProj" ] 2> /dev/null ; then
           echo "ERROR! -m argument \"$minProj\" is not an integer." >&2
@@ -142,9 +141,8 @@ while getopts "g:G:f:c:C:r:b:s:n:i:o:x:m:M:dthwvV" opt ; do
         ;;
     w)  wipeClean=true ;;
     d)  ffcorrection=false ;;
-    t)  testme=true ;;
-    v)  verbose=1 ;;
-    V)  verbose=2 ;;
+    t)  testme="$OPTARG" ;;
+    v)  stParam="$stParam --verbose " ;;
     h)  printhelp ; exit 1 ;;
     \?) echo "Invalid option: -$OPTARG" >&2 ; exit 1 ;;
     :)  echo "Option -$OPTARG requires an argument." >&2 ; exit 1 ;;
@@ -152,9 +150,11 @@ while getopts "g:G:f:c:C:r:b:s:n:i:o:x:m:M:dthwvV" opt ; do
 done
 
 
+
+
 if [ ! -z "$subdirs" ] ; then
 
-  if $testme ; then
+  if [ $testme ] ; then
     echo "ERROR! Multiple sub-samples processing cannot be done in test mode." >&2
     echo "       cd into one of the following sub-sample directories and test there:" >&2
     for subd in $filemask ; do
@@ -178,250 +178,167 @@ fi
 shift $(( $OPTIND - 1 ))
 
 
+
+
 if (( $nofSt > 1 )) ; then
-  stParam="$stParam -g $origin"
+  stParam="$stParam --origin $origin"
   if (( $secondsize > 1 )) ; then
-    stParam="$stParam -G $originSecond"
-    stParam="$stParam -S $secondsize"
+    stParam="$stParam --second-origin $originSecond"
+    stParam="$stParam --second-size $secondsize"
   fi
 fi
 
 if (( $fshift >= 1 )) ; then
   nofSt=$(( 2 * $nofSt ))
   pjs=$(( $pjs - $fshift ))
-  stParam="$stParam -f $originFlip"
+  stParam="$stParam --flip-origin $originFlip"
 fi
-
-proj="$1"
-
-
-if [ "$proj" == "all" ] ; then
-
-  if $testme ; then
-    echo "ERROR! Whole sample stitching (\"all\" argument) cannot be done in test mode." >&2
-    exit 1
-  fi
-  if [ "$minProj" -ge "$maxProj" ] ; then
-    echo "ERROR! First projection $minProj is greater than or equal to the last $maxProj." >&2
-    echo "       Check -m and/or -M options."  >&2
-    exit 1
-  fi
-
-  export PROCRECURSIVE=true
-
-  if (( maxProj > $pjs  )) ; then
-    maxProj=$pjs
-  fi
-
-  allopts="$( sed 's all  g' <<< $allopts )"
-  $0 $allopts  && # do df and bg
-  popts=""
-  if [ "$verbose" -eq 1 ] ; then
-    popts="--eta"
-  elif [ "$verbose" -eq 2 ] ; then
-    popts="--bar"
-  fi
-  echo "Starting parallel stitching in $PWD."
-  seq $minProj $maxProj | parallel $popts "$0 $allopts {}"
-  if [ -z "$xtParamFile" ] ; then
-    exit $?
-  fi
-
-  echo "Starting CT reconstruction in $PWD"
-  addOpt=""
-  if [ ! -z "$step" ] ; then
-    addOpt=" -a $step "
-  fi
-  imbl-xtract-wrapper.sh $addOpt "$xtParamFile" clean rec32fp
-  xret="$?"
-  if [ "$xret" -eq "0" ] && $wipeClean ; then
-      mv clean/SAMPLE*$(printf \%0${nlen}i $minProj).tif .
-      mv clean/SAMPLE*$(printf \%0${nlen}i $maxProj).tif .
-      mv clean/SAMPLE*$(printf \%0${nlen}i $(( ( $minProj + $maxProj ) / 2 )) ).tif .
-      rm -rf clean/*
-  fi
-
-  exit $xret
-
-elif [ "$proj" -eq "$proj" ] 2> /dev/null ; then # is an int
-
-  if (( $proj < 0 )) ; then
-    echo "ERROR! Negative projection $proj." >&2
-    exit 1
-  fi
-  if (( $proj > $pjs )) ; then
-    echo "ERROR! Projection $proj is greater than maximum $pjs." >&2
-    exit 1
-  fi
-  if [ ! -z "$xtParamFile" ] && [ -z "$PROCRECURSIVE" ]   ; then
-    echo "ERROR! Xtract reconstruction can be used only after all projections processed." >&2
-    exit 1
-  fi
-
-elif [ ! -z "$proj" ] ; then
-
-  echo "ERROR! Can't interpret input projection \"$proj\"." >&2
-  exit 1
-
-fi
-
 
 imgbg="$opath/bg.tif"
+if [ -e $imgbg ]  &&  $ffcorrection ; then
+  stParam="$stParam --bg $imgbg"
+fi
+
 imgdf="$opath/df.tif"
+if [ -e $imgdf ]  &&  $ffcorrection ; then
+  stParam="$stParam --df $imgdf"
+fi
+
 imggf="$opath/gf.tif"
-if [ ! -z "$imagick" ] ; then
-  pimgbg="tmp/$(basename $imgbg)"
-  pimgdf="tmp/$(basename $imgdf)"
-  pimgdb="tmp/$(basename $imggf)"
-  if $testme  ||  [ -z "$proj" ]  ||  [ ! -e "$pimgbg" ]  ||  [ ! -e "$pimgdf" ] ; then
-    if [ -e "$imgbg" ] ; then
-      convert -quiet "$imgbg" $imagick "$pimgbg"
-      chkf "$pimgbg" "im-processed background"
-    fi
-    if [ -e "$imgdf" ] ; then
-      convert -quiet "$imgdf" $imagick "$pimgdf"
-      chkf "$pimgdf" "im-processed dark field"
-    fi
-    if [ -e "$imggf" ] ; then
-      convert -quiet "$imggf" $imagick "$pimggf"
-      chkf "$pimggf" "im-processed dark field for background"
-    fi
-  fi
-  imgbg="$pimgbg"
-  imgdf="$pimgdf"
-  imggf="$pimggf"
+if [ -e $imggf ]  &&  $ffcorrection ; then
+  stParam="$stParam --dg $imggf"
 fi
 
+imgms="$mask"
+if [ $imgms ] && [ -e $imgms ] ; then
+  stParam="$stParam --mask $mask"
+fi
+
+oname="SAMPLE_T@.tif"
+if [ $testme ] ; then
+  oname="tmp/$oname"  
+  stParam="$stParam --test $testme"  
+else
+  oname="clean/$oname"
+fi
+stParam="$stParam --output $oname"
+
+if (( maxProj >= $pjs  )) ; then
+    maxProj=$(( $pjs - 1 ))
+fi  
+stParam="$stParam --select ${minProj}-${maxProj}"
 
 
-if [ -z "$proj" ] ; then  # is bg and df
 
-  if $testme ; then
-    echo "ERROR! Background and dark-field stitching (no argument) cannot be done in test mode." >&2
-    exit 1
+
+flip_shift() {
+  lbl=$( sed -e 's:_$::g' -e 's:^_::g' <<< $1 )
+  if [ -z "$lbl" ] ; then
+    lbl="single"
   fi
+  ang=$( ( cat "$projfile" | grep '#' | grep "${lbl}" | cut -d' ' -f 6 ) 2> /dev/null )
+  echo "scale=0 ; 180.0 / $ang" | bc
+}
 
-  stbgs=""
-  stdfs=""
-  stgfs=""
-  for (( icur=0 ; icur < $nofSt ; icur++ )) ; do
-    stbgs="$stImgs $imgbg"
-    stdfs="$stImgs $imgbg"
-    stgfs="$stImgs $imgbg"
-  done
-  if [ -e "$imgbg" ] ; then
-    ctas proj -o clean/BG.tif $stParam $stbgs
+imgnum() {
+  lbl=$( sed -e 's:_$::g' -e 's:^_::g' <<< $1 )
+  if [ -z "$lbl" ] ; then
+    lbl="single"
   fi
-  if [ -e "$imgdf" ] ; then
-    ctas proj -o clean/DF.tif $stParam $stdfs
+  inum=$( ( cat "$projfile" | grep -v '#' | grep "${lbl} ${2} " | cut -d' ' -f 3 ) 2> /dev/null )
+  if [ -z "${inum}" ] ; then
+    inum=${2}
   fi
-  if [ -e "$imggf" ] ; then
-    ctas proj -o clean/GF.tif $stParam $stgfs
-  fi
+  echo $inum
+  #printf "%0${nlen}i" $inum
+}
 
-else # is a projection
-
-
-  if [ -e $imgbg ]  &&  $ffcorrection ; then
-    stParam="$stParam -B $imgbg"
-  fi
-  if [ -e $imgdf ]  &&  $ffcorrection ; then
-    stParam="$stParam -D $imgdf"
-  fi
-  if [ -e $imggf ]  &&  $ffcorrection ; then
-    stParam="$stParam -F $imggf"
-  fi
-
-
-  pjnum=$( printf "%0${nlen}i" $proj )
-
-  oname="SAMPLE_T${pjnum}.tif"
-  if $testme ; then
-    stParam="$stParam -t tmp/T${pjnum}_"
-  else
-    stParam="$stParam -o clean/$oname"
-  fi
-
-  imagemask=""
-  if [ -z "$filemask" ] ; then
-    imagemask="_"
-  else
-    for finm in $filemask ; do
-      imagemask="$imagemask _${finm}_"
-    done
-  fi
-  if [ "$format" == "HDF5" ] ; then  
-    imagemask=$( sed 's:_\>::g'  <<< ${imagemask} )
-  fi
-
-  flip_shift() {
-    lbl=$( sed -e 's:_$::g' -e 's:^_::g' <<< $1 )
-    if [ -z "$lbl" ] ; then
-      lbl="single"
-    fi
-    ang=$( ( cat "$projfile" | grep '#' | grep "${lbl}" | cut -d' ' -f 6 ) 2> /dev/null )
-    echo "scale=0 ; 180.0 / $ang" | bc
-  }
-
-
-  imgnum() {
-    lbl=$( sed -e 's:_$::g' -e 's:^_::g' <<< $1 )
-    if [ -z "$lbl" ] ; then
-      lbl="single"
-    fi
-    inum=$( ( cat "$projfile" | grep -v '#' | grep "${lbl} ${2} " | cut -d' ' -f 3 ) 2> /dev/null )
-    if [ -z "${inum}" ] ; then
-      inum=${2}
-    fi
-    printf "%0${nlen}i" $inum
-  }
-
-
-  lsImgs=""
-  for imgm in $imagemask ; do
-    if [ "$format" == "TIFF" ] ; then
-      imgf="$ipath/SAMPLE${imgm}T$(imgnum $imgm $proj).tif"
-      chkf "$imgf" projection
-    elif [ "$format" == "HDF5" ] ; then
-      imgf="$ipath/SAMPLE${imgm}.hdf:$H5data:$proj"
-    fi
-    lsImgs="$lsImgs $imgf"
-  done
+lsImgs=""
+if [ "$format" == "HDF5" ] ; then
+  while read imgm ; do
+    imgf="$ipath/SAMPLE${imgm}.hdf:$H5data:"
+    lsImgs="${lsImgs}${imgf}APPENDHERE${imgm}S "
+  done <<< $( echo $imagemask | sed 's: :\n:g' )
   if (( $fshift >= 1 )) ; then
-    for imgm in $imagemask ; do
-      prnm="$(( 10#$(imgnum $imgm $proj) + $(flip_shift $imgm) ))"
-      if [ "$format" == "TIFF" ] ; then
-        imgf="$ipath/SAMPLE${imgm}T$(imgnum $imgm $prnm).tif"
-        chkf "$imgf" "flip projection"
-        lsImgs="$lsImgs $imgf"
-      elif [ "$format" == "HDF5" ] ; then
-        imgf="$ipath/SAMPLE${imgm}.hdf:$H5data:${prnm}"
-      fi
-    done
+    while read imgm ; do
+      imgf="$ipath/SAMPLE${imgm}.hdf:$H5data:"
+      lsImgs="${lsImgs}${imgf}APPENDHERE${imgm}F "
+    done <<< $( echo $imagemask | sed 's: :\n:g' )
   fi
-
-  stImgs=""
-  if [ "$format" == "TIFF" ]  &&  [ ! -z "$imagick" ] ; then
-    for imgf in $lsImgs ; do
-      pimgf="tmp/T$(imgnum $imgm $proj)_$(basename $imgf)"
-      $convert_inuse -quiet "$imgf" $imagick "$pimgf"
-      chkf "$pimgf" "im-processed"
-      stImgs="$stImgs $pimgf"
-    done
-  else
-    stImgs="$lsImgs"
-  fi
-
-  ctas proj $stParam $stImgs ||
-  ( echo "There was an error executing:" >&2
-    echo "ctas proj $stParam $stImgs" >&2 )
-
-
-  if ! $testme  &&  [ ! -z "$imagick" ] ; then
-    rm -f $stImgs
-  fi
-
-
 fi
 
+
+
+
+
+declare -a idxs
+declare -a srcf
+cpr=0
+while read imgm ; do
+  lbl=$( sed -e 's:_$::g' -e 's:^_::g' <<< $imgm )
+  if [ -z "$lbl" ] ; then
+    lbl="single"
+  fi
+  if [ "$format" == "HDF5" ] ; then
+    srcf[$cpr]="$ipath/SAMPLE${imgm}.hdf:$H5data:"
+  else 
+    srcf[$cpr]="$ipath/SAMPLE${imgm}T%0${nlen}i.tif"
+  fi
+  idxs[$cpr]=$( ( cat "$projfile" | grep -v '#' | grep "${lbl}" | cut -d' ' -f 3 | head -n $pjs) 2> /dev/null )
+  ((cpr++))
+done <<< $( echo $imagemask | sed 's: :\n:g' )
+if (( $fshift >= 1 )) ; then
+  while read imgm ; do
+    lbl=$( sed -e 's:_$::g' -e 's:^_::g' <<< $imgm )
+    if [ -z "$lbl" ] ; then
+      lbl="single"
+    fi
+    if [ "$format" == "HDF5" ] ; then
+      srcf[$cpr]="$ipath/SAMPLE${imgm}.hdf:$H5data:"
+    else 
+      srcf[$cpr]="$ipath/SAMPLE${imgm}T%0${nlen}i.tif"
+    fi    
+    idxs[$cpr]=$( ( cat "$projfile" | grep -v '#' | grep "${lbl}" | cut -d' ' -f 3 | tail -n +$fshift | head -n $pjs) 2> /dev/null )
+    ((cpr++))
+  done <<< $( echo $imagemask | sed 's: :\n:g' )
+fi
+
+declare -a clmn
+for ((ccpr=0 ; ccpr < $cpr ; ccpr++)) ; do
+  if [ "$format" == "HDF5" ] ; then
+    clmn[$ccpr]="${srcf[$ccpr]}$(tr '\n' ',' <<< ${idxs[$ccpr]})"
+  else
+    format="${srcf[$ccpr]}"    
+    clmn[$ccpr]="$(printf "$format\n" "${idxs[@]}")"
+  fi
+done
+tmp=""
+for cl in "${clmn[@]}"; do
+  tmp=$(paste -d' ' <(echo -e "$tmp") <( echo -e "$cl"))
+done
+
+
+echo "$tmp" | ctas proj $stParam ||
+  ( echo "There was an error executing:" >&2
+    echo "  echo $tmp | ctas proj $stParam" >&2 )
+
+
+
+if [ -z "$xtParamFile" ] ; then
+  exit $?
+fi
+echo "Starting CT reconstruction in $PWD"
+addOpt=""
+if [ ! -z "$step" ] ; then
+  addOpt=" -a $step "
+fi
+imbl-xtract-wrapper.sh $addOpt "$xtParamFile" clean rec
+xret="$?"
+if [ "$xret" -eq "0" ] && $wipeClean ; then
+    mv clean/SAMPLE*$(printf \%0${nlen}i $minProj).tif .
+    mv clean/SAMPLE*$(printf \%0${nlen}i $maxProj).tif .
+    mv clean/SAMPLE*$(printf \%0${nlen}i $(( ( $minProj + $maxProj ) / 2 )) ).tif .
+    rm -rf clean/*
+fi
+exit $xret
 
