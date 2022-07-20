@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export PATH="$(dirname "$(realpath "$0")" ):$PATH"
-
+source env_parallel.bash
 convert_inuse="convert"
 if command -v convert.fp &> /dev/null ; then
   convert_inuse="convert.fp"
@@ -26,11 +26,6 @@ printhelp() {
   echo "                    independent binnings in X and Y coordinates; same otherwise."
   echo "  -s INT[,INT...]   Split point(s). If given, then final projection is"
   echo "                    horizontally split and fractions are named with _N postfix."
-#  echo "  -n RAD            Reduce noise removing peaks (same as imagick's -median option)."
-#  echo "  -i STRING         If given then source images, before any further processing, are"
-#  echo "                    piped through imagemagick with this string as the parameters."
-#  echo "                    The results are used instead of the original source images."
-#  echo "                    Make sure you know how to use it correctly."
   echo "  -m INT            First projection to be processed."
   echo "  -M INT            Last projection to be processed."
   echo "  -d                Does not perform flat field correction on the images."
@@ -60,7 +55,6 @@ if (( $nofSt == 0 )) ; then
   nofSt=1
 fi
 secondsize=$(( $zstitch > 1 ? $ystitch : 0 ))
-
 allopts="$@"
 gmask=""
 crop="0,0,0,0"
@@ -73,7 +67,6 @@ originFlip="0,0"
 split=""
 testme=""
 ffcorrection=true
-#imagick=""
 stParam=""
 xtParamFile=""
 postT=""
@@ -81,11 +74,10 @@ minProj=0
 maxProj=$(( $pjs - 1 ))
 nlen=${#pjs}
 wipeClean=false
+beverbose=false
 
 echo "$allopts" >> ".proc.history"
 
-
-#while getopts "g:G:f:c:C:r:b:s:n:i:o:x:m:M:dthwvV" opt ; do
 while getopts "k:g:G:f:c:C:r:b:s:o:x:m:M:dt:hwvV" opt ; do
   case $opt in
     k)  mask=$OPTARG;;
@@ -142,7 +134,7 @@ while getopts "k:g:G:f:c:C:r:b:s:o:x:m:M:dt:hwvV" opt ; do
     w)  wipeClean=true ;;
     d)  ffcorrection=false ;;
     t)  testme="$OPTARG" ;;
-    v)  stParam="$stParam --verbose " ;;
+    v)  beverbose=true ;;
     h)  printhelp ; exit 1 ;;
     \?) echo "Invalid option: -$OPTARG" >&2 ; exit 1 ;;
     :)  echo "Option -$OPTARG requires an argument." >&2 ; exit 1 ;;
@@ -194,6 +186,10 @@ if (( $fshift >= 1 )) ; then
   stParam="$stParam --flip-origin $originFlip"
 fi
 
+if [ $beverbose ] ; then
+  stParam="$stParam --verbose "
+fi
+
 imgbg="$opath/bg.tif"
 if [ -e $imgbg ]  &&  $ffcorrection ; then
   stParam="$stParam --bg $imgbg"
@@ -223,53 +219,59 @@ else
 fi
 stParam="$stParam --output $oname"
 
-if (( maxProj >= $pjs  )) ; then
+if [ -z "$1" ] ; then
+
+  if (( maxProj >= $pjs  )) ; then
     maxProj=$(( $pjs - 1 ))
-fi  
-stParam="$stParam --select ${minProj}-${maxProj}"
-
-
-
-
-flip_shift() {
-  lbl=$( sed -e 's:_$::g' -e 's:^_::g' <<< $1 )
-  if [ -z "$lbl" ] ; then
-    lbl="single"
   fi
-  ang=$( ( cat "$projfile" | grep '#' | grep "${lbl}" | cut -d' ' -f 6 ) 2> /dev/null )
-  echo "scale=0 ; 180.0 / $ang" | bc
-}
+  stParam="$stParam --select ${minProj}-${maxProj}"
 
-imgnum() {
-  lbl=$( sed -e 's:_$::g' -e 's:^_::g' <<< $1 )
-  if [ -z "$lbl" ] ; then
-    lbl="single"
-  fi
-  inum=$( ( cat "$projfile" | grep -v '#' | grep "${lbl} ${2} " | cut -d' ' -f 3 ) 2> /dev/null )
-  if [ -z "${inum}" ] ; then
-    inum=${2}
-  fi
-  echo $inum
-  #printf "%0${nlen}i" $inum
-}
+elif [ "$1" = "check" ] ; then
 
-lsImgs=""
-if [ "$format" == "HDF5" ] ; then
-  while read imgm ; do
-    imgf="$ipath/SAMPLE${imgm}.hdf:$H5data:"
-    lsImgs="${lsImgs}${imgf}APPENDHERE${imgm}S "
-  done <<< $( echo $imagemask | sed 's: :\n:g' )
-  if (( $fshift >= 1 )) ; then
-    while read imgm ; do
-      imgf="$ipath/SAMPLE${imgm}.hdf:$H5data:"
-      lsImgs="${lsImgs}${imgf}APPENDHERE${imgm}F "
-    done <<< $( echo $imagemask | sed 's: :\n:g' )
-  fi
+  prelist="$(seq ${minProj} ${maxProj})"
+  while
+    ls clean | sed 's SAMPLE clean/SAMPLE g' > ".listclean"
+    nofimgs=$( cat ".listclean" | sed 's .*\(split.*\)\..* \1 g' | sort | uniq | grep split -c )
+    if (( $nofimgs == 0 )) ; then
+      nofimgs=1
+    fi
+
+    paropt=""
+    if [ $beverbose ] ; then
+      paropt=" --bar "
+      echo "Checking for corrupt data in results:" >&2
+    fi
+    badlist=$( echo $prelist | tr ', ' '\n' |
+      parallel $paropt \
+         ' imgs=$( grep $(printf "_T%0'${nlen}'i" {})  ".listclean" ) ; '`
+        `' nofex=$( grep -c SAMPLE <<< "$imgs" ) ; '`
+        `' if [ -z "$imgs" ]  || '`
+        `'    [ "'${nofimgs}'" != "$nofex" ]  || '`
+        `'    ! identout=$(identify $imgs 2>&1) || '`
+        `'    grep -q identify <<< "$identout" ; '`
+        `' then echo {} ; fi ' |
+      sort -g | tr '\n' ',' )
+    if [ "," = "${badlist:0-1}" ] ; then # remove last comma if present
+      badlist="${badlist::-1}"
+    fi
+    if [ "$badlist" = "$prelist" ] ; then
+      echo "No improvement after re-processing. Exiting."
+      exit 1
+    fi
+    [ ! -z "$badlist" ]  &&  [ "$badlist" != "$prelist" ]
+  do
+    prelist="$badlist"
+    echo "Found bad projections to (re-)process: ${badlist}."
+    hallopts="$( sed s:check::g <<< $allopts )"
+    $0 $hallopts $badlist
+  done
+  exit 0
+
+else
+
+  stParam="$stParam --select $1"
+
 fi
-
-
-
-
 
 declare -a idxs
 declare -a srcf
@@ -280,13 +282,13 @@ while read imgm ; do
     lbl="single"
   fi
   if [ "$format" == "HDF5" ] ; then
-    srcf[$cpr]="$ipath/SAMPLE${imgm}.hdf:$H5data:"
-  else 
-    srcf[$cpr]="$ipath/SAMPLE${imgm}T%0${nlen}i.tif"
+    srcf[$cpr]="$ipath/SAMPLE_${imgm}.hdf:$H5data:"
+  else
+    srcf[$cpr]="$ipath/SAMPLE_${imgm}_T%0${nlen}i.tif"
   fi
   idxs[$cpr]=$( ( cat "$projfile" | grep -v '#' | grep "${lbl}" | cut -d' ' -f 3 | head -n $pjs) 2> /dev/null )
   ((cpr++))
-done <<< $( echo $imagemask | sed 's: :\n:g' )
+done <<< "$( echo $filemask | sed 's: :\n:g' )"
 if (( $fshift >= 1 )) ; then
   while read imgm ; do
     lbl=$( sed -e 's:_$::g' -e 's:^_::g' <<< $imgm )
@@ -294,35 +296,43 @@ if (( $fshift >= 1 )) ; then
       lbl="single"
     fi
     if [ "$format" == "HDF5" ] ; then
-      srcf[$cpr]="$ipath/SAMPLE${imgm}.hdf:$H5data:"
-    else 
-      srcf[$cpr]="$ipath/SAMPLE${imgm}T%0${nlen}i.tif"
-    fi    
+      srcf[$cpr]="$ipath/SAMPLE_${imgm}.hdf:$H5data:"
+    else
+      srcf[$cpr]="$ipath/SAMPLE_${imgm}_T%0${nlen}i.tif"
+    fi
     idxs[$cpr]=$( ( cat "$projfile" | grep -v '#' | grep "${lbl}" | cut -d' ' -f 3 | tail -n +$fshift | head -n $pjs) 2> /dev/null )
     ((cpr++))
-  done <<< $( echo $imagemask | sed 's: :\n:g' )
+  done <<< "$( echo $filemask | sed 's: :\n:g' )"
 fi
-
 declare -a clmn
 for ((ccpr=0 ; ccpr < $cpr ; ccpr++)) ; do
   if [ "$format" == "HDF5" ] ; then
-    clmn[$ccpr]="${srcf[$ccpr]}$(tr '\n' ',' <<< ${idxs[$ccpr]})"
+    clmn[$ccpr]="${srcf[$ccpr]}$(tr ' ' ',' <<< ${idxs[$ccpr]})"
   else
-    format="${srcf[$ccpr]}"    
-    clmn[$ccpr]="$(printf "$format\n" "${idxs[@]}")"
+    clmn[$ccpr]="$(printf "${srcf[$ccpr]}\n" ${idxs[$ccpr]} )"
   fi
 done
-tmp=""
+projin=""
 for cl in "${clmn[@]}"; do
-  tmp=$(paste -d' ' <(echo -e "$tmp") <( echo -e "$cl"))
+  projin=$(paste -d' ' <(echo -e "$projin") <( echo -e "$cl"))
 done
 
 
-echo "$tmp" | ctas proj $stParam ||
-  ( echo "There was an error executing:" >&2
-    echo "  echo $tmp | ctas proj $stParam" >&2 )
 
 
+echo "$projin" | ctas proj $stParam # ||
+  #( echo "There was an error executing:" >&2
+  #  echo "  echo $projin | ctas proj $stParam" >&2 )
+
+
+
+
+if [ "$testme" ] ; then
+  exit 0;
+fi
+if [ -z "$1" ] ; then
+  $0 $allopts check
+fi
 
 if [ -z "$xtParamFile" ] ; then
   exit $?
@@ -335,9 +345,9 @@ fi
 imbl-xtract-wrapper.sh $addOpt "$xtParamFile" clean rec
 xret="$?"
 if [ "$xret" -eq "0" ] && $wipeClean ; then
-    mv clean/SAMPLE*$(printf \%0${nlen}i $minProj).tif .
-    mv clean/SAMPLE*$(printf \%0${nlen}i $maxProj).tif .
-    mv clean/SAMPLE*$(printf \%0${nlen}i $(( ( $minProj + $maxProj ) / 2 )) ).tif .
+    mv clean/SAMPLE*$(printf \%0${nlen}i $minProj)*.tif .
+    mv clean/SAMPLE*$(printf \%0${nlen}i $maxProj)*.tif .
+    mv clean/SAMPLE*$(printf \%0${nlen}i $(( ( $minProj + $maxProj ) / 2 )) )*.tif .
     rm -rf clean/*
 fi
 exit $xret

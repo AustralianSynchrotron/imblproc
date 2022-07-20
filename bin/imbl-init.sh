@@ -122,22 +122,17 @@ toHDFctas() {
   echo $listfmt
 }
 
-if $MakeFF || [ ! -e "bg.tif" ] ; then
-
-  listi="$( cat "$listfile" | grep '^BG' | sed "s BG ${ipath}/BG g" | toHDFctas )"
-  if [ ! -z "$listi" ] ; then
-    ctas v2v -o bg.tif -b 1:1:0 $listi
+makeauximg() {
+  if $MakeFF || [ ! -e "$1" ] ; then
+    listi="$( cat "$listfile" | grep "^$2" | sed "s $2 ${ipath}/$2 g" | toHDFctas )"
+    if [ ! -z "$listi" ] ; then
+      ctas v2v -o "$1" -b 1:1:0 $listi
+    fi
   fi
-  listi="$( cat "$listfile" | grep '^DF.*.h*' | sed "s DF ${ipath}/DF g" | toHDFctas )"
-  if [ ! -z "$listi" ] ; then
-    ctas v2v -o df.tif -b 1:1:0 $listi
-  fi
-  listi="$( cat "$listfile" | grep '^GF.*.h*' | sed "s GF ${ipath}/GF g" | toHDFctas )"
-  if [ ! -z "$listi" ] ; then
-    ctas v2v -o gf.tif -b 1:1:0 $listi
-  fi
-
-fi
+}
+makeauximg "bg.tif" "BG"
+makeauximg "df.tif" "DF"
+makeauximg "dg.tif" "DG"
 
 width=0
 hight=0

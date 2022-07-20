@@ -56,8 +56,11 @@ try:
       lres = re.search('\"SAMPLE(.*?)\"', strg) 
       if (not lres):
         eprint("Can't find sample in acquisition string \"" + strg + "\".")
-        sys.exit(1)      
-      label = lres.group(1).removesuffix("_T").strip("_")
+        sys.exit(1)
+      label = lres.group(1)
+      if label.endswith("_T") :
+        label = label[:-2]
+      label = label.strip("_")
       if not label:
         label = 'single'
       if label in labels :
