@@ -52,8 +52,8 @@ try:
     elif "SAMPLE" in strg and "Acquisition started" in strg:
       if label  and  len(pos[label]) < 2 :
         eprint("Empty set on label " + label + ".")
-        sys.exit(1)      
-      lres = re.search('\"SAMPLE(.*?)\"', strg) 
+        sys.exit(1)
+      lres = re.search('\"SAMPLE(.*?)\"', strg)
       if (not lres):
         eprint("Can't find sample in acquisition string \"" + strg + "\".")
         sys.exit(1)
@@ -134,14 +134,14 @@ if args.info :
   sys.exit(0)
 
 upperEnd = steps
-if args.max_proj: 
+if args.max_proj:
   upperEnd = min(upperEnd, args.max_proj)
 if args.max_angle:
-  upperEnd = min(upperEnd, int(args.max_angle/step))  
+  upperEnd = min(upperEnd, int(args.max_angle/step))
 
 if args.table :
   for cur in range(0, upperEnd):
-    for label in labels:  
+    for label in labels:
       print(int(round(res[label][cur])), end = ' ')
     print("")
 else:

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-export PATH="$(dirname "$(realpath "$0")" ):$PATH"
-source env_parallel.bash
-convert_inuse="convert"
-if command -v convert.fp &> /dev/null ; then
-  convert_inuse="convert.fp"
-fi
+EXEPATH="$(dirname "$(realpath "$0")" )"
+PATH="$EXEPATH:$PATH"
+#convert_inuse="convert"
+#if command -v convert.fp &> /dev/null ; then
+#  convert_inuse="convert.fp"
+#fi
 
 printhelp() {
   echo "Usage: $0 [OPTIONS] [PROJECTION]"
@@ -32,6 +32,7 @@ printhelp() {
   echo "  -x STRING         Chain stitching with the X-tract reconstruction with"
   echo "                    the parameters read from the given parameters file."
   echo "  -w                Delete projections folder (clean) after X-tract processing."
+  echo "  -n                Do NOT check results after processing is complete."
   echo "  -t INT            Test mode: keeps intermediate images for the projection in tmp."
   echo "  -v                Verbose mode: show progress."
   echo "  -h                Prints this help."
@@ -48,7 +49,8 @@ format="TIFF" # default
 projfile=".projections"
 initfile=".initstitch"
 chkf "$initfile" init
-source "$initfile"
+# shellcheck source=~/usr/src/imblproc/share/imblproc/.initstitch.sh
+source "${initfile}"
 
 nofSt=$(wc -w <<< $filemask )
 if (( $nofSt == 0 )) ; then
@@ -65,11 +67,11 @@ origin="0,0"
 originSecond="0,0"
 originFlip="0,0"
 split=""
+doCheck=true
 testme=""
 ffcorrection=true
 stParam=""
 xtParamFile=""
-postT=""
 minProj=0
 maxProj=$(( $pjs - 1 ))
 nlen=${#pjs}
@@ -78,7 +80,7 @@ beverbose=false
 
 echo "$allopts" >> ".proc.history"
 
-while getopts "k:g:G:f:c:C:r:b:s:o:x:m:M:dt:hwvV" opt ; do
+while getopts "k:g:G:f:c:C:r:b:s:x:m:M:dt:hwvn" opt ; do
   case $opt in
     k)  mask=$OPTARG;;
     g)  origin=$OPTARG
@@ -111,8 +113,6 @@ while getopts "k:g:G:f:c:C:r:b:s:o:x:m:M:dt:hwvV" opt ; do
           stParam="$stParam --split $sp"
         done
         ;;
-    #n)  imagick="$imagick -median $OPTARG" ;;
-    #i)  imagick="$imagick $OPTARG" ;;
     m)  minProj=$OPTARG
         if [ ! "$minProj" -eq "$minProj" ] 2> /dev/null ; then
           echo "ERROR! -m argument \"$minProj\" is not an integer." >&2
@@ -134,6 +134,7 @@ while getopts "k:g:G:f:c:C:r:b:s:o:x:m:M:dt:hwvV" opt ; do
     w)  wipeClean=true ;;
     d)  ffcorrection=false ;;
     t)  testme="$OPTARG" ;;
+    n)  doCheck=false ;;
     v)  beverbose=true ;;
     h)  printhelp ; exit 1 ;;
     \?) echo "Invalid option: -$OPTARG" >&2 ; exit 1 ;;
@@ -191,41 +192,39 @@ if [ $beverbose ] ; then
 fi
 
 imgbg="$opath/bg.tif"
-if [ -e $imgbg ]  &&  $ffcorrection ; then
+if [ -e "$imgbg" ]  &&  $ffcorrection ; then
   stParam="$stParam --bg $imgbg"
 fi
 
 imgdf="$opath/df.tif"
-if [ -e $imgdf ]  &&  $ffcorrection ; then
+if [ -e "$imgdf" ]  &&  $ffcorrection ; then
   stParam="$stParam --df $imgdf"
 fi
 
 imggf="$opath/gf.tif"
-if [ -e $imggf ]  &&  $ffcorrection ; then
+if [ -e "$imggf" ]  &&  $ffcorrection ; then
   stParam="$stParam --dg $imggf"
 fi
 
 imgms="$mask"
-if [ $imgms ] && [ -e $imgms ] ; then
+if [ $imgms ] && [ -e "$imgms" ] ; then
   stParam="$stParam --mask $mask"
 fi
 
 oname="SAMPLE_T@.tif"
 if [ $testme ] ; then
-  oname="tmp/$oname"  
-  stParam="$stParam --test $testme"  
+  oname="tmp/$oname"
+  stParam="$stParam --test $testme"
 else
   oname="clean/$oname"
 fi
 stParam="$stParam --output $oname"
 
 if [ -z "$1" ] ; then
-
   if (( maxProj >= $pjs  )) ; then
     maxProj=$(( $pjs - 1 ))
   fi
   stParam="$stParam --select ${minProj}-${maxProj}"
-
 elif [ "$1" = "check" ] ; then
 
   prelist="$(seq ${minProj} ${maxProj})"
@@ -238,7 +237,7 @@ elif [ "$1" = "check" ] ; then
 
     paropt=""
     if [ $beverbose ] ; then
-      paropt=" --bar "
+      paropt=" --eta "
       echo "Checking for corrupt data in results:" >&2
     fi
     badlist=$( echo $prelist | tr ', ' '\n' |
@@ -268,9 +267,7 @@ elif [ "$1" = "check" ] ; then
   exit 0
 
 else
-
   stParam="$stParam --select $1"
-
 fi
 
 declare -a idxs
@@ -286,7 +283,12 @@ while read imgm ; do
   else
     srcf[$cpr]="$ipath/SAMPLE_${imgm}_T%0${nlen}i.tif"
   fi
-  idxs[$cpr]=$( ( cat "$projfile" | grep -v '#' | grep "${lbl}" | cut -d' ' -f 3 | head -n $pjs) 2> /dev/null )
+  idxs[$cpr]=$( ( cat "$projfile" |
+                  grep -v '#' |
+                  grep "${lbl}" |
+                  cut -d' ' -f 3 |
+                  head -n $pjs |
+                  perl -pe 'chomp if eof' - ) 2> /dev/null )
   ((cpr++))
 done <<< "$( echo $filemask | sed 's: :\n:g' )"
 if (( $fshift >= 1 )) ; then
@@ -300,14 +302,20 @@ if (( $fshift >= 1 )) ; then
     else
       srcf[$cpr]="$ipath/SAMPLE_${imgm}_T%0${nlen}i.tif"
     fi
-    idxs[$cpr]=$( ( cat "$projfile" | grep -v '#' | grep "${lbl}" | cut -d' ' -f 3 | tail -n +$fshift | head -n $pjs) 2> /dev/null )
+    idxs[$cpr]=$( ( cat "$projfile" |
+                    grep -v '#' |
+                    grep "${lbl}" |
+                    cut -d' ' -f 3 |
+                    tail -n +$fshift |
+                    head -n $pjs |
+                    perl -pe 'chomp if eof' - ) 2> /dev/null )
     ((cpr++))
   done <<< "$( echo $filemask | sed 's: :\n:g' )"
 fi
 declare -a clmn
 for ((ccpr=0 ; ccpr < $cpr ; ccpr++)) ; do
   if [ "$format" == "HDF5" ] ; then
-    clmn[$ccpr]="${srcf[$ccpr]}$(tr ' ' ',' <<< ${idxs[$ccpr]})"
+    clmn[$ccpr]="${srcf[$ccpr]}$(tr ' \n' ',' <<< ${idxs[$ccpr]})"
   else
     clmn[$ccpr]="$(printf "${srcf[$ccpr]}\n" ${idxs[$ccpr]} )"
   fi
@@ -320,9 +328,9 @@ done
 
 
 
-echo "$projin" | ctas proj $stParam # ||
-  #( echo "There was an error executing:" >&2
-  #  echo "  echo $projin | ctas proj $stParam" >&2 )
+ctas proj $stParam <<< "$projin" ||
+  ( echo "There was an error executing:" >&2
+    echo "  echo $projin | ctas proj $stParam" >&2 )
 
 
 
@@ -330,7 +338,7 @@ echo "$projin" | ctas proj $stParam # ||
 if [ "$testme" ] ; then
   exit 0;
 fi
-if [ -z "$1" ] ; then
+if $doCheck  &&  [ -z "$1" ] ; then
   $0 $allopts check
 fi
 
@@ -345,10 +353,10 @@ fi
 imbl-xtract-wrapper.sh $addOpt "$xtParamFile" clean rec
 xret="$?"
 if [ "$xret" -eq "0" ] && $wipeClean ; then
-    mv clean/SAMPLE*$(printf \%0${nlen}i $minProj)*.tif .
-    mv clean/SAMPLE*$(printf \%0${nlen}i $maxProj)*.tif .
-    mv clean/SAMPLE*$(printf \%0${nlen}i $(( ( $minProj + $maxProj ) / 2 )) )*.tif .
-    rm -rf clean/*
+    mv clean/SAMPLE*$(printf \%0${nlen}i $minProj)*.tif . &> /dev/null
+    mv clean/SAMPLE*$(printf \%0${nlen}i $maxProj)*.tif . &> /dev/null
+    mv clean/SAMPLE*$(printf \%0${nlen}i $(( ( $minProj + $maxProj ) / 2 )) )*.tif . &> /dev/null
+    rm -rf clean/* &> /dev/null
 fi
 exit $xret
 

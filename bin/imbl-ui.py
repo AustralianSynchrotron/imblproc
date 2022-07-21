@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
-import sys
-import os
-import re
+import sys, os, re, psutil
+from tabnanny import check
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import pyqtSlot, QSettings, QProcess, QEventLoop, QTimer
@@ -18,6 +17,16 @@ execPath = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
 warnStyle = 'background-color: rgba(255, 0, 0, 128);'
 
 
+def killProcTree(pid):
+    proc=psutil.Process(pid)
+    for child in proc.children(recursive=True):
+        child.kill()
+    proc.kill()
+
+
+
+
+
 class MainWindow(QtWidgets.QMainWindow):
 
     configName = ".imbl-ui"
@@ -31,6 +40,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.ui.setupUi(self)
         self.on_individualIO_toggled()
         self.on_xtractIn_textChanged()
+        self.on_ppIn_textChanged()
 
         self.ui.splits.horizontalHeader().setStretchLastSection(False)
         self.ui.splits.horizontalHeader().setSectionResizeMode(
@@ -73,15 +83,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.zIndependent,
             self.ui.noNewFF,
             self.ui.procAfterInit,
-            self.ui.denoise,
-            self.ui.imageMagick,
+            self.ui.maskPath,
             self.ui.rotate,
             self.ui.sCropTop,
             self.ui.sCropBottom,
             self.ui.sCropRight,
             self.ui.sCropLeft,
             self.ui.xBin,
-            self.ui.sameBin,  # must come between those two
+            self.ui.sameBin,  # must come between those two bins
             self.ui.yBin,
             self.ui.iStX,
             self.ui.iStY,
@@ -100,6 +109,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.noRecFF,
             self.ui.xtractAfter,
             self.ui.xtractIn,
+            self.ui.postproc,
+            self.ui.ppIn,
             self.ui.minProj,
             self.ui.maxProj,
             self.ui.deleteClean
@@ -120,10 +131,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.yIndependent.clicked.connect(self.needReinitiation)
         self.ui.zIndependent.clicked.connect(self.needReinitiation)
         self.ui.xtractAfter.toggled.connect(self.on_xtractIn_textChanged)
+        self.ui.postproc.toggled.connect(self.on_ppIn_textChanged)
         self.ui.expUpdate.clicked.connect(self.on_expPath_textChanged)
         self.ui.ignoreLog.toggled.connect(self.on_inPath_textChanged)
 
         QtCore.QTimer.singleShot(100, self.loadConfiguration)
+
 
     def addToConsole(self, text, qcolor=None):
         if not text:
@@ -134,15 +147,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.console.append(str(text).strip('\n'))
         #self.ui.console.setText(text)
 
+
     def addOutToConsole(self, text):
         self.addToConsole(text, QtCore.Qt.blue)
+
 
     def addErrToConsole(self, text):
         self.addToConsole(text, QtCore.Qt.red)
 
+
     @pyqtSlot()
     def saveNewConfiguration(self):
         self.saveConfiguration("")
+
 
     @pyqtSlot()
     def saveConfiguration(self, fileName=etcConfigName):
@@ -179,9 +196,11 @@ class MainWindow(QtWidgets.QMainWindow):
             config.setValue('pos', self.ui.splits.cellWidget(crow, 0).value())
         config.endArray()
 
+
     @pyqtSlot()
     def loadNewConfiguration(self):
         self.loadConfiguration("")
+
 
     @pyqtSlot()
     def loadConfiguration(self, fileName=etcConfigName):
@@ -203,8 +222,16 @@ class MainWindow(QtWidgets.QMainWindow):
                 wdg.setText(config.value(oName, type=str))
             elif isinstance(wdg, QtWidgets.QCheckBox):
                 wdg.setChecked(config.value(oName, type=bool))
-            elif isinstance(wdg, QtWidgets.QAbstractSpinBox):
-                wdg.setValue(config.value(oName, type=float))
+            elif isinstance(wdg, QtWidgets.QSpinBox):
+                val = config.value(oName, type=int)
+                if wdg.maximum() < val: wdg.setMaximum(val)
+                if wdg.minimum() > val: wdg.setMinimum(val)
+                wdg.setValue(val)
+            elif isinstance(wdg, QtWidgets.QDoubleSpinBox):
+                val = config.value(oName, type=float)
+                if wdg.maximum() < val: wdg.setMaximum(val)
+                if wdg.minimum() > val: wdg.setMinimum(val)
+                wdg.setValue(val)
             elif isinstance(wdg, QtWidgets.QComboBox):
                 txt = config.value(oName, type=str)
                 didx = wdg.findText(txt)
@@ -229,6 +256,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recalculateSplit()
 
         self.amLoading = False
+
 
     def execInBg(self, proc):
 
@@ -258,10 +286,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 break
         self.addToConsole("Stopped with exit status %i" % proc.exitCode())
 
+
     @pyqtSlot()
     def needReinitiation(self):
+        self.ui.width.setValue(0)
+        self.ui.hight.setValue(0)
         for tabIdx in range(1, self.ui.tabWidget.count()-1):
-            self.ui.tabWidget.setTabEnabled(tabIdx, False)
+            self.ui.tabWidget.widget(tabIdx).setEnabled(False)
 
     def update_initiate_state(self):
         self.ui.initiate.setEnabled(os.path.isdir(self.ui.inPath.text()) and
@@ -490,23 +521,30 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.ui.width.setValue(width)
         self.ui.hight.setValue(hight)
-        self.ui.sCropTop.setMaximum(hight)
-        self.ui.sCropBottom.setMaximum(hight)
-        self.ui.sCropRight.setMaximum(width)
-        self.ui.sCropLeft.setMaximum(width)
 
-        self.ui.iStX.setRange(-2*width, 2*width)
-        self.ui.iStY.setRange(-2*hight, 2*hight)
-        self.ui.oStX.setRange(-2*width, 2*width)
-        self.ui.oStY.setRange(-2*hight, 2*hight)
-        self.ui.fStX.setRange(-2*width, 2*width)
-        self.ui.fStY.setRange(-2*hight, 2*hight)
+        def setMyMax(wdg, mymax):
+            if wdg.maximum() < mymax: wdg.setMaximum(mymax)
+
+        def setMyRange(wdg, mymax, mymin):
+            if wdg.maximum() < mymax: wdg.setMaximum(mymax)
+            if wdg.minimum() > mymin: wdg.setMinimum(mymin)
+
+        setMyMax(self.ui.sCropTop, hight)
+        setMyMax(self.ui.sCropBottom, hight)
+        setMyMax(self.ui.sCropLeft, width)
+        setMyMax(self.ui.sCropRight, width)
+        setMyRange(self.ui.iStX, -2*width, 2*width)
+        setMyRange(self.ui.iStY, -2*hight, 2*hight)
+        setMyRange(self.ui.oStX, -2*width, 2*width)
+        setMyRange(self.ui.oStY, -2*hight, 2*hight)
+        setMyRange(self.ui.fStX, -2*width, 2*width)
+        setMyRange(self.ui.fStY, -2*hight, 2*hight)
         msz = max(1,ys, zs)
-        self.ui.splitSize.setMaximum(hight*msz)
-        self.ui.fCropTop.setMaximum(hight*msz)
-        self.ui.fCropBottom.setMaximum(hight*msz)
-        self.ui.fCropRight.setMaximum(width*msz)
-        self.ui.fCropLeft.setMaximum(width*msz)
+        setMyMax(self.ui.splitSize, hight*msz)
+        setMyMax(self.ui.fCropTop, hight*msz)
+        setMyMax(self.ui.fCropBottom, hight*msz)
+        setMyMax(self.ui.fCropRight, width*msz)
+        setMyMax(self.ui.fCropLeft, width*msz)
         self.ui.recalculateSplit()
 
         self.ui.testSubDir.clear()
@@ -515,22 +553,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.testSubDir.setVisible(sds)
         self.ui.testSubDirLabel.setVisible(sds)
         self.ui.procThis.setVisible(sds)
-        self.ui.testProjection.setMaximum(pjs)
-        self.ui.minProj.setMaximum(pjs)
-        self.ui.maxProj.setMaximum(pjs)
+        setMyMax(self.ui.testProjection, pjs)
+        setMyMax(self.ui.minProj, pjs)
+        setMyMax(self.ui.maxProj, pjs)
 
         for tabIdx in range(1, self.ui.tabWidget.count()-1):
-            self.ui.tabWidget.setTabEnabled(tabIdx, True)
+            self.ui.tabWidget.widget(tabIdx).setEnabled(True)
+
 
 
     initproc = QProcess()
 
-
     @pyqtSlot()
     def on_initiate_clicked(self):
-
         if self.initproc.state():
-            self.initproc.kill()
+            killProcTree(self.initproc.processId())
             return
 
         self.needReinitiation()
@@ -553,7 +590,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.ui.noNewFF.isChecked():
             command += " -e "
         if not self.ui.ignoreLog.isChecked() and self.ui.ignoreLog.isVisible() :
-            command += " -l "        
+            command += " -l "
         command += " -o \"%s\" " % opath
         command += self.ui.inPath.text()
 
@@ -589,7 +626,8 @@ class MainWindow(QtWidgets.QMainWindow):
         nrow = self.ui.splits.rowCount() - 1
         self.ui.splits.insertRow(nrow)
         poss = QtWidgets.QSpinBox(self)
-        poss.setMaximum(self.ui.splitSize.maximum())
+        maxsz = max(1, self.ui.ys.value(), self.ui.zs.value()) * self.ui.hight.value()
+        poss.setMaximum(maxsz)
         poss.setValue(pos)
         poss.editingFinished.connect(self.saveConfiguration)
         self.ui.splits.setCellWidget(nrow, 0, poss)
@@ -621,7 +659,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.ui.irregularSplit.isChecked() :
             return
         pixels = self.ui.splitSize.value()
-        points = 0  if  pixels == 0  else  self.ui.splitSize.maximum() // pixels        
+        maxsz = max(1, self.ui.ys.value(), self.ui.zs.value()) * self.ui.hight.value()
+        points = 0  if  pixels == 0  else  maxsz // pixels
         for cpnt in range(points) :
             cpos = (cpnt + 1 ) * pixels
             pointWdg = self.ui.splits.cellWidget(cpnt,0)
@@ -636,41 +675,36 @@ class MainWindow(QtWidgets.QMainWindow):
     stitchproc = QProcess()
 
     def common_test_proc(self, ars, wdir, actButton):
-
         if self.stitchproc.state():
-            self.stitchproc.kill()
+            killProcTree(self.stitchproc.processId())
             return
 
         prms = str()
         if self.doYst or self.doZst:
             if self.doZst:
-                prms += "-g %f,%f " % (
+                prms += " -g %f,%f " % (
                   self.ui.iStX.value(), self.ui.iStY.value())
             else:
-                prms += "-g %f,%f " % (
+                prms += " -g %f,%f " % (
                   self.ui.oStX.value(), self.ui.oStY.value())
         if self.doYst and self.doZst:
-            prms += "-G %f,%f " % (
+            prms += " -G %f,%f " % (
                 self.ui.oStX.value(), self.ui.oStY.value())
         if self.doFnS:
-            prms += "-f %f,%f " % (
+            prms += " -f %f,%f " % (
                 self.ui.fStX.value(), self.ui.fStY.value())
         if 1 != self.ui.xBin.value() * self.ui.yBin.value():
-            prms += "-b %i,%i " % (
+            prms += " -b %i,%i " % (
                 self.ui.xBin.value(), self.ui.yBin.value())
-        if self.ui.denoise.value():
-            prms += "-n %i " % self.ui.denoise.value()
-        if self.ui.imageMagick.text():
-            prms += "-i \"%s\" " % self.ui.imageMagick.text()
         if 0.0 != self.ui.rotate.value():
-            prms += "-r %f " % self.ui.rotate.value()
+            prms += " -r %f " % self.ui.rotate.value()
         if self.ui.splits.rowCount() > 1:
             splits = []
             for crow in range(0, self.ui.splits.rowCount()-1):
                 splits.append(self.ui.splits.cellWidget(crow, 0).value())
             splits.sort()
             splits = set(splits)
-            prms += "-s %s " % ','.join([str(splt) for splt in splits])
+            prms += " -s %s " % ','.join([str(splt) for splt in splits])
         crops = (self.ui.sCropTop.value(), self.ui.sCropLeft.value(),
                  self.ui.sCropBottom.value(), self.ui.sCropRight.value())
         if sum(crops):
@@ -679,7 +713,12 @@ class MainWindow(QtWidgets.QMainWindow):
                  self.ui.fCropBottom.value(), self.ui.fCropRight.value())
         if sum(crops):
             prms += " -C %i,%i,%i,%i " % crops
-        prms += "-v"
+        minProj = self.ui.minProj.value()
+        maxProj = self.ui.maxProj.value()
+        if maxProj == self.ui.maxProj.minimum():
+            maxProj = int(self.ui.projections.text())
+        prms += " -m %i -M %i " % (minProj, maxProj)
+        prms += " -v "
         prms += ars
 
         disableWdgs = (*self.configObjects,
@@ -702,7 +741,7 @@ class MainWindow(QtWidgets.QMainWindow):
         actButton.setText(actText)
         actButton.setStyleSheet("")
         self.on_sameBin_clicked()  # to correct state of the yBin
-        self.on_xtractIn_textChanged()  # to correct state of process all
+        # self.on_xtractIn_textChanged()  # to correct state of process all
         self.update_initiate_state()
 
     @pyqtSlot()
@@ -717,12 +756,6 @@ class MainWindow(QtWidgets.QMainWindow):
         ars += (" -x \"%s\" " % self.ui.xtractIn.text()
                 if self.ui.xtractAfter.isChecked() else "")
         ars += " -w " if self.ui.deleteClean.isChecked() else ""
-        minProj = self.ui.minProj.value()
-        maxProj = self.ui.maxProj.value()
-        if maxProj == self.ui.maxProj.minimum():
-            maxProj = int(self.ui.projections.text())
-        ars += " -m %i -M %i " % (minProj, maxProj)
-        ars += " all"
         return ars
 
     @pyqtSlot()
@@ -738,19 +771,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.saveConfiguration(os.path.join(wdir, self.configName))
         self.common_test_proc(self.procParams(), wdir, self.ui.procThis)
 
-    @pyqtSlot()
-    def on_xtractBrowse_clicked(self):
-        newfile, _filter = QFileDialog.getOpenFileName(self,
-            "Xtract parameters file", os.path.dirname(self.ui.xtractIn.text()))
-        if newfile:
-            self.ui.xtractIn.setText(newfile)
+
+
+
 
     xtrproc = QProcess()
 
     @pyqtSlot()
     def on_xtractExecute_clicked(self):
         if self.xtrproc.state():
-            self.xtrproc.kill()
+            killProcTree(self.xtrproc.processId())
             return
 
         xtrText = self.ui.xtractExecute.text()
@@ -771,15 +801,64 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.xtractExecute.setStyleSheet("")
 
     @pyqtSlot()
+    def on_xtractBrowse_clicked(self):
+        newfile, _filter = QFileDialog.getOpenFileName(self,
+            "Xtract parameters file", os.path.dirname(self.ui.xtractIn.text()))
+        if newfile:
+            self.ui.xtractIn.setText(newfile)
+
+    @pyqtSlot()
     @pyqtSlot(str)
     def on_xtractIn_textChanged(self):
         doXtract = self.ui.xtractAfter.isChecked()
         xparfOK = os.path.exists(self.ui.xtractIn.text()) or not doXtract
         self.ui.xtractWdg.setVisible(doXtract)
-        self.ui.xtractInabel.setVisible(doXtract)
+        self.ui.xtractInLabel.setVisible(doXtract)
         self.ui.xtractIn.setStyleSheet("" if xparfOK else warnStyle)
-        self.ui.procThis.setEnabled(xparfOK)
-        self.ui.procAll.setEnabled(xparfOK)
+        self.ui.xtractExecute.setEnabled(xparfOK)
+
+
+    ppproc = QProcess()
+
+    @pyqtSlot()
+    def on_ppExecute_clicked(self):
+        if self.ppproc.state():
+            killProcTree(self.ppproc.processId())
+            return
+
+        ppText = self.ui.ppExecute.text()
+        self.ui.ppExecute.setText('Stop')
+        self.ui.ppExecute.setStyleSheet(warnStyle)
+
+        self.ppproc.setProgram("/bin/sh")
+        self.ppproc.setArguments(("-c", self.ppIn.text()))
+        wdir = os.path.join(self.ui.outPath.text(),
+                            self.ui.testSubDir.currentText())
+        self.ppproc.setWorkingDirectory(wdir)
+        self.execInBg(self.ppproc)
+
+        self.ui.ppExecute.setText(ppText)
+        self.ui.ppExecute.setStyleSheet("")
+
+    @pyqtSlot()
+    def on_ppBrowse_clicked(self):
+        newfile, _filter = QFileDialog.getOpenFileName(self,
+            "Executable file", os.path.dirname(self.ui.ppIn.text()))
+        if newfile:
+            self.ui.ppIn.setText(newfile)
+
+    @pyqtSlot()
+    @pyqtSlot(str)
+    def on_ppIn_textChanged(self):
+        doPP = self.ui.postproc.isChecked()
+        self.ui.ppWdg.setVisible(doPP)
+        self.ui.ppInLabel.setVisible(doPP)
+        if not doPP:
+            return
+        ppOK = not QProcess.execute("/bin/sh", ("-n", "-c", self.ui.ppIn.text()))
+        self.ui.ppIn.setStyleSheet("" if ppOK else warnStyle)
+        self.ui.ppExecute.setEnabled(ppOK)
+
 
     def onMinMaxProjectionChanged(self):
         minProj = self.ui.minProj.value()

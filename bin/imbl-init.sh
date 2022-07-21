@@ -91,14 +91,14 @@ if [ -z "$ctversion" ] ; then
     exit 1
 fi
 
-logfile="$(sed 's configuration log g' <<< $conffile)" 
+logfile="$(sed 's configuration log g' <<< $conffile)"
 logi=""
 if $uselog ; then
   if [ ! -e "$logfile" ] ; then
     echo "No log file \"$logfile\" found in input path." >&2
     exit 1
   fi
-  logi=$(cat "$logfile" | imbl-log.py -i)   
+  logi=$(cat "$logfile" | imbl-log.py -i)
   if (( "$?" )) ; then
     echo "Error parsing log file \"$logfile\"." >&2
     exit 1
@@ -115,7 +115,7 @@ toHDFctas() {
   while read fl ; do
     if [ "$format" == "HDF5" ] ; then
       listfmt="$listfmt $fl:$H5data:$1 "
-    else 
+    else
       listfmt="$listfmt $fl "
     fi
   done
@@ -152,7 +152,7 @@ fi
 Zlist=""
 Zdirs="."
 if (( $Zsteps > 1 )) ; then
-  if $uselog ; then 
+  if $uselog ; then
     Zlist="$( sed -e '1,2d' -e 's :  g' -e 's .*\(Z[0-9]*\).* \1 g' <<< "$logi" | sort | uniq )"
   else
     while read Zcur ; do
@@ -169,7 +169,7 @@ Zsize=$( wc -w <<< $Zlist )
 Ylist=""
 Ydirs="."
 if (( $Ysteps > 1 )) ; then
-  if $uselog ; then 
+  if $uselog ; then
     Ylist="$( sed -e '1,2d' -e 's :  g' -e 's .*\(Y[0-9]*\).* \1 g' <<< "$logi" | sort | uniq )"
   else
     while read Ycur ; do
@@ -214,7 +214,7 @@ outInitFile() {
   if [ ! -z "$3" ] ; then
     filemask="${3}"
   fi
-  
+
   echoInfo() {
     echo "filemask=\"$filemask\""
     echo "ipath=\"$ipath\""
@@ -234,7 +234,7 @@ outInitFile() {
   }
 
   echoInfo > "${2}/$initName"
-  
+
 }
 
 strip_ () {
@@ -265,9 +265,9 @@ for Ydir in $Ydirs ; do
       fi
     done
     Slist="$( sed -e 's:\.::g' -e 's:__:_:g' <<< $Slist)"
-    
-    outInitFile "$Slist" "$Sdir" 
-    
+
+    outInitFile "$Slist" "$Sdir"
+
   done
 done
 
