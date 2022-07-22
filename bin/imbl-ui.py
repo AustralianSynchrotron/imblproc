@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys, os, re, psutil
+import sys, os, re, psutil, time
 from tabnanny import check
 
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -300,6 +300,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.inProgress.setFormat(f"Starting {printproc}")
         counter=0
 
+        start_time = time.time()
         proc.start()
         proc.waitForStarted(500)
         while True:
@@ -330,7 +331,8 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 break
 
-        self.addToConsole("Stopped with exit status %i" % proc.exitCode())
+        proc_time = time.time() - start_time
+        self.addToConsole(f"Stopped after {int(proc_time)}s with exit status {proc.exitCode()}.")
         self.ui.inProgress.setVisible(False)
 
 
