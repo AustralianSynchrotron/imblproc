@@ -22,7 +22,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>3</number>
+       <number>4</number>
       </property>
       <widget class="QWidget" name="tabInit">
        <attribute name="title">
@@ -1276,6 +1276,9 @@
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
          <widget class="QTextBrowser" name="console"/>
+        </item>
+        <item>
+         <widget class="QProgressBar" name="inProgress"/>
         </item>
        </layout>
       </widget>

@@ -17,6 +17,7 @@ printhelp() {
   echo "  -z           Treat multiple Z's (if present) as independent scans."
   echo "  -f           Do not flip-and-stitch in 360deg scan."
   echo "  -l           Use projection positions from the log file."
+  echo "  -v           Be verbose."
   echo "  -h           Prints this help."
 }
 
@@ -27,9 +28,10 @@ Zst=true
 Fst=true
 opath=""
 uselog=false
+beverbose=false
 H5data="/entry/data/data"
 
-while getopts "yzfhelo:" opt ; do
+while getopts "vyzfhelo:" opt ; do
   case $opt in
     o) opath="$OPTARG" ;;
     e) MakeFF=false ;;
@@ -37,6 +39,7 @@ while getopts "yzfhelo:" opt ; do
     z) Zst=false ;;
     f) Fst=false ;;
     l) uselog=true ;;
+    v) beverbose=true ;;
     h) printhelp ; exit 0 ;;
     \?) echo "Invalid option: -$OPTARG" >&2 ; exit 1 ;;
     :)  echo "Option -$OPTARG requires an argument." >&2 ; exit 1 ;;
@@ -125,8 +128,12 @@ toHDFctas() {
 makeauximg() {
   if $MakeFF || [ ! -e "$1" ] ; then
     listi="$( cat "$listfile" | grep "^$2" | sed "s $2 ${ipath}/$2 g" | toHDFctas )"
+    vparam=""
+    if $beverbose ; then
+      vparam=" -v "
+    fi
     if [ ! -z "$listi" ] ; then
-      ctas v2v -o "$1" -b 1:1:0 $listi
+      ctas v2v -o "$1" -b 1:1:0 $vparam $listi
     fi
   fi
 }

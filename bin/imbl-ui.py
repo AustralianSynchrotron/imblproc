@@ -24,6 +24,33 @@ def killProcTree(pid):
     proc.kill()
 
 
+def parsePoptMx(outed, erred):
+    progg = proggMax = proggTxt = None
+    addOut = outed
+    addErr = erred
+    def retMe():
+        return progg, proggMax, proggTxt, addOut, addErr
+
+    if not outed:
+        return retMe()
+
+    addOut = ""
+    for curL in outed.splitlines():
+        curL = curL.strip()
+        if lres := re.search('Starting process \((.*) steps\)\: (.*)\.', curL) :
+            progg=0
+            proggMax=int(lres.group(1))
+            proggTxt=lres.group(2)
+        if re.search('Successfully finished (.*)', curL) or \
+           re.search('[0-9]+ of [0-9]+.*DONE.', curL) :
+            progg=-1
+        if lres := re.search('([0-9]*)/([0-9]*)', curL) :
+            progg=int(lres.group(1))
+            proggMax=int(lres.group(2))
+        elif len(curL):
+            addOut += curL + '\n'
+    return retMe()
+
 
 
 
@@ -55,6 +82,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.splits.setSpan(0, 0, 1, 2)
         self.ui.splitSize.editingFinished.connect(self.ui.recalculateSplit)
         self.ui.irregularSplit.toggled.connect(self.ui.recalculateSplit)
+        self.ui.inProgress.setVisible(False)
 
         saveBtn = QtWidgets.QPushButton("Save", self)
         saveBtn.setFlat(True)
@@ -145,7 +173,6 @@ class MainWindow(QtWidgets.QMainWindow):
             qcolor = self.ui.console.palette().text().color()
         self.ui.console.setTextColor(qcolor)
         self.ui.console.append(str(text).strip('\n'))
-        #self.ui.console.setText(text)
 
 
     def addOutToConsole(self, text):
@@ -258,33 +285,53 @@ class MainWindow(QtWidgets.QMainWindow):
         self.amLoading = False
 
 
-    def execInBg(self, proc):
+    def execInBg(self, proc, parseProc=None):
 
         self.addToConsole("Executing command:")
-        self.addToConsole(proc.program() + " "
-                          + ' '.join([ar for ar in proc.arguments()]),
-                          QtCore.Qt.green)
-        if proc.workingDirectory() and \
-           not os.path.samefile(proc.workingDirectory(), os.getcwd()):
-            self.addToConsole("in ")
-            self.addToConsole(os.path.realpath(proc.workingDirectory()), QtCore.Qt.green)
+        printproc = proc.program() + " " + ' '.join([ar for ar in proc.arguments()])
+        printpwd = os.path.realpath(proc.workingDirectory())
+        self.addToConsole(f"cd \"{printpwd}\"    && \\ \n {printproc}", QtCore.Qt.green)
         eloop = QEventLoop(self)
         proc.finished.connect(eloop.quit)
         proc.readyReadStandardOutput.connect(eloop.quit)
         proc.readyReadStandardError.connect(eloop.quit)
+        self.ui.inProgress.setValue(0)
+        self.ui.inProgress.setMaximum(0)
+        self.ui.inProgress.setFormat(f"Starting {printproc}")
+        counter=0
 
         proc.start()
         proc.waitForStarted(500)
         while True:
-            self.addOutToConsole(proc.readAllStandardOutput()
-                                 .data().decode(sys.getdefaultencoding()))
-            self.addErrToConsole(proc.readAllStandardError()
-                                 .data().decode(sys.getdefaultencoding()))
+            progg = proggMax = proggTxt = None
+            addOut = proc.readAllStandardOutput().data().decode(sys.getdefaultencoding())
+            addErr = proc.readAllStandardError().data().decode(sys.getdefaultencoding())
+            try :
+                progg, proggMax, proggTxt, addOut, addErr = parseProc(addOut, addErr)
+                if progg is not None:
+                    if progg == -1 and self.ui.inProgress.isVisible():
+                        counter += 1
+                        self.ui.inProgress.setVisible(False)
+                    else:
+                        self.ui.inProgress.setValue(progg)
+                    self.ui.inProgress.setVisible(progg>=0)
+                if proggMax  and  proggMax != self.ui.inProgress.maximum() :
+                    self.ui.inProgress.setMaximum(proggMax)
+                if proggTxt:
+                    self.ui.inProgress.setFormat( (f"({counter+1}) " if counter else "")
+                                                  + proggTxt + ": %v of %m (%p%)" )
+            except:
+                pass
+            self.addOutToConsole(addOut)
+            self.addErrToConsole(addErr)
+
             if proc.state():
                 eloop.exec_()
             else:
                 break
+
         self.addToConsole("Stopped with exit status %i" % proc.exitCode())
+        self.ui.inProgress.setVisible(False)
 
 
     @pyqtSlot()
@@ -294,10 +341,12 @@ class MainWindow(QtWidgets.QMainWindow):
         for tabIdx in range(1, self.ui.tabWidget.count()-1):
             self.ui.tabWidget.widget(tabIdx).setEnabled(False)
 
+
     def update_initiate_state(self):
         self.ui.initiate.setEnabled(os.path.isdir(self.ui.inPath.text()) and
                                     (os.path.isdir(self.ui.outPath.text()) or
                                      not self.ui.individualIO.isChecked()))
+
 
     @pyqtSlot()
     @pyqtSlot(bool)
@@ -315,12 +364,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.on_expPath_textChanged()
         self.on_outPath_textChanged()
 
+
     @pyqtSlot()
     def on_expBrowse_clicked(self):
         newdir = QFileDialog.getExistingDirectory(
             self, "Experiment directory", self.ui.expPath.text())
         if newdir:
             self.ui.expPath.setText(newdir)
+
 
     @pyqtSlot(bool)
     @pyqtSlot(str)
@@ -359,6 +410,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ui.expSample.setCurrentIndex(sidx)
         self.ui.expSample.setEnabled(True)
 
+
     @pyqtSlot(str)
     def on_expSample_currentTextChanged(self):
         if self.ui.individualIO.isChecked() or self.ui.expSample.styleSheet():
@@ -368,12 +420,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.inPath.setText(os.path.join(epath, 'input', sample))
         self.ui.outPath.setText(os.path.join(epath, 'output', sample))
 
+
     @pyqtSlot()
     def on_inBrowse_clicked(self):
         newdir = QFileDialog.getExistingDirectory(
             self, "Sample directory", os.path.dirname(self.ui.inPath.text()))
         if newdir:
             self.ui.inPath.setText(newdir)
+
 
     @pyqtSlot(str)
     @pyqtSlot(bool)
@@ -561,7 +615,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.tabWidget.widget(tabIdx).setEnabled(True)
 
 
-
     initproc = QProcess()
 
     @pyqtSlot()
@@ -581,6 +634,7 @@ class MainWindow(QtWidgets.QMainWindow):
             os.makedirs(opath, exist_ok=True)
 
         command = execPath + "imbl-init.sh "
+        command += " -v "
         if self.ui.notFnS.isChecked():
             command += " -f "
         if self.ui.yIndependent.isChecked():
@@ -591,12 +645,12 @@ class MainWindow(QtWidgets.QMainWindow):
             command += " -e "
         if not self.ui.ignoreLog.isChecked() and self.ui.ignoreLog.isVisible() :
             command += " -l "
-        command += " -o \"%s\" " % opath
-        command += self.ui.inPath.text()
+        command += f" -o \"{opath}\" "
+        command += f" \"{self.ui.inPath.text()}\" "
 
         self.initproc.setProgram("/bin/sh")
         self.initproc.setArguments(("-c", command))
-        self.execInBg(self.initproc)
+        self.execInBg(self.initproc, parsePoptMx)
 
         self.ui.initInfo.setEnabled(True)
         self.ui.initiate.setStyleSheet('')
@@ -715,8 +769,9 @@ class MainWindow(QtWidgets.QMainWindow):
             prms += " -C %i,%i,%i,%i " % crops
         minProj = self.ui.minProj.value()
         maxProj = self.ui.maxProj.value()
-        if maxProj == self.ui.maxProj.minimum():
-            maxProj = int(self.ui.projections.text())
+        pjs=int(self.ui.projections.text())
+        if maxProj == self.ui.maxProj.minimum()  or maxProj >= pjs  :
+            maxProj = pjs
         prms += " -m %i -M %i " % (minProj, maxProj)
         prms += " -v "
         prms += ars
@@ -744,12 +799,14 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.on_xtractIn_textChanged()  # to correct state of process all
         self.update_initiate_state()
 
+
     @pyqtSlot()
     def on_test_clicked(self):
         ars = (" -t %i" % self.ui.testProjection.value())
         wdir = os.path.join(self.ui.outPath.text(),
                             self.ui.testSubDir.currentText())
         self.common_test_proc(ars, wdir, self.ui.test)
+
 
     def procParams(self):
         ars = " -d " if self.ui.noRecFF.isChecked() else ""
@@ -758,11 +815,13 @@ class MainWindow(QtWidgets.QMainWindow):
         ars += " -w " if self.ui.deleteClean.isChecked() else ""
         return ars
 
+
     @pyqtSlot()
     def on_procAll_clicked(self):
         wdir = self.ui.outPath.text()
         self.saveConfiguration(os.path.join(wdir, self.configName))
         self.common_test_proc(self.procParams(), wdir, self.ui.procAll)
+
 
     @pyqtSlot()
     def on_procThis_clicked(self):
@@ -770,9 +829,6 @@ class MainWindow(QtWidgets.QMainWindow):
                             self.ui.testSubDir.currentText())
         self.saveConfiguration(os.path.join(wdir, self.configName))
         self.common_test_proc(self.procParams(), wdir, self.ui.procThis)
-
-
-
 
 
     xtrproc = QProcess()
@@ -800,12 +856,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.xtractExecute.setText(xtrText)
         self.ui.xtractExecute.setStyleSheet("")
 
+
     @pyqtSlot()
     def on_xtractBrowse_clicked(self):
         newfile, _filter = QFileDialog.getOpenFileName(self,
             "Xtract parameters file", os.path.dirname(self.ui.xtractIn.text()))
         if newfile:
             self.ui.xtractIn.setText(newfile)
+
 
     @pyqtSlot()
     @pyqtSlot(str)
@@ -840,12 +898,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.ppExecute.setText(ppText)
         self.ui.ppExecute.setStyleSheet("")
 
+
     @pyqtSlot()
     def on_ppBrowse_clicked(self):
         newfile, _filter = QFileDialog.getOpenFileName(self,
             "Executable file", os.path.dirname(self.ui.ppIn.text()))
         if newfile:
             self.ui.ppIn.setText(newfile)
+
 
     @pyqtSlot()
     @pyqtSlot(str)
@@ -869,9 +929,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.minProj.setStyleSheet(nstl)
         self.ui.maxProj.setStyleSheet(nstl)
 
+
     @pyqtSlot(int)
     def on_minProj_valueChanged(self):
         self.onMinMaxProjectionChanged()
+
 
     @pyqtSlot(int)
     def on_maxProj_valueChanged(self):

@@ -34,7 +34,7 @@ printhelp() {
   echo "  -w                Delete projections folder (clean) after X-tract processing."
   echo "  -n                Do NOT check results after processing is complete."
   echo "  -t INT            Test mode: keeps intermediate images for the projection in tmp."
-  echo "  -v                Verbose mode: show progress."
+  echo "  -v                Be verbose to show progress."
   echo "  -h                Prints this help."
 }
 
@@ -77,8 +77,6 @@ maxProj=$(( $pjs - 1 ))
 nlen=${#pjs}
 wipeClean=false
 beverbose=false
-
-echo "$allopts" >> ".proc.history"
 
 while getopts "k:g:G:f:c:C:r:b:s:x:m:M:dt:hwvn" opt ; do
   case $opt in
@@ -142,8 +140,9 @@ while getopts "k:g:G:f:c:C:r:b:s:x:m:M:dt:hwvn" opt ; do
   esac
 done
 
-
-
+if [ -z "$PROCRECURSIVE" ] ; then
+  echo "$allopts" >> ".proc.history"
+fi
 
 if [ ! -z "$subdirs" ] ; then
 
@@ -169,7 +168,7 @@ if [ ! -z "$subdirs" ] ; then
 fi
 
 shift $(( $OPTIND - 1 ))
-
+export PROCRECURSIVE=true
 
 
 
@@ -187,7 +186,7 @@ if (( $fshift >= 1 )) ; then
   stParam="$stParam --flip-origin $originFlip"
 fi
 
-if [ $beverbose ] ; then
+if $beverbose ; then
   stParam="$stParam --verbose "
 fi
 
@@ -236,7 +235,7 @@ elif [ "$1" = "check" ] ; then
     fi
 
     paropt=""
-    if [ $beverbose ] ; then
+    if $beverbose ; then
       paropt=" --eta "
       echo "Checking for corrupt data in results:" >&2
     fi
@@ -272,6 +271,7 @@ fi
 
 declare -a idxs
 declare -a srcf
+imagemask="$(sed 's: :\n:g' <<< "$filemask" | sed -r 's ^(.+) _\1 g')"
 cpr=0
 while read imgm ; do
   lbl=$( sed -e 's:_$::g' -e 's:^_::g' <<< $imgm )
@@ -279,9 +279,9 @@ while read imgm ; do
     lbl="single"
   fi
   if [ "$format" == "HDF5" ] ; then
-    srcf[$cpr]="$ipath/SAMPLE_${imgm}.hdf:$H5data:"
+    srcf[$cpr]="$ipath/SAMPLE${imgm}.hdf:$H5data:"
   else
-    srcf[$cpr]="$ipath/SAMPLE_${imgm}_T%0${nlen}i.tif"
+    srcf[$cpr]="$ipath/SAMPLE${imgm}_T%0${nlen}i.tif"
   fi
   idxs[$cpr]=$( ( cat "$projfile" |
                   grep -v '#' |
@@ -290,7 +290,7 @@ while read imgm ; do
                   head -n $pjs |
                   perl -pe 'chomp if eof' - ) 2> /dev/null )
   ((cpr++))
-done <<< "$( echo $filemask | sed 's: :\n:g' )"
+done <<< "$imagemask"
 if (( $fshift >= 1 )) ; then
   while read imgm ; do
     lbl=$( sed -e 's:_$::g' -e 's:^_::g' <<< $imgm )
@@ -298,9 +298,9 @@ if (( $fshift >= 1 )) ; then
       lbl="single"
     fi
     if [ "$format" == "HDF5" ] ; then
-      srcf[$cpr]="$ipath/SAMPLE_${imgm}.hdf:$H5data:"
+      srcf[$cpr]="$ipath/SAMPLE${imgm}.hdf:$H5data:"
     else
-      srcf[$cpr]="$ipath/SAMPLE_${imgm}_T%0${nlen}i.tif"
+      srcf[$cpr]="$ipath/SAMPLE${imgm}_T%0${nlen}i.tif"
     fi
     idxs[$cpr]=$( ( cat "$projfile" |
                     grep -v '#' |
@@ -310,7 +310,7 @@ if (( $fshift >= 1 )) ; then
                     head -n $pjs |
                     perl -pe 'chomp if eof' - ) 2> /dev/null )
     ((cpr++))
-  done <<< "$( echo $filemask | sed 's: :\n:g' )"
+  done <<< "$imagemask"
 fi
 declare -a clmn
 for ((ccpr=0 ; ccpr < $cpr ; ccpr++)) ; do
@@ -330,7 +330,7 @@ done
 
 ctas proj $stParam <<< "$projin" ||
   ( echo "There was an error executing:" >&2
-    echo "  echo $projin | ctas proj $stParam" >&2 )
+    echo -e "    ctas proj $stParam <<< \n$projin"  >&2 )
 
 
 
