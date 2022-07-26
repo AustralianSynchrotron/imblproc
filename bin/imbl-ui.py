@@ -791,7 +791,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stitchproc.setProgram("/bin/sh")
         self.stitchproc.setArguments(("-c", execPath + "imbl-proc.sh " + prms))
         self.stitchproc.setWorkingDirectory(wdir)
-        self.execInBg(self.stitchproc)
+        self.execInBg(self.stitchproc, parsePoptMx)
 
         for wdg in disableWdgs:
             wdg.setEnabled(True)
