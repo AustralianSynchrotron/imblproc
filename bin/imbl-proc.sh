@@ -269,68 +269,47 @@ else
   stParam="$stParam --select $1"
 fi
 
-declare -a idxs
-declare -a srcf
-imagemask="$(sed 's: :\n:g' <<< "$filemask" | sed -r 's ^(.+) _\1 g')"
-cpr=0
+imagemask="$(echo $filemask | sed 's: :\n:g' | sed -r 's ^(.+) _\1 g')"
+idxslisto=""
+idxslistf=""
 while read imgm ; do
+
+  header=""
+  fprint=""
+  if [ "$format" == "HDF5" ] ; then
+    header="$ipath/SAMPLE${imgm}.hdf:$H5data:"
+    fprint="%i,"
+  else
+    header=""
+    fprint="$ipath/SAMPLE${imgm}_T%0${nlen}i.tif\n"
+  fi
   lbl=$( sed -e 's:_$::g' -e 's:^_::g' <<< $imgm )
   if [ -z "$lbl" ] ; then
     lbl="single"
   fi
-  if [ "$format" == "HDF5" ] ; then
-    srcf[$cpr]="$ipath/SAMPLE${imgm}.hdf:$H5data:"
-  else
-    srcf[$cpr]="$ipath/SAMPLE${imgm}_T%0${nlen}i.tif"
+
+  idxfl=".idxs${imgm}.o"
+  echo -n "$header" > "$idxfl"
+  cat "$projfile" | grep -v '#' | grep "${lbl}" | cut -d' ' -f 3  \
+    | head -n $pjs | perl -pe 'chomp if eof' - | xargs printf "$fprint" >> "$idxfl"
+  idxslisto="$idxslisto $idxfl"
+  if (( $fshift >= 1 )) ; then
+    idxfl=".idxs${imgm}.f"
+    echo -n "$header" > "$idxfl"
+    cat "$projfile" | grep -v '#' | grep "${lbl}" | cut -d' ' -f 3 \
+      | tail -n +$fshift \
+      | head -n $pjs | perl -pe 'chomp if eof' | xargs printf "$fprint" >> "$idxfl"
+    idxslistf="$idxslistf $idxfl"
   fi
-  idxs[$cpr]=$( ( cat "$projfile" |
-                  grep -v '#' |
-                  grep "${lbl}" |
-                  cut -d' ' -f 3 |
-                  head -n $pjs |
-                  perl -pe 'chomp if eof' - ) 2> /dev/null )
-  ((cpr++))
-done <<< "$imagemask"
-if (( $fshift >= 1 )) ; then
-  while read imgm ; do
-    lbl=$( sed -e 's:_$::g' -e 's:^_::g' <<< $imgm )
-    if [ -z "$lbl" ] ; then
-      lbl="single"
-    fi
-    if [ "$format" == "HDF5" ] ; then
-      srcf[$cpr]="$ipath/SAMPLE${imgm}.hdf:$H5data:"
-    else
-      srcf[$cpr]="$ipath/SAMPLE${imgm}_T%0${nlen}i.tif"
-    fi
-    idxs[$cpr]=$( ( cat "$projfile" |
-                    grep -v '#' |
-                    grep "${lbl}" |
-                    cut -d' ' -f 3 |
-                    tail -n +$fshift |
-                    head -n $pjs |
-                    perl -pe 'chomp if eof' - ) 2> /dev/null )
-    ((cpr++))
-  done <<< "$imagemask"
-fi
-declare -a clmn
-for ((ccpr=0 ; ccpr < $cpr ; ccpr++)) ; do
-  if [ "$format" == "HDF5" ] ; then
-    clmn[$ccpr]="${srcf[$ccpr]}$(tr ' \n' ',' <<< ${idxs[$ccpr]})"
-  else
-    clmn[$ccpr]="$(printf "${srcf[$ccpr]}\n" ${idxs[$ccpr]} )"
-  fi
-done
-projin=""
-for cl in "${clmn[@]}"; do
-  projin=$(paste -d' ' <(echo -e "$projin") <( echo -e "$cl"))
-done
+
+done <<< $imagemask
 
 
 
 
-ctas proj $stParam <<< "$projin" ||
+paste -d' ' $idxslisto $iidxslistf  |  ctas proj $stParam  ||
   ( echo "There was an error executing:" >&2
-    echo -e "    ctas proj $stParam <<< \n$projin"  >&2 )
+    echo -e "paste -d' ' $idxslisto $iidxslistf  |  ctas proj $stParam"  >&2 )
 
 
 
