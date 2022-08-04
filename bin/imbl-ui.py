@@ -16,7 +16,6 @@ from pathlib import Path
 execPath = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
 warnStyle = 'background-color: rgba(255, 0, 0, 128);'
 
-
 def killProcTree(pid):
     proc=psutil.Process(pid)
     for child in proc.children(recursive=True):
@@ -24,31 +23,65 @@ def killProcTree(pid):
     proc.kill()
 
 
-def parsePoptMx(outed, erred):
+previousParse = ""
+def parseOutProgg(outed, erred):
+    global previousParse
     progg = proggMax = proggTxt = None
-    addOut = outed
-    addErr = erred
+    addToOut = outed
+    addToErr = erred
     def retMe():
-        return progg, proggMax, proggTxt, addOut, addErr
-
-    if not outed:
+        return progg, proggMax, proggTxt, addToOut, addToErr
+    if not outed and not erred:
         return retMe()
 
-    addOut = ""
+    addToOut = ""
     for curL in outed.splitlines():
-        curL = curL.strip()
-        if lres := re.search('Starting process \((.*) steps\)\: (.*)\.', curL) :
+        # poptmx start
+        if lres := re.search('Starting process \((.*) steps\)\: (.*)\.', curL) : 
             progg=0
             proggMax=int(lres.group(1))
             proggTxt=lres.group(2)
-        if re.search('Successfully finished (.*)', curL)  or  "DONE" in curL :
-           re.search('[0-9]+ of [0-9]+.*DONE.', curL) :
+            addToOut += curL + '\n'  
+        # poptmx complete
+        elif "Successfully finished" in curL or "DONE" in curL :
             progg=-1
-        if lres := re.search('([0-9]*)/([0-9]*)', curL) :
+            addToOut += curL + '\n'
+        # poptmx progg
+        elif lres := re.search('^([0-9]+)/([0-9]+)$', curL) :
             progg=int(lres.group(1))
             proggMax=int(lres.group(2))
+        # other
         elif len(curL):
-            addOut += curL + '\n'
+            addToOut += curL + '\n'
+        if len(curL.strip()) :
+            previousParse = curL.strip()
+
+    addToErr = ""
+    for curL in erred.splitlines(): # GNU parallel in err       
+        if 'Computers / CPU cores / Max jobs to run' in curL:
+            if lres := re.search('Starting (.*)\:', previousParse) :
+                progg=0
+                proggTxt=lres.group(1)
+        # GNU parallel skip
+        elif    'Computer:jobs running/jobs completed/%of started jobs/Average seconds to complete' in curL \
+             or re.search('.+ / [0-9]+ / [0-9]+', curL) :
+            progg=0
+        # GNU parallel progg
+        elif lres := re.search('ETA\: .* Left\: .* AVG\: .*\:([0-9]+)/([0-9]+)/.*/.*', curL) :
+            progg = int(lres.group(2))
+            leftToDo = int(lres.group(1))
+            proggMax = progg + leftToDo
+            if not leftToDo :
+                llres = re.search('ETA\: .* Left\: .* AVG\: .*\:([0-9]+)/([0-9]+)/.*/.*', previousParse)
+                if not llres or  progg != int(llres.group(2)) :
+                    progg=-1
+                    addToOut += " DONE.\n"
+        # other
+        elif len(curL):
+            addToErr += curL + '\n'
+        if len(curL.strip()) :
+            previousParse = curL.strip()
+
     return retMe()
 
 
@@ -308,7 +341,7 @@ class MainWindow(QtWidgets.QMainWindow):
             addOut = proc.readAllStandardOutput().data().decode(sys.getdefaultencoding())
             addErr = proc.readAllStandardError().data().decode(sys.getdefaultencoding())
             try :
-                progg, proggMax, proggTxt, addOut, addErr = parseProc(addOut, addErr)
+                progg, proggMax, proggTxt, toOut, toErr = parseProc(addOut, addErr)
                 if progg is not None:
                     if progg == -1 and self.ui.inProgress.isVisible():
                         counter += 1
@@ -323,8 +356,8 @@ class MainWindow(QtWidgets.QMainWindow):
                                                   + proggTxt + ": %v of %m (%p%)" )
             except:
                 pass
-            self.addOutToConsole(addOut)
-            self.addErrToConsole(addErr)
+            self.addOutToConsole(toOut)
+            self.addErrToConsole(toErr)
 
             if proc.state():
                 eloop.exec_()
@@ -532,7 +565,6 @@ class MainWindow(QtWidgets.QMainWindow):
         if not os.path.exists(initiatedFile):
             return
         initDict = dict()
-        print(f"{initiatedFile}")
         try:
             exec(open(initiatedFile).read(), initDict)
         except :
@@ -653,7 +685,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.initproc.setProgram("/bin/sh")
         self.initproc.setArguments(("-c", command))
-        self.execInBg(self.initproc, parsePoptMx)
+        self.execInBg(self.initproc, parseOutProgg)
 
         self.ui.initInfo.setEnabled(True)
         self.ui.initiate.setStyleSheet('')
@@ -792,7 +824,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stitchproc.setProgram("/bin/sh")
         self.stitchproc.setArguments(("-c", execPath + "imbl-proc.sh " + prms))
         self.stitchproc.setWorkingDirectory(wdir)
-        self.execInBg(self.stitchproc, parsePoptMx)
+        self.execInBg(self.stitchproc, parseOutProgg)
 
         for wdg in disableWdgs:
             wdg.setEnabled(True)

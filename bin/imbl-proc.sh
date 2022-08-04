@@ -134,8 +134,8 @@ while getopts "k:g:G:f:c:C:r:b:s:x:m:M:dt:hwvn" opt ; do
     n)  doCheck=false ;;
     v)  beverbose=true ;;
     h)  printhelp ; exit 1 ;;
-    \?) echo "Invalid option: -$OPTARG" >&2 ; exit 1 ;;
-    :)  echo "Option -$OPTARG requires an argument." >&2 ; exit 1 ;;
+    \?) echo "ERROR! Invalid option: -$OPTARG" >&2 ; exit 1 ;;
+    :)  echo "ERROR! Option -$OPTARG requires an argument." >&2 ; exit 1 ;;
   esac
 done
 
@@ -155,11 +155,22 @@ if [ ! -z "$subdirs" ] ; then
   fi
 
   for subd in $filemask ; do
-    echo "Processing subdirectory $subd ..."
+    if $beverbose ; then
+      echo "Processing subdirectory $subd ... "
+      echo "    cd $(realpath $subd)"
+    fi
     cd $subd
+    if $beverbose ; then
+      echo "    $0 $@"
+    fi
     $0 $@
+    if $beverbose ; then
+      echo "    cd $(realpath $OLDPWD)"
+    fi
     cd $OLDPWD
-    echo "Finished processing ${subd}."
+    if $beverbose ; then
+      echo "Finished processing ${subd}."
+    fi      
   done
 
   exit $?
@@ -236,7 +247,7 @@ elif [ "$1" = "check" ] ; then
     paropt=""
     if $beverbose ; then
       paropt=" --eta "
-      echo "Checking for corrupt data in results:" >&2
+      echo "Starting check for corrupt data in results:"
     fi
     badlist=$( echo $prelist | tr ', ' '\n' |
       parallel $paropt \
@@ -252,14 +263,17 @@ elif [ "$1" = "check" ] ; then
       badlist="${badlist::-1}"
     fi
     if [ "$badlist" = "$prelist" ] ; then
-      echo "No improvement after re-processing. Exiting."
+      echo "No improvement after re-processing. Exiting." >&2
       exit 1
     fi
     [ ! -z "$badlist" ]  &&  [ "$badlist" != "$prelist" ]
   do
     prelist="$badlist"
-    echo "Found bad projections to (re-)process: ${badlist}."
+    echo "Found bad projections to (re-)process: ${badlist}." >&2
     hallopts="$( sed s:check::g <<< $allopts )"
+    if $beverbose ; then
+      echo "    $0 $hallopts $badlist"
+    fi
     $0 $hallopts $badlist
   done
   exit 0
@@ -306,9 +320,14 @@ done <<< "$imagemask"
 
 
 
+if $beverbose ; then
+  echo "Starting frame formation in $PWD."
+  echo "   paste -d' ' $idxslisto $iidxslistf  |  ctas proj $stParam"
+fi
 paste -d' ' $idxslisto $iidxslistf  |  ctas proj $stParam  ||
   ( echo "There was an error executing:" >&2
-    echo -e "paste -d' ' $idxslisto $iidxslistf  |  ctas proj $stParam"  >&2 )
+    echo -e "paste -d' ' $idxslisto $iidxslistf  |  ctas proj $stParam"  >&2
+    exit 1 )
 
 
 
@@ -323,11 +342,14 @@ fi
 if [ -z "$xtParamFile" ] ; then
   exit $?
 fi
-echo "Starting CT reconstruction in $PWD"
 addOpt=""
 if [ ! -z "$step" ] ; then
   addOpt=" -a $step "
 fi
+if $beverbose ; then
+  echo "Starting CT reconstruction in $PWD."
+  echo "   imbl-xtract-wrapper.sh $addOpt "$xtParamFile" clean rec"
+fi  
 imbl-xtract-wrapper.sh $addOpt "$xtParamFile" clean rec
 xret="$?"
 if [ "$xret" -eq "0" ] && $wipeClean ; then
