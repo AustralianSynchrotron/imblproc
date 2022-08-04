@@ -42,6 +42,7 @@ def parsePoptMx(outed, erred):
             proggMax=int(lres.group(1))
             proggTxt=lres.group(2)
         if re.search('Successfully finished (.*)', curL) or \
+            "DONE" in curL:
            re.search('[0-9]+ of [0-9]+.*DONE.', curL) :
             progg=-1
         if lres := re.search('([0-9]*)/([0-9]*)', curL) :
