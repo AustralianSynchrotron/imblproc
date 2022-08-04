@@ -532,6 +532,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if not os.path.exists(initiatedFile):
             return
         initDict = dict()
+        print(f"{initiatedFile}")
         try:
             exec(open(initiatedFile).read(), initDict)
         except :
@@ -553,8 +554,8 @@ class MainWindow(QtWidgets.QMainWindow):
         except KeyError:
             return
 
-        self.ui.inPath.setText(ipath)
-
+        if self.ui.individualIO.isChecked():
+          self.ui.inPath.setText(ipath)
         self.doFnS = scanrange >= 360 and fshift > 0
         self.ui.scanRange.setText(str(scanrange))
         self.ui.step.setText(str(step))

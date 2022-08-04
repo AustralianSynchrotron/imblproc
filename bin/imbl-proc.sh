@@ -49,7 +49,6 @@ format="TIFF" # default
 projfile=".projections"
 initfile=".initstitch"
 chkf "$initfile" init
-# shellcheck source=~/usr/src/imblproc/share/imblproc/.initstitch.sh
 source "${initfile}"
 
 nofSt=$(wc -w <<< $filemask )
@@ -302,7 +301,7 @@ while read imgm ; do
     idxslistf="$idxslistf $idxfl"
   fi
 
-done <<< $imagemask
+done <<< "$imagemask"
 
 
 
