@@ -29,10 +29,9 @@ def parseOutProgg(outed, erred):
     progg = proggMax = proggTxt = None
     addToOut = outed
     addToErr = erred
-    def retMe():
-        return progg, proggMax, proggTxt, addToOut, addToErr
     if not outed and not erred:
-        return retMe()
+        return progg, proggMax, proggTxt, addToOut, addToErr
+
 
     addToOut = ""
     for curL in outed.splitlines():
@@ -82,7 +81,8 @@ def parseOutProgg(outed, erred):
         if len(curL.strip()) :
             previousParse = curL.strip()
 
-    return retMe()
+    return progg, proggMax, proggTxt, addToOut, addToErr
+
 
 
 
@@ -338,6 +338,7 @@ class MainWindow(QtWidgets.QMainWindow):
         proc.waitForStarted(500)
         while True:
             progg = proggMax = proggTxt = None
+            toOut = toErr = ""
             addOut = proc.readAllStandardOutput().data().decode(sys.getdefaultencoding())
             addErr = proc.readAllStandardError().data().decode(sys.getdefaultencoding())
             try :
