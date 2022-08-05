@@ -21,7 +21,8 @@ printhelp() {
   echo "                        2 - Cosine,"
   echo "                        3 - Hamming,"
   echo "                        4 - Hann."
-  echo "  -q                  Suppres X-tract output."
+  echo "  -q                  No output."
+  echo "  -v                  Full X-tract output."
   echo "  -h                  Print this help."
 }
 
@@ -48,10 +49,11 @@ ring_filter_sinogram_size=""
 cor=""
 recon_filter=""
 quiet=false
+verbose=false
 trim_region=""
 energy=""
 
-while getopts "p:r:s:c:e:a:S:P:d:D:R:F:T:hq" opt ; do
+while getopts "p:r:s:c:e:a:S:P:d:D:R:F:T:hqv" opt ; do
   case $opt in
     p)  projFiles="$OPTARG" ;;
     r)  recFiles="$OPTARG" ;;
@@ -65,11 +67,22 @@ while getopts "p:r:s:c:e:a:S:P:d:D:R:F:T:hq" opt ; do
     D)  phase_extraction_delta_to_beta="$OPTARG" ; qparam="${qparam} -D $OPTARG " ;;
     R)  ring_filter_sinogram_size="$OPTARG" ;
         ring_filter_sinogram=$(( $ring_filter_sinogram_size > 0 ? 1 : 0 ))
-        qparam="${qparam} -R $OPTARG " 
+        qparam="${qparam} -R $OPTARG "
         ;;
     T)  trim_region="$OPTARG" ; qparam="${qparam} -T $OPTARG "  ;; # IFS=',' read startx startY sizeX sizeY <<< "$OPTARG" ;;
     F)  recon_filter="$OPTARG" ; qparam="${qparam} -F $OPTARG " ;;
-    q)  quiet=true ;;
+    q)  quiet=true ;
+        if "$verbose" ;then
+          echo "Options -q (quiet) and -v (verbose) are incompatible." >&2
+          exit 1
+        fi
+        ;;
+    v)  verbose=true ;
+        if "$quiet" ;then
+          echo "Options -q (quiet) and -v (verbose) are incompatible." >&2
+          exit 1
+        fi
+        ;;
     h)  printhelp ; exit 1 ;;
     \?) echo "Invalid option: -$OPTARG" >&2 ; exit 1 ;;
     :)  echo "Option -$OPTARG requires an argument." >&2 ; exit 1 ;;
@@ -161,9 +174,65 @@ setXparam "$trim_region" trim_region
 drop_caches
 if $quiet ; then
   xlictworkflow_local.sh $xparams > /dev/null
-else
+elif $verbose ; then
   xlictworkflow_local.sh $xparams
+else
+
+  nofProj=0
+  nofSlic=0
+  curProj=
+  cntSlic=0
+  xlog="xtract_log.txt"
+
+  while read ; do
+
+    echo $REPLY >> "$xlog"
+    if grep -q -E 'Process: [0-9]+, Thread: [0-9]+, Projection Volume Dimensions, x = [0-9]+, y = [0-9]+, z = [0-9]+' \
+       <<< "$REPLY"
+    then
+      nofProj=$(echo "$REPLY" | sed 's:.*z = \([0-9]*\).*:\1:g' )
+      nofSlic=$(echo "$REPLY" | sed 's:.*y = \([0-9]*\).*:\1:g' )
+    elif grep -q -E 'Process: [0-9]+, Thread: [0-9]+, Get Projection Slab, pSlab->Get_nSliceOffset\(\) = [0-9]+, pSlab->Get_nSize\(\) = [0-9]+' \
+         <<< "$REPLY"
+    then
+      curProj=$(echo "$REPLY" | sed 's:.*Get_nSliceOffset() = \([0-9]*\).*:\1:g' )
+      echo "Reading projections: $curProj/$nofProj"
+    elif grep -q -E 'Process: [0-9]+, Thread: [0-9]+, Put Sinogram Slab, SliceOffset = 0' \
+         <<< "$REPLY"
+    then
+      echo "Reading projections: $curProj/$nofProj"
+      echo "Reading projections: DONE."
+    elif grep -q -E '<< COR= [0-9]+>>' \
+         <<< "$REPLY"
+    then
+      echo "$REPLY"
+    elif grep -q -E 'Process: [0-9]+, Thread: [0-9]+, Reconstructed slice [0-9]+' \
+         <<< "$REPLY"
+    then
+      curSlic=$(echo "$REPLY" | sed 's:.*Reconstructed slice \([0-9]*\).*:\1:g' )
+      (( cntSlic++ ))
+      echo "Reconstructing volume: $cntSlic/$nofSlic"
+    elif grep -q -E '>>>>> Progress: OnCompleted' \
+         <<< "$REPLY"
+    then
+      echo "Reconstructing volume: $cntSlic/$nofSlic"
+      echo "Reconstructing volume: DONE"
+
+    elif grep -q -E 'Process: [0-9]+, Finalising, Total Time = [.0-9]+ \(s\)' \
+         <<< "$REPLY"
+    then
+      ctTime=$(echo "$REPLY" | sed 's:.*Total Time = \([\.0-9]*\) (s).*:\1:g' )
+      echo "CT reconstruction finished in ${ctTime}s."
+    fi
+
+  done < <( xlictworkflow_local.sh $xparams  2> >(tee -a "$xlog" >&2 )  )
+
 fi
+
+
+
+
+
 
 exit $?
 
