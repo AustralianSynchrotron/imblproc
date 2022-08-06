@@ -171,9 +171,10 @@ setXparam "$trim_region" trim_region
 
 
 
+xlog=".xtract_log.txt"
 drop_caches
 if $quiet ; then
-  xlictworkflow_local.sh $xparams > /dev/null
+  xlictworkflow_local.sh $xparams >> "$xlog" 2> >(tee -a "$xlog" >&2 )
 elif $verbose ; then
   xlictworkflow_local.sh $xparams
 else
@@ -182,7 +183,6 @@ else
   nofSlic=0
   curProj=
   cntSlic=0
-  xlog="xtract_log.txt"
 
   while read ; do
 
@@ -192,26 +192,38 @@ else
     then
       nofProj=$(echo "$REPLY" | sed 's:.*z = \([0-9]*\).*:\1:g' )
       nofSlic=$(echo "$REPLY" | sed 's:.*y = \([0-9]*\).*:\1:g' )
+    
     elif grep -q -E 'Process: [0-9]+, Thread: [0-9]+, Get Projection Slab, pSlab->Get_nSliceOffset\(\) = [0-9]+, pSlab->Get_nSize\(\) = [0-9]+' \
          <<< "$REPLY"
     then
       curProj=$(echo "$REPLY" | sed 's:.*Get_nSliceOffset() = \([0-9]*\).*:\1:g' )
-      echo "Reading projections: $curProj/$nofProj"
+      if (( $curProj )) ; then
+        echo "Reading projections: $curProj/$nofProj"
+      fi
+    
     elif grep -q -E 'Process: [0-9]+, Thread: [0-9]+, Put Sinogram Slab, SliceOffset = 0' \
          <<< "$REPLY"
     then
       echo "Reading projections: $curProj/$nofProj"
       echo "Reading projections: DONE."
+    
     elif grep -q -E '<< COR= [0-9]+>>' \
          <<< "$REPLY"
     then
       echo "$REPLY"
+
+    elif grep -q -E   'Process: [0-9]+, Thread: [0-9]+, Get CT Recon Slab, Slice Offset = [0-9]+' \
+         <<< "$REPLY"
+    then
+        echo "Reconstructing volume: 0/$nofProj"
+    
     elif grep -q -E 'Process: [0-9]+, Thread: [0-9]+, Reconstructed slice [0-9]+' \
          <<< "$REPLY"
     then
       curSlic=$(echo "$REPLY" | sed 's:.*Reconstructed slice \([0-9]*\).*:\1:g' )
       (( cntSlic++ ))
       echo "Reconstructing volume: $cntSlic/$nofSlic"
+    
     elif grep -q -E '>>>>> Progress: OnCompleted' \
          <<< "$REPLY"
     then

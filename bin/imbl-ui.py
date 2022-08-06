@@ -24,9 +24,10 @@ def killProcTree(pid):
 
 
 previousParse = ""
+proggMax = None
 def parseOutProgg(outed, erred):
-    global previousParse
-    progg = proggMax = proggTxt = None
+    global previousParse, proggMax
+    progg = proggTxt = None
     addToOut = outed
     addToErr = erred
     if not outed and not erred:
@@ -49,6 +50,30 @@ def parseOutProgg(outed, erred):
         elif lres := re.search('^([0-9]+)/([0-9]+)$', curL) :
             progg=int(lres.group(1))
             proggMax=int(lres.group(2))
+        #xwrap reading progg
+        elif lres := re.search('Reading projections: ([0-9]+)/([0-9]+)', curL) :    
+            procName = "CT: reading projections." 
+            proggTxt = procName 
+            progg=int(lres.group(1))
+            proggMax=int(lres.group(2))
+            if not progg:
+                addToOut += procName + '\n' 
+        #xwrap reading complete.
+        elif 'Reading projections: DONE.' in curL:
+            progg = -1
+            addToOut += " DONE." + '\n' 
+        #xwrap reconstructing progg
+        elif lres := re.search('Reconstructing volume: ([0-9]+)/([0-9]+)', curL) :    
+            procName = "CT: reconstructing volume." 
+            proggTxt = procName 
+            progg=int(lres.group(1))
+            proggMax=int(lres.group(2))
+            if not progg:
+                addToOut += procName + '\n' 
+        #xwrap reconstion complete.
+        elif 'Reconstructing volume: DONE' in curL:
+            progg = -1
+            addToOut += " DONE." + '\n' 
         # other
         elif len(curL):
             addToOut += curL + '\n'
@@ -66,15 +91,15 @@ def parseOutProgg(outed, erred):
              or re.search('.+ / [0-9]+ / [0-9]+', curL) :
             progg=0
         # GNU parallel progg
-        elif lres := re.search('ETA\: .* Left\: .* AVG\: .*\:([0-9]+)/([0-9]+)/.*/.*', curL) :
-            progg = int(lres.group(2))
+        elif lres := re.search('ETA\: .* Left\: ([0-9]+) AVG\: .*\:[0-9]+/([0-9]+)/.*/.*', curL) :
             leftToDo = int(lres.group(1))
+            progg = int(lres.group(2))
             proggMax = progg + leftToDo
             if not leftToDo :
-                llres = re.search('ETA\: .* Left\: .* AVG\: .*\:([0-9]+)/([0-9]+)/.*/.*', previousParse)
-                if not llres or  progg != int(llres.group(2)) :
-                    progg=-1
-                    addToOut += " DONE.\n"
+                llres = re.search('ETA\: .* Left\: ([0-9]+) AVG\: .*\:[0-9]+/([0-9]+)/.*/.*', previousParse)
+                if not llres or progg != int(llres.group(2)) :
+                  progg = -1
+                  addToOut += " DONE.\n"
         # other
         elif len(curL):
             addToErr += curL + '\n'
@@ -337,14 +362,22 @@ class MainWindow(QtWidgets.QMainWindow):
         proc.start()
         proc.waitForStarted(500)
         while True:
+            addOut = proc.readAllStandardOutput().data().decode(sys.getdefaultencoding())
+            if addOut and len(addOut.strip()):
+              print(addOut, end=None)
+            addErr = proc.readAllStandardError().data().decode(sys.getdefaultencoding())
+            if addErr and len(addErr.strip()):
+              print(addErr, end=None, file=sys.stderr)
+            if not parseProc:
+                self.addOutToConsole(addOut)
+                self.addErrToConsole(addErr)
+                continue
             progg = proggMax = proggTxt = None
             toOut = toErr = ""
-            addOut = proc.readAllStandardOutput().data().decode(sys.getdefaultencoding())
-            addErr = proc.readAllStandardError().data().decode(sys.getdefaultencoding())
             try :
                 progg, proggMax, proggTxt, toOut, toErr = parseProc(addOut, addErr)
                 if progg is not None:
-                    if progg == -1 and self.ui.inProgress.isVisible():
+                    if progg < 0:
                         counter += 1
                         self.ui.inProgress.setVisible(False)
                     else:
@@ -366,7 +399,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 break
 
         proc_time = time.time() - start_time
-        self.addToConsole(f"Stopped after {int(proc_time)}s with exit status {proc.exitCode()}.")
+        final_msg = f"Stopped after {int(proc_time)}s with exit status {proc.exitCode()}."
+        if proc.exitCode():
+            self.addErrToConsole(final_msg)
+        else:
+            self.addOutToConsole(final_msg)
         self.ui.inProgress.setVisible(False)
 
 
@@ -887,7 +924,7 @@ class MainWindow(QtWidgets.QMainWindow):
         wdir = os.path.join(self.ui.outPath.text(),
                             self.ui.testSubDir.currentText())
         self.xtrproc.setWorkingDirectory(wdir)
-        self.execInBg(self.xtrproc)
+        self.execInBg(self.xtrproc, parseOutProgg)
 
         self.ui.xtractExecute.setText(xtrText)
         self.ui.xtractExecute.setStyleSheet("")
