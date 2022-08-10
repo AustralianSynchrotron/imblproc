@@ -221,7 +221,11 @@ outInitFile() {
     for msk in $hmask ; do
       echo "# $msk: 0.0 $hrange $hpjs $hstep" >> "${2}/$projName"
     done
-    for msk in $hmask ; do
+    pmask="$hmask"
+    if [ -z "$pmask" ] ; then
+      pmask="single"
+    fi
+    for msk in $pmask ; do
       seq 0 $hpjs | sed "s:^\(.*\):$msk \1 \1:g" >> "${2}/$projName"
     done
   fi
