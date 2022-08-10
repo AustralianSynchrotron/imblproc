@@ -318,7 +318,7 @@ done <<< "$imagemask"
 
 
 
-idxslist="$( echo .idxs*o .idxs*f 2> /dev/null)"
+idxslist="$( (ls .idxs*o ; ls .idxs*f) 2> /dev/null )"
 if $beverbose ; then
   echo "Starting frame formation in $PWD."
   #echo "   paste -d' ' $idxslisto $iidxslistf  |  ctas proj $stParam"
