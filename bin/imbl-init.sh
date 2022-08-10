@@ -215,6 +215,15 @@ outInitFile() {
     if (( $hshift != 0 )) ; then
       hfshift=$( echo "180 * $hpjs / $hrange" | bc )
     fi
+  else
+    echo "# Set: start, range, projections, step" > "${2}/$projName"
+    echo "# Common: 0.0 $hrange $hpjs $hstep" >> "${2}/$projName"
+    for msk in $hmask ; do
+      echo "# $msk: 0.0 $hrange $hpjs $hstep" >> "${2}/$projName"
+    done
+    for msk in $hmask ; do
+      seq 0 $hpjs | sed "s:^\(.*\):$msk \1 \1:g" >> "${2}/$projName"
+    done
   fi
 
   filemask="$hmask"

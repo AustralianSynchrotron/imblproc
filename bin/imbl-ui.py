@@ -749,6 +749,21 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     @pyqtSlot()
+    def on_maskBrowse_clicked(self):
+        newfile, _filter = QFileDialog.getOpenFileName(self,
+            "Mask image.", os.path.dirname(self.ui.maskPath.text()))
+        if newfile:
+            self.ui.maskPath.setText(newfile)
+
+
+    @pyqtSlot()
+    @pyqtSlot(str)
+    def on_maskPath_textChanged(self):
+        maskOK = os.path.exists(self.ui.maskPath.text()) or not len(self.ui.maskPath.text().strip())
+        self.ui.maskPath.setStyleSheet("" if maskOK else warnStyle)
+
+
+    @pyqtSlot()
     def addToSplit(self, pos=0):
         nrow = self.ui.splits.rowCount() - 1
         self.ui.splits.insertRow(nrow)
@@ -820,6 +835,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.doFnS:
             prms += " -f %f,%f " % (
                 self.ui.fStX.value(), self.ui.fStY.value())
+        if len(self.ui.maskPath.text().strip()) :
+            prms += f" -i \"{self.ui.maskPath.text().strip()}\" "
         if 1 != self.ui.xBin.value() * self.ui.yBin.value():
             prms += " -b %i,%i " % (
                 self.ui.xBin.value(), self.ui.yBin.value())

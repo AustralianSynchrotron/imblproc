@@ -663,17 +663,10 @@
         <item row="1" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_12">
           <item>
-           <widget class="QLineEdit" name="maskPath">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-           </widget>
+           <widget class="QLineEdit" name="maskPath"/>
           </item>
           <item>
            <widget class="QPushButton" name="maskBrowse">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
             <property name="text">
              <string>Browse</string>
             </property>

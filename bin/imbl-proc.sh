@@ -21,6 +21,7 @@ printhelp() {
   echo "     T, L, B and R numbers give cropping from the edges of the images:"
   echo "     top,left,bottom,right."
   echo "Other options."
+  echo "  -i PATH           Path to the image mask used in projection formation."
   echo "  -r ANGLE          Rotate projections."
   echo "  -b INT[,INT]      Binning factor(s). If second number is given, then two"
   echo "                    independent binnings in X and Y coordinates; same otherwise."
@@ -77,9 +78,9 @@ nlen=${#pjs}
 wipeClean=false
 beverbose=false
 
-while getopts "k:g:G:f:c:C:r:b:s:x:m:M:dt:hwvn" opt ; do
+while getopts "i:g:G:f:c:C:r:b:s:x:m:M:dt:hwvn" opt ; do
   case $opt in
-    k)  mask=$OPTARG;;
+    i)  gmask=$OPTARG;;
     g)  origin=$OPTARG
         if (( $nofSt < 2 )) ; then
           echo "ERROR! Accordingly to the init file there is nothing to stitch." >&2
@@ -215,9 +216,9 @@ if [ -e "$imggf" ]  &&  $ffcorrection ; then
   stParam="$stParam --dg $imggf"
 fi
 
-imgms="$mask"
+imgms="$gmask"
 if [ $imgms ] && [ -e "$imgms" ] ; then
-  stParam="$stParam --mask $mask"
+  stParam="$stParam --mask $gmask"
 fi
 
 oname="SAMPLE_T@.tif"
@@ -283,8 +284,7 @@ else
 fi
 
 imagemask="$(echo $filemask | sed 's: :\n:g' | sed -r 's ^(.+) _\1 g')"
-idxslisto=""
-idxslistf=""
+rm .idxs* 2> /dev/null
 while read imgm ; do
 
   header=""
@@ -305,14 +305,12 @@ while read imgm ; do
   echo -n "$header" > "$idxfl"
   cat "$projfile" | grep -v '#' | grep "${lbl}" | cut -d' ' -f 3  \
     | head -n $pjs | perl -pe 'chomp if eof' - | xargs printf "$fprint" >> "$idxfl"
-  idxslisto="$idxslisto $idxfl"
   if (( $fshift >= 1 )) ; then
     idxfl=".idxs${imgm}.f"
     echo -n "$header" > "$idxfl"
     cat "$projfile" | grep -v '#' | grep "${lbl}" | cut -d' ' -f 3 \
       | tail -n +$fshift \
       | head -n $pjs | perl -pe 'chomp if eof' | xargs printf "$fprint" >> "$idxfl"
-    idxslistf="$idxslistf $idxfl"
   fi
 
 done <<< "$imagemask"
@@ -320,13 +318,15 @@ done <<< "$imagemask"
 
 
 
+idxslist="$( echo .idxs*o .idxs*f 2> /dev/null)"
 if $beverbose ; then
   echo "Starting frame formation in $PWD."
-  echo "   paste -d' ' $idxslisto $iidxslistf  |  ctas proj $stParam"
+  #echo "   paste -d' ' $idxslisto $iidxslistf  |  ctas proj $stParam"
+  echo "   paste -d' ' $idxslist  |  ctas proj $stParam"
 fi
-paste -d' ' $idxslisto $iidxslistf  |  ctas proj $stParam  ||
+paste -d' ' $idxslist  |  ctas proj $stParam  ||
   ( echo "There was an error executing:" >&2
-    echo -e "paste -d' ' $idxslisto $iidxslistf  |  ctas proj $stParam"  >&2
+    echo -e "paste -d' ' $idxslist  |  ctas proj $stParam"  >&2
     exit 1 )
 
 
