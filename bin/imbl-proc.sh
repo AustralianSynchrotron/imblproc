@@ -171,7 +171,7 @@ if [ ! -z "$subdirs" ] ; then
     cd $OLDPWD
     if $beverbose ; then
       echo "Finished processing ${subd}."
-    fi      
+    fi
   done
 
   exit $?
@@ -304,21 +304,23 @@ while read imgm ; do
   idxfl=".idxs${imgm}.o"
   echo -n "$header" > "$idxfl"
   cat "$projfile" | grep -v '#' | grep "${lbl}" | cut -d' ' -f 3  \
-    | head -n $pjs | perl -pe 'chomp if eof' - | xargs printf "$fprint" >> "$idxfl"
+    | head -n $pjs | perl -pe 'chomp if eof' - | xargs printf "$fprint" > "$idxfl"
   if (( $fshift >= 1 )) ; then
     idxfl=".idxs${imgm}.f"
     echo -n "$header" > "$idxfl"
     cat "$projfile" | grep -v '#' | grep "${lbl}" | cut -d' ' -f 3 \
       | tail -n +$fshift \
-      | head -n $pjs | perl -pe 'chomp if eof' | xargs printf "$fprint" >> "$idxfl"
+      | head -n $pjs | perl -pe 'chomp if eof' | xargs printf "$fprint" > "$idxfl"
   fi
 
 done <<< "$imagemask"
+idxslist="$( (ls .idxs*o ; ls .idxs*f) 2> /dev/null | tr '\n' ' ' )"
 
 
 
 
-idxslist="$( (ls .idxs*o ; ls .idxs*f) 2> /dev/null )"
+
+
 if $beverbose ; then
   echo "Starting frame formation in $PWD."
   #echo "   paste -d' ' $idxslisto $iidxslistf  |  ctas proj $stParam"
@@ -328,6 +330,8 @@ paste -d' ' $idxslist  |  ctas proj $stParam  ||
   ( echo "There was an error executing:" >&2
     echo -e "paste -d' ' $idxslist  |  ctas proj $stParam"  >&2
     exit 1 )
+
+
 
 
 
@@ -349,7 +353,7 @@ fi
 if $beverbose ; then
   echo "Starting CT reconstruction in $PWD."
   echo "   imbl-xtract-wrapper.sh $addOpt "$xtParamFile" clean rec"
-fi  
+fi
 imbl-xtract-wrapper.sh $addOpt "$xtParamFile" clean rec
 xret="$?"
 if [ "$xret" -eq "0" ] && $wipeClean ; then

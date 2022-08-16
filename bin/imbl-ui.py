@@ -37,11 +37,11 @@ def parseOutProgg(outed, erred):
     addToOut = ""
     for curL in outed.splitlines():
         # poptmx start
-        if lres := re.search('Starting process \((.*) steps\)\: (.*)\.', curL) : 
+        if lres := re.search('Starting process \((.*) steps\)\: (.*)\.', curL) :
             progg=0
             proggMax=int(lres.group(1))
             proggTxt=lres.group(2)
-            addToOut += curL + '\n'  
+            addToOut += curL + '\n'
         # poptmx complete
         elif "Successfully finished" in curL or "DONE" in curL :
             progg=-1
@@ -51,29 +51,29 @@ def parseOutProgg(outed, erred):
             progg=int(lres.group(1))
             proggMax=int(lres.group(2))
         #xwrap reading progg
-        elif lres := re.search('Reading projections: ([0-9]+)/([0-9]+)', curL) :    
-            procName = "CT: reading projections." 
-            proggTxt = procName 
+        elif lres := re.search('Reading projections: ([0-9]+)/([0-9]+)', curL) :
+            procName = "CT: reading projections."
+            proggTxt = procName
             progg=int(lres.group(1))
             proggMax=int(lres.group(2))
             if not progg:
-                addToOut += procName + '\n' 
+                addToOut += procName + '\n'
         #xwrap reading complete.
         elif 'Reading projections: DONE.' in curL:
             progg = -1
-            addToOut += " DONE." + '\n' 
+            addToOut += " DONE." + '\n'
         #xwrap reconstructing progg
-        elif lres := re.search('Reconstructing volume: ([0-9]+)/([0-9]+)', curL) :    
-            procName = "CT: reconstructing volume." 
-            proggTxt = procName 
+        elif lres := re.search('Reconstructing volume: ([0-9]+)/([0-9]+)', curL) :
+            procName = "CT: reconstructing volume."
+            proggTxt = procName
             progg=int(lres.group(1))
             proggMax=int(lres.group(2))
             if not progg:
-                addToOut += procName + '\n' 
+                addToOut += procName + '\n'
         #xwrap reconstion complete.
         elif 'Reconstructing volume: DONE' in curL:
             progg = -1
-            addToOut += " DONE." + '\n' 
+            addToOut += " DONE." + '\n'
         # other
         elif len(curL):
             addToOut += curL + '\n'
@@ -81,7 +81,7 @@ def parseOutProgg(outed, erred):
             previousParse = curL.strip()
 
     addToErr = ""
-    for curL in erred.splitlines(): # GNU parallel in err       
+    for curL in erred.splitlines(): # GNU parallel in err
         if 'Computers / CPU cores / Max jobs to run' in curL:
             if lres := re.search('Starting (.*)\:', previousParse) :
                 progg=0
@@ -821,6 +821,16 @@ class MainWindow(QtWidgets.QMainWindow):
             killProcTree(self.stitchproc.processId())
             return
 
+        disableWdgs = (*self.configObjects,
+                       self.ui.procAll, self.ui.procThis, self.ui.test,
+                       self.ui.splits, self.ui.initiate)
+        for wdg in disableWdgs:
+            if wdg is not actButton:
+                wdg.setEnabled(False)
+        actText = actButton.text()
+        actButton.setText('Stop')
+        actButton.setStyleSheet(warnStyle)
+
         prms = str()
         if self.doYst or self.doZst:
             if self.doZst:
@@ -865,16 +875,6 @@ class MainWindow(QtWidgets.QMainWindow):
         prms += " -m %i -M %i " % (minProj, maxProj)
         prms += " -v "
         prms += ars
-
-        disableWdgs = (*self.configObjects,
-                       self.ui.procAll, self.ui.procThis, self.ui.test,
-                       self.ui.splits, self.ui.initiate)
-        for wdg in disableWdgs:
-            if wdg is not actButton:
-                wdg.setEnabled(False)
-        actText = actButton.text()
-        actButton.setText('Stop')
-        actButton.setStyleSheet(warnStyle)
 
         self.stitchproc.setProgram("/bin/sh")
         self.stitchproc.setArguments(("-c", execPath + "imbl-proc.sh " + prms))
