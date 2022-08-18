@@ -17,10 +17,13 @@ execPath = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
 warnStyle = 'background-color: rgba(255, 0, 0, 128);'
 
 def killProcTree(pid):
-    proc=psutil.Process(pid)
-    for child in proc.children(recursive=True):
-        child.kill()
-    proc.kill()
+    try:
+        proc=psutil.Process(pid)
+        for child in proc.children(recursive=True):
+            child.kill()
+        proc.kill()
+    except Exception:
+        pass
 
 
 previousParse = ""
@@ -388,7 +391,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 if proggTxt:
                     self.ui.inProgress.setFormat( (f"({counter+1}) " if counter else "")
                                                   + proggTxt + ": %v of %m (%p%)" )
-            except:
+            except Exception:
                 pass
             self.addOutToConsole(toOut)
             self.addErrToConsole(toErr)
@@ -605,7 +608,7 @@ class MainWindow(QtWidgets.QMainWindow):
         initDict = dict()
         try:
             exec(open(initiatedFile).read(), initDict)
-        except :
+        except Exception:
             self.addErrToConsole("Corrupt init file \"%s\"" % initiatedFile)
             return
         try:

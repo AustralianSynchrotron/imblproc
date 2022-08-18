@@ -126,16 +126,20 @@ toHDFctas() {
 }
 
 makeauximg() {
-  if $MakeFF || [ ! -e "$1" ] ; then
-    listi="$( cat "$listfile" | grep "^$2" | sed "s $2 ${ipath}/$2 g" | toHDFctas )"
-    vparam=""
-    if $beverbose ; then
-      vparam=" -v "
-    fi
-    if [ ! -z "$listi" ] ; then
-      ctas v2v -o "$1" -b 1:1:0 $vparam $listi
-    fi
+  if ! $MakeFF  &&  [ -e "$1" ] ; then
+    return
   fi
+  listi="$( cat "$listfile" | grep "^$2" | sed "s $2 ${ipath}/$2 g" | toHDFctas )"
+  if [ -z "$listi" ] ; then
+    return
+  fi
+  vparam=""
+  if $beverbose ; then
+    vparam=" -v "
+    echo "Making $1:"
+    echo "  ctas v2v -o "$1" -b 1:1:0 $vparam $listi"
+  fi
+  ctas v2v -o "$1" -b 1:1:0 $vparam $listi
 }
 makeauximg "bg.tif" "BG"
 makeauximg "df.tif" "DF"
@@ -192,12 +196,11 @@ Ysize=$( wc -w <<< $Ylist )
 
 range=$(getfromconfig scan range)
 pjs=$(getfromconfig scan ^steps)
-step=$( echo "$range / $pjs " | bc )
+step=$( echo " scale=6 ; $range / $pjs " | bc | sed 's 0*$  g')
 fshift=0
 if (( $(echo "$range >= 360.0" | bc -l) ))  &&  $Fst  ; then
   fshift=$( echo "180 * $pjs / $range" | bc )
 fi
-
 
 initName=".initstitch"
 projName=".projections"
@@ -234,6 +237,7 @@ outInitFile() {
   if [ ! -z "$3" ] ; then
     filemask="${3}"
   fi
+
 
   echoInfo() {
     echo "filemask=\"$filemask\""

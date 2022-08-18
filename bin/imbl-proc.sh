@@ -304,13 +304,13 @@ while read imgm ; do
   idxfl=".idxs${imgm}.o"
   echo -n "$header" > "$idxfl"
   cat "$projfile" | grep -v '#' | grep "${lbl}" | cut -d' ' -f 3  \
-    | head -n $pjs | perl -pe 'chomp if eof' - | xargs printf "$fprint" > "$idxfl"
+    | head -n $pjs | perl -pe 'chomp if eof' - | xargs printf "$fprint" >> "$idxfl"
   if (( $fshift >= 1 )) ; then
     idxfl=".idxs${imgm}.f"
     echo -n "$header" > "$idxfl"
     cat "$projfile" | grep -v '#' | grep "${lbl}" | cut -d' ' -f 3 \
       | tail -n +$fshift \
-      | head -n $pjs | perl -pe 'chomp if eof' | xargs printf "$fprint" > "$idxfl"
+      | head -n $pjs | perl -pe 'chomp if eof' | xargs printf "$fprint" >> "$idxfl"
   fi
 
 done <<< "$imagemask"
@@ -323,7 +323,6 @@ idxslist="$( (ls .idxs*o ; ls .idxs*f) 2> /dev/null | tr '\n' ' ' )"
 
 if $beverbose ; then
   echo "Starting frame formation in $PWD."
-  #echo "   paste -d' ' $idxslisto $iidxslistf  |  ctas proj $stParam"
   echo "   paste -d' ' $idxslist  |  ctas proj $stParam"
 fi
 paste -d' ' $idxslist  |  ctas proj $stParam  ||

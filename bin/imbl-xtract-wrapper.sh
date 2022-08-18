@@ -76,12 +76,14 @@ while getopts "p:r:s:c:e:a:S:P:d:D:R:F:T:hqv" opt ; do
           echo "Options -q (quiet) and -v (verbose) are incompatible." >&2
           exit 1
         fi
+        qparam="${qparam} -q "
         ;;
     v)  verbose=true ;
         if "$quiet" ;then
           echo "Options -q (quiet) and -v (verbose) are incompatible." >&2
           exit 1
         fi
+        qparam="${qparam} -v "
         ;;
     h)  printhelp ; exit 1 ;;
     \?) echo "Invalid option: -$OPTARG" >&2 ; exit 1 ;;
@@ -192,7 +194,7 @@ else
     then
       nofProj=$(echo "$REPLY" | sed 's:.*z = \([0-9]*\).*:\1:g' )
       nofSlic=$(echo "$REPLY" | sed 's:.*y = \([0-9]*\).*:\1:g' )
-    
+
     elif grep -q -E 'Process: [0-9]+, Thread: [0-9]+, Get Projection Slab, pSlab->Get_nSliceOffset\(\) = [0-9]+, pSlab->Get_nSize\(\) = [0-9]+' \
          <<< "$REPLY"
     then
@@ -200,13 +202,13 @@ else
       if (( $curProj )) ; then
         echo "Reading projections: $curProj/$nofProj"
       fi
-    
+
     elif grep -q -E 'Process: [0-9]+, Thread: [0-9]+, Put Sinogram Slab, SliceOffset = 0' \
          <<< "$REPLY"
     then
       echo "Reading projections: $curProj/$nofProj"
       echo "Reading projections: DONE."
-    
+
     elif grep -q -E '<< COR= [0-9]+>>' \
          <<< "$REPLY"
     then
@@ -216,14 +218,14 @@ else
          <<< "$REPLY"
     then
         echo "Reconstructing volume: 0/$nofProj"
-    
+
     elif grep -q -E 'Process: [0-9]+, Thread: [0-9]+, Reconstructed slice [0-9]+' \
          <<< "$REPLY"
     then
       curSlic=$(echo "$REPLY" | sed 's:.*Reconstructed slice \([0-9]*\).*:\1:g' )
       (( cntSlic++ ))
       echo "Reconstructing volume: $cntSlic/$nofSlic"
-    
+
     elif grep -q -E '>>>>> Progress: OnCompleted' \
          <<< "$REPLY"
     then

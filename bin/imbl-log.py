@@ -97,13 +97,16 @@ stop  = min(stops)   if pdir else  max(stops)
 minPos = min (start, stop)
 maxPos = max (start, stop)
 
-for label in labels:
-  while not minPos <= pos[label][1] <= maxPos :
-    del pos[label][0]
-    del idx[label][0]
-  while not minPos <= pos[label][-2] <= maxPos :
-    del pos[label][-1]
-    del idx[label][-1]
+for lbl in labels:
+  while len(pos[lbl]) > 3 and not minPos <= pos[lbl][1] <= maxPos :
+    del pos[lbl][0]
+    del idx[lbl][0]
+  while len(pos[lbl]) > 3 and not minPos <= pos[lbl][-2] <= maxPos :
+    del pos[lbl][-1]
+    del idx[lbl][-1]
+  if len(pos[lbl]) < 4 :
+    eprint("Corrupt log or incomplete scan.")
+    sys.exit(1)
 
 step = args.step
 if not step :
