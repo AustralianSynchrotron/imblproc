@@ -209,7 +209,7 @@ else
       echo "Reading projections: $curProj/$nofProj"
       echo "Reading projections: DONE."
 
-    elif grep -q -E '<< COR= [0-9]+>>' \
+    elif grep -q -E '<<.*COR.*=.*[0-9]+.*>>' \
          <<< "$REPLY"
     then
       echo "$REPLY"
