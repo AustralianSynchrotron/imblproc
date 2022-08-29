@@ -235,16 +235,41 @@ if [ -z "$1" ] ; then
     maxProj=$(( $pjs - 1 ))
   fi
   stParam="$stParam --select ${minProj}-${maxProj}"
-elif [ "$1" = "check" ] ; then
+elif [ "$1" != "check" ] ; then
+  stParam="$stParam --select $1"
+else
 
   prelist="$(seq ${minProj} ${maxProj})"
-  while
-    ls clean | sed 's SAMPLE clean/SAMPLE g' > ".listclean"
-    nofimgs=$( cat ".listclean" | sed 's .*\(split.*\)\..* \1 g' | sort | uniq | grep split -c )
-    if (( $nofimgs == 0 )) ; then
-      nofimgs=1
-    fi
+  ls clean | sed 's SAMPLE clean/SAMPLE g' > ".listclean"
+  exsplits="$( cat .listclean | sed 's .*\(split.*\)\..* \1 g' | sort | uniq )"
+  nofimgs=$(grep split -c <<< "$exsplits")
+  canonszs=""
+  if (( $nofimgs == 0 )) ; then
+    nofimgs=1
+    canonszs=$( identify  $(cat .listclean | head -n 1) | cut -d' ' -f 3 | tr -d "\n ")
+  else
+    canonszs=$( \
+      for exsplit in $exsplits ; do
+        identifyout="$(identify $(cat .listclean | grep $exsplit | head ) )"
+        szs=$( cut -d' ' -f 3 <<< "$identifyout"  | sort | uniq )
+        nofszs=$(grep -c x <<< "$szs" )
+        if (( $nofszs == 1 )) ; then
+          echo $szs
+        elif (( $nofszs == 2 )) ; then
+          for sz in $szs ; do
+            szcnt=$( grep -c $sz <<< "$identifyout" )
+            echo $szcnt $sz
+          done | sort -g -r -t' ' -k 1,1 | head -n 1 | cut -d' ' -f 2
+        else
+          echo "Inconsistent output image sizes." >&2
+          exit 1
+        fi
+      done | tr -d '\n ' )
+  fi
 
+  while
+
+    ls clean | sed 's SAMPLE clean/SAMPLE g' > ".listclean"
     paropt=""
     if $beverbose ; then
       paropt=" --eta "
@@ -257,9 +282,11 @@ elif [ "$1" = "check" ] ; then
         `' if [ -z "$imgs" ]  || '`
         `'    [ "'${nofimgs}'" != "$nofex" ]  || '`
         `'    ! identout=$(identify $imgs 2>&1) || '`
-        `'    grep -q identify <<< "$identout" ; '`
+        `'    grep -q identify <<< "$identout" || '`
+        `'    [ "'${canonszs}'" !=  "$( cut -d" " -f 3 <<< "$identout" | tr -d "\n " )" ] ; '`
         `' then echo {} ; fi ' |
       sort -g | tr '\n' ',' )
+
     if [ "," = "${badlist:0-1}" ] ; then # remove last comma if present
       badlist="${badlist::-1}"
     fi
@@ -268,10 +295,11 @@ elif [ "$1" = "check" ] ; then
       exit 1
     fi
     [ ! -z "$badlist" ]  &&  [ "$badlist" != "$prelist" ]
+
   do
     prelist="$badlist"
     echo "Found bad projections to (re-)process: ${badlist}." >&2
-    hallopts="$( sed s:check::g <<< $allopts )"
+    hallopts="$( sed 's:check::g' <<< $allopts )"
     if $beverbose ; then
       echo "    $0 $hallopts $badlist"
     fi
@@ -279,8 +307,6 @@ elif [ "$1" = "check" ] ; then
   done
   exit 0
 
-else
-  stParam="$stParam --select $1"
 fi
 
 imagemask="$(echo $filemask | sed 's: :\n:g' | sed -r 's ^(.+) _\1 g')"
@@ -336,13 +362,16 @@ paste -d' ' $idxslist  |  ctas proj $stParam  ||
 
 
 if [ "$testme" ] ; then
-  exit 0;
+  exit 0
 fi
 if $doCheck  &&  [ -z "$1" ] ; then
-  $0 $allopts check
+  export AMCHECKING=true
+  # -n to make sure it won't enter here and unset AMCHECKING
+  $0 $allopts -n check
+  unset AMCHECKING
 fi
 
-if [ -z "$xtParamFile" ] ; then
+if [ -z "$xtParamFile" ]  ||  [ ! -z ${AMCHECKING+x} ] ; then
   exit $?
 fi
 addOpt=""
