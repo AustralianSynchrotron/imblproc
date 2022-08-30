@@ -858,9 +858,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if 0.0 != self.ui.rotate.value():
             prms += " -r %f " % self.ui.rotate.value()
         if 0.0 != self.ui.edge.value():
-            prms += " -e %i " % self.ui.edge.value()
+            prms += " -E %i " % self.ui.edge.value()
         if 0.0 != self.ui.sigma.value():
-            prms += " --sigma %f " % self.ui.sigma.value()
+            prms += " -S %f " % self.ui.sigma.value()
         if self.ui.splits.rowCount() > 1:
             splits = []
             for crow in range(0, self.ui.splits.rowCount()-1):

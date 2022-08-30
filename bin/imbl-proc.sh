@@ -344,20 +344,20 @@ while read imgm ; do
   fi
 
 done <<< "$imagemask"
-idxslist="$( (ls .idxs*o ; ls .idxs*f) 2> /dev/null | tr '\n' ' ' )"
-
-
+#idxslist="$( (ls .idxs*o ; ls .idxs*f) 2> /dev/null | tr '\n' ' ' )"
+paste -d' ' $( (ls .idxs*o ; ls .idxs*f) 2> /dev/null ) > ".idxsall"
+rm .idxs*o .idxs*f 2> /dev/null
 
 
 
 
 if $beverbose ; then
   echo "Starting frame formation in $PWD."
-  echo "   paste -d' ' $idxslist  |  ctas proj $stParam"
+  echo "  ctas proj $stParam < .idxsall"
 fi
-paste -d' ' $idxslist  |  ctas proj $stParam  ||
+ctas proj $stParam < .idxsall  ||
   ( echo "There was an error executing:" >&2
-    echo -e "paste -d' ' $idxslist  |  ctas proj $stParam"  >&2
+    echo -e "ctas proj $stParam < .idxsall"  >&2
     exit 1 )
 
 
