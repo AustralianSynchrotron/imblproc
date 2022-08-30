@@ -63,6 +63,8 @@ crop="0,0,0,0"
 cropFinal="0,0,0,0"
 binn=1
 rotate=0
+edge=0
+sigma=0
 origin="0,0"
 originSecond="0,0"
 originFlip="0,0"
@@ -78,7 +80,7 @@ nlen=${#pjs}
 wipeClean=false
 beverbose=false
 
-while getopts "i:g:G:f:c:C:r:b:s:x:m:M:dt:hwvn" opt ; do
+while getopts "i:g:G:f:c:C:r:b:s:x:m:M:S:E:dt:hwvn" opt ; do
   case $opt in
     i)  gmask=$OPTARG;;
     g)  origin=$OPTARG
@@ -103,6 +105,8 @@ while getopts "i:g:G:f:c:C:r:b:s:x:m:M:dt:hwvn" opt ; do
         fi
         ;;
     r)  rotate=$OPTARG ;    stParam="$stParam --rotate $rotate" ;;
+    S)  sigma=$OPTARG ;     stParam="$stParam --sigma $sigma" ;;
+    E)  edge=$OPTARG ;      stParam="$stParam --edge $edge" ;;
     c)  crop=$OPTARG ;      stParam="$stParam --crop $crop" ;;
     C)  cropFinal=$OPTARG ; stParam="$stParam --crop-final $cropFinal" ;;
     b)  binn=$OPTARG ;      stParam="$stParam --binn $binn" ;;

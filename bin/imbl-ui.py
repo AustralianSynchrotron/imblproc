@@ -174,6 +174,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.procAfterInit,
             self.ui.maskPath,
             self.ui.rotate,
+            self.ui.edge,
+            self.ui.sigma,
             self.ui.sCropTop,
             self.ui.sCropBottom,
             self.ui.sCropRight,
@@ -855,6 +857,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ui.xBin.value(), self.ui.yBin.value())
         if 0.0 != self.ui.rotate.value():
             prms += " -r %f " % self.ui.rotate.value()
+        if 0.0 != self.ui.edge.value():
+            prms += " -e %i " % self.ui.edge.value()
+        if 0.0 != self.ui.sigma.value():
+            prms += " --sigma %f " % self.ui.sigma.value()
         if self.ui.splits.rowCount() > 1:
             splits = []
             for crow in range(0, self.ui.splits.rowCount()-1):
