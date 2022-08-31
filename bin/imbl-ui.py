@@ -527,8 +527,7 @@ class MainWindow(QtWidgets.QMainWindow):
         cfgName = ''
         attempt = 0
         while True:
-            n_cfgName = os.path.join(ipath,
-                                     'acquisition.%i.configuration' % attempt)
+            n_cfgName = os.path.join(ipath, f"acquisition.{attempt}.configuration")
             if os.path.exists(n_cfgName):
                 cfgName = n_cfgName
             else:
@@ -611,7 +610,7 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             exec(open(initiatedFile).read(), initDict)
         except Exception:
-            self.addErrToConsole("Corrupt init file \"%s\"" % initiatedFile)
+            self.addErrToConsole("Corrupt init file \"{initiatedFile}\"")
             return
         try:
             filemask = initDict['filemask']
@@ -839,28 +838,23 @@ class MainWindow(QtWidgets.QMainWindow):
         prms = str()
         if self.doYst or self.doZst:
             if self.doZst:
-                prms += " -g %f,%f " % (
-                  self.ui.iStX.value(), self.ui.iStY.value())
+                prms += f" -g {self.ui.iStX.value()},{self.ui.iStY.value()} "
             else:
-                prms += " -g %f,%f " % (
-                  self.ui.oStX.value(), self.ui.oStY.value())
+                prms += f" -g {self.ui.oStX.value()},{self.ui.oStY.value()} "
         if self.doYst and self.doZst:
-            prms += " -G %f,%f " % (
-                self.ui.oStX.value(), self.ui.oStY.value())
+            prms += f" -G {self.ui.oStX.value()},{self.ui.oStY.value()} "
         if self.doFnS:
-            prms += " -f %f,%f " % (
-                self.ui.fStX.value(), self.ui.fStY.value())
+            prms += f" -f {self.ui.fStX.value()},{self.ui.fStY.value()} "
         if len(self.ui.maskPath.text().strip()) :
             prms += f" -i \"{self.ui.maskPath.text().strip()}\" "
         if 1 != self.ui.xBin.value() * self.ui.yBin.value():
-            prms += " -b %i,%i " % (
-                self.ui.xBin.value(), self.ui.yBin.value())
+            prms += f" -b {self.ui.xBin.value()},{self.ui.yBin.value()} "
         if 0.0 != self.ui.rotate.value():
-            prms += " -r %f " % self.ui.rotate.value()
+            prms += f" -r {self.ui.rotate.value()} "
         if 0.0 != self.ui.edge.value():
-            prms += " -E %i " % self.ui.edge.value()
+            prms += f" -E {self.ui.edge.value()} "
         if 0.0 != self.ui.sigma.value():
-            prms += " -S %f " % self.ui.sigma.value()
+            prms += f" -S {self.ui.sigma.value()} "
         if self.ui.splits.rowCount() > 1:
             splits = []
             for crow in range(0, self.ui.splits.rowCount()-1):
@@ -881,7 +875,7 @@ class MainWindow(QtWidgets.QMainWindow):
         pjs=int(self.ui.projections.text())
         if maxProj == self.ui.maxProj.minimum()  or maxProj >= pjs  :
             maxProj = pjs
-        prms += " -m %i -M %i " % (minProj, maxProj)
+        prms += f" -m {minProj} -M {maxProj} "
         prms += " -v "
         prms += ars
 
@@ -901,7 +895,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def on_test_clicked(self):
-        ars = (" -t %i" % self.ui.testProjection.value())
+        ars = f" -t {self.ui.testProjection.value()}"
         wdir = os.path.join(self.ui.outPath.text(),
                             self.ui.testSubDir.currentText())
         self.common_test_proc(ars, wdir, self.ui.test)
@@ -909,7 +903,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def procParams(self):
         ars = " -d " if self.ui.noRecFF.isChecked() else ""
-        ars += (" -x \"%s\" " % self.ui.xtractIn.text()
+        ars += (f" -x \"{self.ui.xtractIn.text()}\" "
                 if self.ui.xtractAfter.isChecked() else "")
         ars += " -w " if self.ui.deleteClean.isChecked() else ""
         return ars

@@ -23,6 +23,8 @@ printhelp() {
   echo "Other options."
   echo "  -i PATH           Path to the image mask used in projection formation."
   echo "  -r ANGLE          Rotate projections."
+  echo "  -E INT            Thickness in pixels of edge transition."
+  echo "  -S FLOAT          Sigma used in gaussian gap closure."
   echo "  -b INT[,INT]      Binning factor(s). If second number is given, then two"
   echo "                    independent binnings in X and Y coordinates; same otherwise."
   echo "  -s INT[,INT...]   Split point(s). If given, then final projection is"

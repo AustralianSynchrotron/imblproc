@@ -713,7 +713,7 @@
         <item row="3" column="1">
          <widget class="QDoubleSpinBox" name="sigma">
           <property name="toolTip">
-           <string>Sigma used in gaussian gap closure.&lt;/span&gt;&lt;span style=&quot; font-family:'Hack'; color:#d69545;&quot;&gt; The gaps left by the mask superimpositions can be closed with the gaussian blur with the given sigma. If no mask is provided, the closure will be applied to pixels with values &gt;= 0 or NAN.</string>
+           <string>Sigma used in gaussian gap closure. The gaps left by the mask superimpositions can be closed with the gaussian blur with the given sigma. If no mask is provided, the closure will be applied to pixels with values &gt;= 0 or NAN.</string>
           </property>
           <property name="decimals">
            <number>1</number>
