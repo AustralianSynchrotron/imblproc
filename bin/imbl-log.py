@@ -15,8 +15,8 @@ parser = argparse.ArgumentParser(description=
   ' The file is read from the standart input and the result is sent to the standart output.')
 parser.add_argument('labels', type=str, nargs='*', default="",
                     help='Parse only given labels.')
-parser.add_argument('-i', '--info', action='store_true',
-                    help='Output only information derived from the log')
+parser.add_argument('-a', '--all', action='store_true',
+                    help='Output full information derived from the log')
 parser.add_argument('-t', '--table', action='store_true',
                     help='Output data in the new table format')
 parser.add_argument('-s', '--step', type=float, default=0,
@@ -89,11 +89,11 @@ if len(labels) == 0 :
   eprint("Empty or corrupt log.")
   sys.exit(1)
 
-starts = [ pos[label][ 0] for label in labels ]
-stops  = [ pos[label][-1] for label in labels ]
+starts = {label: pos[label][ 0] for label in labels }
+stops  = {label: pos[label][-1] for label in labels }
 pdir = pos[labels[0]][0] < pos[labels[0]][-1]
-start = max(starts)  if pdir else  min(starts)
-stop  = min(stops)   if pdir else  max(stops)
+start = max(starts.values())  if pdir else  min(starts.values())
+stop  = min(stops.values())   if pdir else  max(stops.values())
 minPos = min (start, stop)
 maxPos = max (start, stop)
 
@@ -123,17 +123,15 @@ res = {}
 for label in labels:
   res[label] = numpy.interp(samples, pos[label], idx[label])
 
-def printInfo(lbl, strt, rng, pjs, stp) :
-  print("# %s: %f %f %i %f" % ( lbl, strt, rng, pjs, stp ) )
-
-print("# Set: start, range, projections, step")
-printInfo( "Common", start, stop - start, steps, step)
+print( "# Set: start, range, projections, step (full scan)")
+print(f"# Common: {start:.3f} {stop - start:.3f} {steps} {step:.6f}")
 if len(labels) > 1 :
   for label in labels :
     rangeL = pos[label][-1] - pos[label][0]
     stepsL = idx[label][-1] - idx[label][0]
-    printInfo(label, pos[label][0], rangeL, stepsL, rangeL/stepsL)
-if args.info :
+    print(f"# {label}: {pos[label][0]: .3f} {rangeL: .3f} {stepsL} {rangeL/stepsL:.6f}"
+          f" ({starts[label]: .3f} ... {stops[label]: .3f})")
+if not args.all :
   sys.exit(0)
 
 upperEnd = steps

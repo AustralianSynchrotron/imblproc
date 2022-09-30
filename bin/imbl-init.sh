@@ -101,7 +101,7 @@ if $uselog ; then
     echo "No log file \"$logfile\" found in input path." >&2
     exit 1
   fi
-  logi=$(cat "$logfile" | imbl-log.py -i)
+  logi=$(cat "$logfile" | imbl-log.py )
   if (( "$?" )) ; then
     echo "Error parsing log file \"$logfile\"." >&2
     exit 1
@@ -137,7 +137,11 @@ makeauximg() {
   if $beverbose ; then
     vparam=" -v "
     echo "Making $1:"
-    echo "  ctas v2v -o "$1" -b 1:1:0 $vparam $listi"
+    prntlist="$listi"
+    if [ "$format" != "HDF5" ] ; then
+      prntlist="${ipath}/$2"'*.tif'
+    fi
+    echo "  ctas v2v -o "$1" -b 1:1:0 $vparam $prntlist"
   fi
   ctas v2v -o "$1" -b 1:1:0 $vparam $listi
 }
@@ -213,7 +217,7 @@ outInitFile() {
   hshift=$fshift
   hstep=$step
   if $uselog ; then
-    cat "$logfile" | imbl-log.py $hmask > "${2}/$projName"
+    cat "$logfile" | imbl-log.py --all $hmask > "${2}/$projName"
     read hrange hpjs hstep <<< $( cat "${2}/$projName" | grep '# Common' | cut -d' ' -f 4- )
     if (( $hshift != 0 )) ; then
       hfshift=$( echo "180 * $hpjs / $hrange" | bc )
