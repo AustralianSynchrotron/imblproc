@@ -63,13 +63,13 @@ try:
       label = label.strip("_")
       if not label:
         label = 'single'
-      if label in labels :
-        eprint("Label " + label + " already exists. Corrupt log file.")
-        sys.exit(1)
       if  args.labels  and not any( lbl in label for lbl in args.labels ) :
         label = ""
       else :
-        labels.append(label)
+        if label in labels :
+          eprint("Warning. Label " + label + " already exists. Will overwrite previous.")
+        else :
+          labels.append(label)
         idx[label] = []
         pos[label] = []
 
