@@ -122,8 +122,13 @@ fi
 if [ -z "$projFiles" ] ; then
 
   nsplits=$(ls "${indir}" | grep SAMPLE | grep split 2>/dev/null | sed 's .*\(_split[0-9]\+\).* \1 g' | sort | uniq)
-  if [ -z "$nsplits" ] && ls "${indir}" | grep -q SAMPLE > /dev/null ; then
-    nsplits="_"
+  if [ -z "$nsplits" ] ; then
+    if ls "${indir}" | grep -q SAMPLE > /dev/null ; then
+      nsplits="_"
+    else
+      echo "Can't see any input data inside input dir \"${indir}\"."
+      exit 1
+    fi
   fi
 
   retnum=0
