@@ -101,7 +101,8 @@ if $uselog ; then
     echo "No log file \"$logfile\" found in input path." >&2
     exit 1
   fi
-  logi=$(cat "$logfile" | imbl-log.py )
+  logi=$(cat $(dirname $logfile)/acquisition*log | imbl-log.py )
+  #logi=$(cat "$logfile" | imbl-log.py )
   if (( "$?" )) ; then
     echo "Error parsing log file \"$logfile\"." >&2
     exit 1
@@ -217,7 +218,9 @@ outInitFile() {
   hshift=$fshift
   hstep=$step
   if $uselog ; then
-    cat "$logfile" | imbl-log.py --all $hmask > "${2}/$projName"
+    #cat "$logfile" | imbl-log.py --all $hmask > "${2}/$projName"
+    cat $(dirname $logfile)/acquisition*log | imbl-log.py --all $hmask > "${2}/$projName"
+
     read hrange hpjs hstep <<< $( cat "${2}/$projName" | grep '# Common' | cut -d' ' -f 4- )
     if (( $hshift != 0 )) ; then
       hfshift=$( echo "180 * $hpjs / $hrange" | bc )
