@@ -563,7 +563,7 @@ class MainWindow(QtWidgets.QMainWindow):
         logInfo = []
         if os.path.exists(logName) and not self.ui.ignoreLog.isChecked() :
             logInfo = os.popen('cat "' + logName + '"'
-                                + ' | ' + execPath + 'imbl-log.py -i'
+                                + ' | ' + execPath + 'imbl-log.py '
                                 + ' | grep \'# Common\' '
                                 + ' | cut -d\' \' -f 4- ' ) \
                             .read().strip("\n").split()
