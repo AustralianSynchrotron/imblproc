@@ -175,7 +175,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.maskPath,
             self.ui.rotate,
             self.ui.edge,
-            self.ui.sigma,
+            self.ui.peakThr,
+            self.ui.peakRad,
             self.ui.sCropTop,
             self.ui.sCropBottom,
             self.ui.sCropRight,
@@ -851,10 +852,10 @@ class MainWindow(QtWidgets.QMainWindow):
             prms += f" -b {self.ui.xBin.value()},{self.ui.yBin.value()} "
         if 0.0 != self.ui.rotate.value():
             prms += f" -r {self.ui.rotate.value()} "
+        if 0.0 != self.ui.peakRad.value():
+            prms += f" -n {self.ui.peakRad.value()} -N {self.ui.peakThr.value()} "
         if 0.0 != self.ui.edge.value():
             prms += f" -E {self.ui.edge.value()} "
-        if 0.0 != self.ui.sigma.value():
-            prms += f" -S {self.ui.sigma.value()} "
         if self.ui.splits.rowCount() > 1:
             splits = []
             for crow in range(0, self.ui.splits.rowCount()-1):

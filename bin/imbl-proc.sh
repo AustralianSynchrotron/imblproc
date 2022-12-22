@@ -24,7 +24,8 @@ printhelp() {
   echo "  -i PATH           Path to the image mask used in projection formation."
   echo "  -r ANGLE          Rotate projections."
   echo "  -E INT            Thickness in pixels of edge transition."
-  echo "  -S FLOAT          Sigma used in gaussian gap closure."
+  echo "  -n INT            Peak removal radius."
+  echo "  -N FLOAT          Peak removal threshold: absolute if positive, relative if negative."
   echo "  -b INT[,INT]      Binning factor(s). If second number is given, then two"
   echo "                    independent binnings in X and Y coordinates; same otherwise."
   echo "  -s INT[,INT...]   Split point(s). If given, then final projection is"
@@ -35,7 +36,7 @@ printhelp() {
   echo "  -x STRING         Chain stitching with the X-tract reconstruction with"
   echo "                    the parameters read from the given parameters file."
   echo "  -w                Delete projections folder (clean) after X-tract processing."
-  echo "  -n                Do NOT check results after processing is complete."
+  echo "  -R                Do NOT check results after processing is complete."
   echo "  -t INT            Test mode: keeps intermediate images for the projection in tmp."
   echo "  -v                Be verbose to show progress."
   echo "  -h                Prints this help."
@@ -66,7 +67,8 @@ cropFinal="0,0,0,0"
 binn=1
 rotate=0
 edge=0
-sigma=0
+peakThr=0
+peakRad=0
 origin="0,0"
 originSecond="0,0"
 originFlip="0,0"
@@ -82,7 +84,7 @@ nlen=${#pjs}
 wipeClean=false
 beverbose=false
 
-while getopts "i:g:G:f:c:C:r:b:s:x:m:M:S:E:dt:hwvn" opt ; do
+while getopts "i:g:G:f:c:C:r:b:s:x:m:M:E:n:N:dt:hwvR" opt ; do
   case $opt in
     i)  gmask=$OPTARG;;
     g)  origin=$OPTARG
@@ -107,8 +109,9 @@ while getopts "i:g:G:f:c:C:r:b:s:x:m:M:S:E:dt:hwvn" opt ; do
         fi
         ;;
     r)  rotate=$OPTARG ;    stParam="$stParam --rotate $rotate" ;;
-    S)  sigma=$OPTARG ;     stParam="$stParam --sigma $sigma" ;;
     E)  edge=$OPTARG ;      stParam="$stParam --edge $edge" ;;
+    n)  peakRad=$OPTARG ;   stParam="$stParam --noise-rad $peakRad" ;;
+    N)  peakThr=$OPTARG ;   stParam="$stParam --noise-thr $peakThr" ;;
     c)  crop=$OPTARG ;      stParam="$stParam --crop $crop" ;;
     C)  cropFinal=$OPTARG ; stParam="$stParam --crop-final $cropFinal" ;;
     b)  binn=$OPTARG ;      stParam="$stParam --binn $binn" ;;
@@ -138,7 +141,7 @@ while getopts "i:g:G:f:c:C:r:b:s:x:m:M:S:E:dt:hwvn" opt ; do
     w)  wipeClean=true ;;
     d)  ffcorrection=false ;;
     t)  testme="$OPTARG" ;;
-    n)  doCheck=false ;;
+    R)  doCheck=false ;;
     v)  beverbose=true ;;
     h)  printhelp ; exit 1 ;;
     \?) echo "ERROR! Invalid option: -$OPTARG" >&2 ; exit 1 ;;
