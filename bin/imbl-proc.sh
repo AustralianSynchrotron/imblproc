@@ -318,6 +318,31 @@ else
 
 fi
 
+
+compact_seq() {
+  pidx=""
+  sseq=""
+  while read idx ; do
+    if [ -z "$sseq" ] ; then
+      sseq=$idx
+    elif (( $idx - $pidx != 1 )) ; then
+      echo -n "$sseq"
+      if (( $sseq != $pidx )) ; then
+        echo -n "-${pidx}"
+      fi
+      echo -n ','
+      sseq=${idx}
+    fi
+    pidx=$idx
+  done
+  echo -n "${sseq}"
+  if (( $pidx != $sseq )) ; then
+    echo -n "-$pidx"
+  fi
+  echo
+}
+
+
 imagemask="$(echo $filemask | sed 's: :\n:g' | sed -r 's ^(.+) _\1 g')"
 rm .idxs* 2> /dev/null
 while read imgm ; do
@@ -339,7 +364,7 @@ while read imgm ; do
   idxfl=".idxs${imgm}.o"
   echo -n "$header" > "$idxfl"
   cat "$projfile" | grep -v '#' | grep "${lbl}" | cut -d' ' -f 3  \
-    | head -n $pjs | perl -pe 'chomp if eof' - | xargs printf "$fprint" >> "$idxfl"
+    | head -n $pjs | compact_seq >> "$idxfl"
   if (( $fshift >= 1 )) ; then
     idxfl=".idxs${imgm}.f"
     echo -n "$header" > "$idxfl"
@@ -353,7 +378,7 @@ done <<< "$imagemask"
 paste -d' ' $( (ls .idxs*o ; ls .idxs*f) 2> /dev/null ) > ".idxsall"
 rm .idxs*o .idxs*f 2> /dev/null
 
-
+exit 0
 
 
 if $beverbose ; then
@@ -375,8 +400,8 @@ if [ "$testme" ] ; then
 fi
 if $doCheck  &&  [ -z "$1" ] ; then
   export AMCHECKING=true
-  # -n to make sure it won't enter here and unset AMCHECKING
-  $0 $allopts -n check
+  # -R to make sure it won't enter here and unset AMCHECKING
+  $0 $allopts -R check
   unset AMCHECKING
 fi
 
