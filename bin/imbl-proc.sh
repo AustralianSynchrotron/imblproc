@@ -149,6 +149,7 @@ while getopts "i:g:G:f:c:C:r:b:s:x:m:M:E:n:N:dt:hwvR" opt ; do
   esac
 done
 
+
 if [ -z "$PROCRECURSIVE" ] ; then
   echo "$allopts" >> ".proc.history"
 fi
@@ -239,6 +240,8 @@ else
 fi
 stParam="$stParam --output $oname"
 
+
+
 if [ -z "$1" ] ; then
   if (( maxProj >= $pjs  )) ; then
     maxProj=$(( $pjs - 1 ))
@@ -319,11 +322,8 @@ else
 fi
 
 
-
 prepare_seq() {
-
   if [ "$format" == "HDF5" ] ; then
-
     echo -n "$1"
     pidx=""
     sseq=""
@@ -345,15 +345,10 @@ prepare_seq() {
       echo -n "-$pidx"
     fi
     echo
-
   else
-
     perl -pe 'chomp if eof' | xargs printf "$1"
-
   fi
-
 }
-
 
 rm .idxs* 2> /dev/null
 imagemask="$(echo $filemask | sed 's: :\n:g' | sed -r 's ^(.+) _\1 g')"
@@ -382,7 +377,7 @@ if (( $(wc -w <<< "$filemask") > 1 )) ; then # purely for easy reading
   sed -zi 's \n \n\n g' "$idxsallf"
 fi
 rm .idxs*o .idxs*f 2> /dev/null
-exit 0
+
 
 if $beverbose ; then
   echo "Starting frame formation in $PWD."
