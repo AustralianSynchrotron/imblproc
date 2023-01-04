@@ -319,72 +319,78 @@ else
 fi
 
 
-compact_seq() {
-  pidx=""
-  sseq=""
-  while read idx ; do
-    if [ -z "$sseq" ] ; then
-      sseq=$idx
-    elif (( $idx - $pidx != 1 )) ; then
-      echo -n "$sseq"
-      if (( $sseq != $pidx )) ; then
-        echo -n "-${pidx}"
+
+prepare_seq() {
+
+  if [ "$format" == "HDF5" ] ; then
+
+    echo -n "$1"
+    pidx=""
+    sseq=""
+    while read idx ; do
+      if [ -z "$sseq" ] ; then
+        sseq=$idx
+      elif (( $idx - $pidx != 1 )) ; then
+        echo -n "$sseq"
+        if (( $sseq != $pidx )) ; then
+          echo -n "-${pidx}"
+        fi
+        echo -n ','
+        sseq=${idx}
       fi
-      echo -n ','
-      sseq=${idx}
+      pidx=$idx
+    done
+    echo -n "${sseq}"
+    if (( $pidx != $sseq )) ; then
+      echo -n "-$pidx"
     fi
-    pidx=$idx
-  done
-  echo -n "${sseq}"
-  if (( $pidx != $sseq )) ; then
-    echo -n "-$pidx"
+    echo
+
+  else
+
+    perl -pe 'chomp if eof' | xargs printf "$1"
+
   fi
-  echo
+
 }
 
 
-imagemask="$(echo $filemask | sed 's: :\n:g' | sed -r 's ^(.+) _\1 g')"
 rm .idxs* 2> /dev/null
+imagemask="$(echo $filemask | sed 's: :\n:g' | sed -r 's ^(.+) _\1 g')"
 while read imgm ; do
-
-  header=""
-  fprint=""
-  if [ "$format" == "HDF5" ] ; then
-    header="$ipath/SAMPLE${imgm}.hdf:$H5data:"
-    fprint="%i,"
-  else
-    header=""
-    fprint="$ipath/SAMPLE${imgm}_T%0${nlen}i.tif\n"
-  fi
   lbl=$( sed -e 's:_$::g' -e 's:^_::g' <<< $imgm )
   if [ -z "$lbl" ] ; then
     lbl="single"
   fi
-
-  idxfl=".idxs${imgm}.o"
-  echo -n "$header" > "$idxfl"
-  cat "$projfile" | grep -v '#' | grep "${lbl}" | cut -d' ' -f 3  \
-    | head -n $pjs | compact_seq >> "$idxfl"
-  if (( $fshift >= 1 )) ; then
-    idxfl=".idxs${imgm}.f"
-    echo -n "$header" > "$idxfl"
-    cat "$projfile" | grep -v '#' | grep "${lbl}" | cut -d' ' -f 3 \
-      | tail -n +$fshift \
-      | head -n $pjs | perl -pe 'chomp if eof' | xargs printf "$fprint" >> "$idxfl"
+  seqarg=""
+  if [ "$format" == "HDF5" ] ; then
+    seqarg="$ipath/SAMPLE${imgm}.hdf:$H5data:"
+  else
+    seqarg="$ipath/SAMPLE${imgm}_T%0${nlen}i.tif\n"
   fi
-
+  cat "$projfile" | grep -v '#' | grep "${lbl}" | cut -d' ' -f 3  \
+    | head -n $pjs | prepare_seq "$seqarg" >> ".idxs${imgm}.o"
+  if (( $fshift >= 1 )) ; then
+    cat "$projfile" | grep -v '#' | grep "${lbl}" | cut -d' ' -f 3 \
+      | tail -n +$fshift | head -n $pjs | prepare_seq "$seqarg" >> ".idxs${imgm}.f"
+  fi
 done <<< "$imagemask"
-#idxslist="$( (ls .idxs*o ; ls .idxs*f) 2> /dev/null | tr '\n' ' ' )"
-paste -d' ' $( (ls .idxs*o ; ls .idxs*f) 2> /dev/null ) > ".idxsall"
+
+idxsallf=".idxsall"
+paste -d' ' $( (ls .idxs*o ; ls .idxs*f) 2> /dev/null ) > "$idxsallf"
+if (( $(wc -w <<< "$filemask") > 1 )) ; then # purely for easy reading
+  sed -zi 's \n \n\n g' "$idxsallf"
+fi
 rm .idxs*o .idxs*f 2> /dev/null
+exit 0
 
 if $beverbose ; then
   echo "Starting frame formation in $PWD."
-  echo "  ctas proj $stParam < .idxsall"
+  echo "  ctas proj $stParam < $idxsallf"
 fi
-ctas proj $stParam < .idxsall  ||
+ctas proj $stParam < "$idxsallf"  ||
   ( echo "There was an error executing:" >&2
-    echo -e "ctas proj $stParam < .idxsall"  >&2
+    echo -e "ctas proj $stParam < $idxsallf"  >&2
     exit 1 )
 
 
