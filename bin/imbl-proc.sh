@@ -378,9 +378,6 @@ done <<< "$imagemask"
 paste -d' ' $( (ls .idxs*o ; ls .idxs*f) 2> /dev/null ) > ".idxsall"
 rm .idxs*o .idxs*f 2> /dev/null
 
-exit 0
-
-
 if $beverbose ; then
   echo "Starting frame formation in $PWD."
   echo "  ctas proj $stParam < .idxsall"
@@ -389,10 +386,6 @@ ctas proj $stParam < .idxsall  ||
   ( echo "There was an error executing:" >&2
     echo -e "ctas proj $stParam < .idxsall"  >&2
     exit 1 )
-
-
-
-
 
 
 if [ "$testme" ] ; then
