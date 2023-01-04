@@ -206,6 +206,9 @@ if (( $fshift >= 1 )) ; then
   pjs=$(( $pjs - $fshift ))
   stParam="$stParam --flip-origin $originFlip"
 fi
+if (( maxProj >= $pjs  )) ; then
+  maxProj=$(( $pjs - 1 ))
+fi
 
 if $beverbose ; then
   stParam="$stParam --verbose "
@@ -231,6 +234,10 @@ if [ $imgms ] && [ -e "$imgms" ] ; then
   stParam="$stParam --mask $gmask"
 fi
 
+if [ -n "$1" ] && [ "$1" != "check" ] ; then
+  stParam="$stParam --select $1"
+fi
+
 oname="SAMPLE_T@.tif"
 if [ $testme ] ; then
   oname="tmp/$oname"
@@ -241,15 +248,7 @@ fi
 stParam="$stParam --output $oname"
 
 
-
-if [ -z "$1" ] ; then
-  if (( maxProj >= $pjs  )) ; then
-    maxProj=$(( $pjs - 1 ))
-  fi
-  stParam="$stParam --select ${minProj}-${maxProj}"
-elif [ "$1" != "check" ] ; then
-  stParam="$stParam --select $1"
-else
+if [ "$1" == "check" ] ; then
 
   prelist="$(seq ${minProj} ${maxProj})"
   ls clean | sed 's SAMPLE clean/SAMPLE g' > ".listclean"
@@ -372,7 +371,8 @@ while read imgm ; do
 done <<< "$imagemask"
 
 idxsallf=".idxsall"
-paste -d' ' $( (ls .idxs*o ; ls .idxs*f) 2> /dev/null ) > "$idxsallf"
+paste -d' ' $( (ls .idxs*o ; ls .idxs*f) 2> /dev/null ) \
+  | head -n $(( $maxProj + 1 )) | tail -n+$(( $minProj + 1 ))  > "$idxsallf"
 if (( $(wc -w <<< "$filemask") > 1 )) ; then # purely for easy reading
   sed -zi 's \n \n\n g' "$idxsallf"
 fi
