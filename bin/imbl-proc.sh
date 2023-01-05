@@ -80,7 +80,6 @@ stParam=""
 xtParamFile=""
 minProj=0
 maxProj=$(( $pjs - 1 ))
-nlen=${#pjs}
 wipeClean=false
 beverbose=false
 
@@ -209,6 +208,8 @@ fi
 if (( maxProj >= $pjs  )) ; then
   maxProj=$(( $pjs - 1 ))
 fi
+ppjs=$(( $maxProj - $minProj + 1 ))
+nlen=${#ppjs}
 
 if $beverbose ; then
   stParam="$stParam --verbose "
