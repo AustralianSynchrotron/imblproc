@@ -510,7 +510,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if newdir:
             self.ui.inPath.setText(newdir)
 
-
+    @pyqtSlot()
     @pyqtSlot(str)
     @pyqtSlot(bool)
     def on_inPath_textChanged(self):
@@ -569,14 +569,14 @@ class MainWindow(QtWidgets.QMainWindow):
         logInfo = []
         if os.path.exists(logName) and not self.ui.ignoreLog.isChecked() :
             grepsPps = ""
-            if self.ui.excludes.isVisible() and not self.ui.excludes.text().isEmpty():
+            if self.ui.excludes.isVisible() and self.ui.excludes.text():
                 for grep in self.ui.excludes.text().split():
                     grepsPps += f" | grep -v -e '{grep}' "
-            labels = os.popen('cat "' + os.path.join(ipath, "acquisition*log") + '"'
+            labels = os.popen('cat ' + os.path.join(ipath, "acquisition*log")
                                  + ' | ' + execPath + 'imbl-log.py'
                                  + ' | tail -n +3 | cut -d\' \' -f2 | cut -d\':\' -f 1 '
                                  + grepsPps).read().strip("\n").replace("\n", " ")
-            logInfo = os.popen('cat "' + os.path.join(ipath, "acquisition*log") + '"'
+            logInfo = os.popen('cat ' + os.path.join(ipath, "acquisition*log")
                                 + ' | ' + execPath + 'imbl-log.py ' + labels
                                 + ' | grep \'# Common\' '
                                 + ' | cut -d\' \' -f 4- ' ) \
@@ -736,11 +736,11 @@ class MainWindow(QtWidgets.QMainWindow):
             command += " -e "
         if not self.ui.ignoreLog.isChecked() and self.ui.ignoreLog.isVisible() :
             command += " -l "
-        if self.ui.excludes.isVisible() and not self.ui.excludes.text().isEmpty():
+        if self.ui.excludes.isVisible() and self.ui.excludes.text():
             grepsPps = ""
             for grep in self.ui.excludes.text().split():
                 grepsPps += f" | grep -v -e '{grep}' "
-            labels = os.popen('cat "' + os.path.join(ipath, "acquisition*log") + '"'
+            labels = os.popen('cat ' + os.path.join(ipath, "acquisition*log")
                                  + ' | ' + execPath + 'imbl-log.py'
                                  + ' | tail -n +3 | cut -d\' \' -f2 | cut -d\':\' -f 1 '
                                  + grepsPps).read().strip("\n").replace("\n", ",")
