@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1380</width>
+    <height>931</height>
+   </rect>
+  </property>
   <property name="windowTitle">
    <string>imbl pre-proccessing</string>
   </property>
@@ -209,15 +217,42 @@
            </item>
            <item row="6" column="1" rowspan="2">
             <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,0,0">
-             <item row="0" column="0">
-              <widget class="QLabel" name="label_3">
+             <item row="3" column="0">
+              <widget class="QLabel" name="zlabel">
                <property name="text">
-                <string>Scan range</string>
+                <string>Innear series [Z]</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="2">
+              <widget class="QCheckBox" name="ignoreLog">
+               <property name="text">
+                <string>Ignore corrections from log file</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QLineEdit" name="scanRange">
+               <property name="readOnly">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
              <item row="3" column="1">
               <widget class="QSpinBox" name="zs">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="buttonSymbols">
+                <enum>QAbstractSpinBox::NoButtons</enum>
+               </property>
+               <property name="maximum">
+                <number>999</number>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QSpinBox" name="ys">
                <property name="readOnly">
                 <bool>true</bool>
                </property>
@@ -242,33 +277,6 @@
                </property>
               </widget>
              </item>
-             <item row="1" column="2">
-              <widget class="QCheckBox" name="ignoreLog">
-               <property name="text">
-                <string>Ignore corrections from log file</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="0">
-              <widget class="QLabel" name="ylabel">
-               <property name="text">
-                <string>Outer series [Y]</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="2">
-              <widget class="QCheckBox" name="yIndependent">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="text">
-                <string>treat Y series as independent samples</string>
-               </property>
-              </widget>
-             </item>
              <item row="0" column="2">
               <widget class="QCheckBox" name="notFnS">
                <property name="sizePolicy">
@@ -279,40 +287,6 @@
                </property>
                <property name="text">
                 <string>scan is NOT 180deg flip-and-stitch</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QLineEdit" name="scanRange">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="0">
-              <widget class="QLabel" name="label_5">
-               <property name="text">
-                <string>Projections</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="0">
-              <widget class="QLabel" name="zlabel">
-               <property name="text">
-                <string>Innear series [Z]</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="1">
-              <widget class="QSpinBox" name="ys">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="buttonSymbols">
-                <enum>QAbstractSpinBox::NoButtons</enum>
-               </property>
-               <property name="maximum">
-                <number>999</number>
                </property>
               </widget>
              </item>
@@ -358,6 +332,54 @@
                 </widget>
                </item>
               </layout>
+             </item>
+             <item row="2" column="0">
+              <widget class="QLabel" name="ylabel">
+               <property name="text">
+                <string>Outer series [Y]</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="2">
+              <widget class="QCheckBox" name="yIndependent">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>treat Y series as independent samples</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_3">
+               <property name="text">
+                <string>Scan range</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_5">
+               <property name="text">
+                <string>Projections</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0">
+              <widget class="QLabel" name="exclLabel">
+               <property name="text">
+                <string>Exclude series</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="1">
+              <widget class="QLineEdit" name="excludes">
+               <property name="whatsThis">
+                <string>Space-separated patterns to exclude from the series.</string>
+               </property>
+              </widget>
              </item>
             </layout>
            </item>

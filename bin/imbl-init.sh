@@ -17,6 +17,7 @@ printhelp() {
   echo "  -z           Treat multiple Z's (if present) as independent scans."
   echo "  -f           Do not flip-and-stitch in 360deg scan."
   echo "  -l           Use projection positions from the log file."
+  echo "  -L           Restrict processing to given labels."
   echo "  -v           Be verbose."
   echo "  -h           Prints this help."
 }
@@ -28,10 +29,11 @@ Zst=true
 Fst=true
 opath=""
 uselog=false
+uselabels=""
 beverbose=false
 H5data="/entry/data/data"
 
-while getopts "vyzfhelo:" opt ; do
+while getopts "vyzfhelo:L:" opt ; do
   case $opt in
     o) opath="$OPTARG" ;;
     e) MakeFF=false ;;
@@ -39,6 +41,7 @@ while getopts "vyzfhelo:" opt ; do
     z) Zst=false ;;
     f) Fst=false ;;
     l) uselog=true ;;
+    L) uselabels="$OPTARG" ;;
     v) beverbose=true ;;
     h) printhelp ; exit 0 ;;
     \?) echo "Invalid option: -$OPTARG" >&2 ; exit 1 ;;
@@ -101,8 +104,8 @@ if $uselog ; then
     echo "No log file \"$logfile\" found in input path." >&2
     exit 1
   fi
-  logi=$(cat $(dirname $logfile)/acquisition*log | imbl-log.py )
-  #logi=$(cat "$logfile" | imbl-log.py )
+  logi=$(cat $(dirname $logfile)/acquisition*log | imbl-log.py $uselabels)
+  #logi=$(cat "$logfile" | imbl-log.py $uselabels)
   if (( "$?" )) ; then
     echo "Error parsing log file \"$logfile\"." >&2
     exit 1
@@ -288,10 +291,16 @@ for Ydir in $Ydirs ; do
     Slist=""
     for Ycur in $Ylist ; do
       if [ -z "$Zlist" ] ; then
-        Slist="$Slist $(strip_ ${Ydir}${Ycur})"
+        clabel="$(strip_ ${Ydir}${Ycur})"
+        if [ -z "$uselabels" ]  ||  grep -q "${clabel}" <<< "${uselabels}" ; then
+          Slist="$Slist $clabel"
+        fi
       else
         for Zcur in $Zlist ; do
-          Slist="$Slist $(strip_ ${Ydir}${Ycur}_${Zdir}${Zcur})"
+          clabel="$(strip_ ${Ydir}${Ycur}_${Zdir}${Zcur})"
+          if [ -z "$uselabels" ]  ||  grep -q "${clabel}" <<< "${uselabels}" ; then
+            Slist="$Slist $clabel"
+          fi
         done
       fi
     done
@@ -304,7 +313,7 @@ done
 
 subdCount=$( wc -w <<< $Sdirs)
 if (( $subdCount > 1 )) ; then
-  outInitFile "" . "$Sdirs"
+  outInitFile "$labels" . "$Sdirs"
   echo "subdirs=$subdCount" >>  "$initName"
 fi
 

@@ -168,6 +168,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.ignoreLog,
             self.ui.step,
             self.ui.notFnS,
+            self.ui.excludes,
             self.ui.yIndependent,
             self.ui.zIndependent,
             self.ui.noNewFF,
@@ -222,10 +223,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.ignoreLog.clicked.connect(self.needReinitiation)
         self.ui.yIndependent.clicked.connect(self.needReinitiation)
         self.ui.zIndependent.clicked.connect(self.needReinitiation)
+        self.ui.excludes.edingFinished.connect(self.needReinitiation)
         self.ui.xtractAfter.toggled.connect(self.on_xtractIn_textChanged)
         self.ui.postproc.toggled.connect(self.on_ppIn_textChanged)
         self.ui.expUpdate.clicked.connect(self.on_expPath_textChanged)
         self.ui.ignoreLog.toggled.connect(self.on_inPath_textChanged)
+        self.ui.excludes.edingFinished.connect(self.on_inPath_textChanged)
 
         QtCore.QTimer.singleShot(100, self.loadConfiguration)
 
@@ -551,6 +554,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.ylabel.setVisible(serialScan)
         self.ui.ys.setVisible(serialScan)
         self.ui.ys.setValue(cfg.value('serial/outerseries/nofsteps', type=int))
+        self.ui.exclLabel.setVisible(serialScan)
+        self.ui.excludes.setVisible(serialScan)
 
         twodScan = serialScan and cfg.value('serial/2d', type=bool)
         self.ui.zIndependent.setVisible(twodScan)
@@ -563,8 +568,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.ignoreLog.setVisible(os.path.exists(logName))
         logInfo = []
         if os.path.exists(logName) and not self.ui.ignoreLog.isChecked() :
-            logInfo = os.popen('cat "' + logName + '"'
-                                + ' | ' + execPath + 'imbl-log.py '
+            grepsPps = ""
+            if self.ui.excludes.isVisible() and not self.ui.excludes.text().isEmpty():
+                for grep in self.ui.excludes.text().split():
+                    grepsPps += f" | grep -v -e '{grep}' "
+            labels = os.popen('cat "' + os.path.join(ipath, "acquisition*log") + '"'
+                                 + ' | ' + execPath + 'imbl-log.py'
+                                 + ' | tail -n +3 | cut -d\' \' -f2 | cut -d\':\' -f 1 '
+                                 + grepsPps).read().strip("\n").replace("\n", " ")
+            logInfo = os.popen('cat "' + os.path.join(ipath, "acquisition*log") + '"'
+                                + ' | ' + execPath + 'imbl-log.py ' + labels
                                 + ' | grep \'# Common\' '
                                 + ' | cut -d\' \' -f 4- ' ) \
                             .read().strip("\n").split()
@@ -701,6 +714,11 @@ class MainWindow(QtWidgets.QMainWindow):
             killProcTree(self.initproc.processId())
             return
 
+        if not self.ui.excludes.isempty:
+            regs = self.ui.excludes.text().splt()
+            alllabels =
+
+
         self.needReinitiation()
         self.ui.initInfo.setEnabled(False)
         self.ui.initiate.setStyleSheet(warnStyle)
@@ -723,6 +741,16 @@ class MainWindow(QtWidgets.QMainWindow):
             command += " -e "
         if not self.ui.ignoreLog.isChecked() and self.ui.ignoreLog.isVisible() :
             command += " -l "
+        if self.ui.excludes.isVisible() and not self.ui.excludes.text().isEmpty():
+            grepsPps = ""
+            for grep in self.ui.excludes.text().split():
+                grepsPps += f" | grep -v -e '{grep}' "
+            labels = os.popen('cat "' + os.path.join(ipath, "acquisition*log") + '"'
+                                 + ' | ' + execPath + 'imbl-log.py'
+                                 + ' | tail -n +3 | cut -d\' \' -f2 | cut -d\':\' -f 1 '
+                                 + grepsPps).read().strip("\n").replace("\n", ",")
+            command += f" -L \"{labels}\" "
+
         command += f" -o \"{opath}\" "
         command += f" \"{self.ui.inPath.text()}\" "
 
