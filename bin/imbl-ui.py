@@ -743,7 +743,7 @@ class MainWindow(QtWidgets.QMainWindow):
             labels = os.popen('cat ' + os.path.join(self.ui.inPath.text(), "acquisition*log")
                                  + ' | ' + execPath + 'imbl-log.py'
                                  + ' | tail -n +3 | cut -d\' \' -f2 | cut -d\':\' -f 1 '
-                                 + grepsPps).read().strip("\n").replace("\n", ",")
+                                 + grepsPps).read().strip("\n").replace("\n", " ")
             command += f" -L \"{labels}\" "
 
         command += f" -o \"{opath}\" "
