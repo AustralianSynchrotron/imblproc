@@ -291,29 +291,28 @@ for Ydir in $Ydirs ; do
     Slist=""
     for Ycur in $Ylist ; do
       if [ -z "$Zlist" ] ; then
-        clabel="$(strip_ ${Ydir}${Ycur})"
-        if [ -z "$uselabels" ]  ||  grep -q "${clabel}" <<< "${uselabels}" ; then
-          Slist="$Slist $clabel"
-        fi
+        Slist="$Slist $(strip_ ${Ydir}${Ycur})"
       else
         for Zcur in $Zlist ; do
-          clabel="$(strip_ ${Ydir}${Ycur}_${Zdir}${Zcur})"
-          if [ -z "$uselabels" ]  ||  grep -q "${clabel}" <<< "${uselabels}" ; then
-            Slist="$Slist $clabel"
-          fi
+          Slist="$Slist $(strip_ ${Ydir}${Ycur}_${Zdir}${Zcur})"
         done
       fi
     done
-    Slist="$( sed -e 's:\.::g' -e 's:__:_:g' <<< $Slist)"
 
-    outInitFile "$Slist" "$Sdir"
+    NSlist=""
+    for comp in $( sed -e 's:\.::g' -e 's:__:_:g' <<< $Slist) ; do
+      if [ -z "$uselabels" ] || grep -q $comp <<< "${uselabels}" ; then
+        NSlist="$NSlist $comp"
+      fi
+    done
+    outInitFile "$NSlist" "$Sdir"
 
   done
 done
 
 subdCount=$( wc -w <<< $Sdirs)
 if (( $subdCount > 1 )) ; then
-  outInitFile "$labels" . "$Sdirs"
+  outInitFile "$uselabels" . "$Sdirs"
   echo "subdirs=$subdCount" >>  "$initName"
 fi
 
