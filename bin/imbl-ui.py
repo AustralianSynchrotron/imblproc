@@ -740,7 +740,7 @@ class MainWindow(QtWidgets.QMainWindow):
             grepsPps = ""
             for grep in self.ui.excludes.text().split():
                 grepsPps += f" | grep -v -e '{grep}' "
-            labels = os.popen('cat ' + os.path.join(ipath, "acquisition*log")
+            labels = os.popen('cat ' + os.path.join(self.ui.inPath.text(), "acquisition*log")
                                  + ' | ' + execPath + 'imbl-log.py'
                                  + ' | tail -n +3 | cut -d\' \' -f2 | cut -d\':\' -f 1 '
                                  + grepsPps).read().strip("\n").replace("\n", ",")
