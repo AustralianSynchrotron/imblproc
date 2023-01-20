@@ -714,11 +714,6 @@ class MainWindow(QtWidgets.QMainWindow):
             killProcTree(self.initproc.processId())
             return
 
-        if not self.ui.excludes.isempty:
-            regs = self.ui.excludes.text().splt()
-            alllabels =
-
-
         self.needReinitiation()
         self.ui.initInfo.setEnabled(False)
         self.ui.initiate.setStyleSheet(warnStyle)
