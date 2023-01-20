@@ -223,12 +223,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.ignoreLog.clicked.connect(self.needReinitiation)
         self.ui.yIndependent.clicked.connect(self.needReinitiation)
         self.ui.zIndependent.clicked.connect(self.needReinitiation)
-        self.ui.excludes.edingFinished.connect(self.needReinitiation)
+        self.ui.excludes.editingFinished.connect(self.needReinitiation)
         self.ui.xtractAfter.toggled.connect(self.on_xtractIn_textChanged)
         self.ui.postproc.toggled.connect(self.on_ppIn_textChanged)
         self.ui.expUpdate.clicked.connect(self.on_expPath_textChanged)
         self.ui.ignoreLog.toggled.connect(self.on_inPath_textChanged)
-        self.ui.excludes.edingFinished.connect(self.on_inPath_textChanged)
+        self.ui.excludes.editingFinished.connect(self.on_inPath_textChanged)
 
         QtCore.QTimer.singleShot(100, self.loadConfiguration)
 
