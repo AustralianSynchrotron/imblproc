@@ -687,6 +687,26 @@
         <item row="3" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_15">
           <item>
+           <widget class="QLabel" name="label_38">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Radius</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="peakRad">
+            <property name="maximum">
+             <number>1024</number>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QLabel" name="label_39">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -709,26 +729,6 @@
             </property>
             <property name="maximum">
              <double>1000000000000.000000000000000</double>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_38">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>Radius</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QSpinBox" name="peakRad">
-            <property name="maximum">
-             <number>1024</number>
             </property>
            </widget>
           </item>
@@ -1370,8 +1370,6 @@
      </widget>
     </item>
    </layout>
-  </widget>
-  <widget class="QMenuBar" name="menubar">
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
