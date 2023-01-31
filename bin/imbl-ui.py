@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys, os, re, psutil, time, itertools
+import sys, os, re, psutil, time, signal
 from tabnanny import check
 
 
@@ -12,105 +12,11 @@ from PyQt5.uic import loadUi
 from subprocess import Popen
 from pathlib import Path
 # sys.path.append("..")
-# from share import ui_imbl
+
+
 
 execPath = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
 warnStyle = 'background-color: rgba(255, 0, 0, 128);'
-
-def killProcTree(pid):
-    try:
-        proc=psutil.Process(pid)
-        for child in proc.children(recursive=True):
-            child.kill()
-        proc.kill()
-    except Exception:
-        pass
-
-
-previousParse = ""
-proggMax = None
-def parseOutProgg(outed, erred):
-    global previousParse, proggMax
-    progg = proggTxt = None
-    addToOut = outed
-    addToErr = erred
-    if not outed and not erred:
-        return progg, proggMax, proggTxt, addToOut, addToErr
-
-
-    addToOut = ""
-    for curL in outed.splitlines():
-        # poptmx start
-        if lres := re.search('Starting process \((.*) steps\)\: (.*)\.', curL) :
-            progg=0
-            proggMax=int(lres.group(1))
-            proggTxt=lres.group(2)
-            addToOut += curL + '\n'
-        # poptmx complete
-        elif "Successfully finished" in curL or "DONE" in curL :
-            progg=-1
-            addToOut += curL + '\n'
-        # poptmx progg
-        elif lres := re.search('^([0-9]+)/([0-9]+)$', curL) :
-            progg=int(lres.group(1))
-            proggMax=int(lres.group(2))
-        #xwrap reading progg
-        elif lres := re.search('Reading projections: ([0-9]+)/([0-9]+)', curL) :
-            procName = "CT: reading projections."
-            proggTxt = procName
-            progg=int(lres.group(1))
-            proggMax=int(lres.group(2))
-            if not progg:
-                addToOut += procName + '\n'
-        #xwrap reading complete.
-        elif 'Reading projections: DONE.' in curL:
-            progg = -1
-            addToOut += " DONE." + '\n'
-        #xwrap reconstructing progg
-        elif lres := re.search('Reconstructing volume: ([0-9]+)/([0-9]+)', curL) :
-            procName = "CT: reconstructing volume."
-            proggTxt = procName
-            progg=int(lres.group(1))
-            proggMax=int(lres.group(2))
-            if not progg:
-                addToOut += procName + '\n'
-        #xwrap reconstion complete.
-        elif 'Reconstructing volume: DONE' in curL:
-            progg = -1
-            addToOut += " DONE." + '\n'
-        # other
-        elif len(curL):
-            addToOut += curL + '\n'
-        if len(curL.strip()) :
-            previousParse = curL.strip()
-
-    addToErr = ""
-    for curL in erred.splitlines(): # GNU parallel in err
-        if 'Computers / CPU cores / Max jobs to run' in curL:
-            if lres := re.search('Starting (.*)\:', previousParse) :
-                progg=0
-                proggTxt=lres.group(1)
-        # GNU parallel skip
-        elif    'Computer:jobs running/jobs completed/%of started jobs/Average seconds to complete' in curL \
-             or re.search('.+ / [0-9]+ / [0-9]+', curL) :
-            progg=0
-        # GNU parallel progg
-        elif lres := re.search('ETA\: .* Left\: ([0-9]+) AVG\: .*\:[0-9]+/([0-9]+)/.*/.*', curL) :
-            leftToDo = int(lres.group(1))
-            progg = int(lres.group(2))
-            proggMax = progg + leftToDo
-            if not leftToDo :
-                llres = re.search('ETA\: .* Left\: ([0-9]+) AVG\: .*\:[0-9]+/([0-9]+)/.*/.*', previousParse)
-                if not llres or progg != int(llres.group(2)) :
-                  progg = -1
-                  addToOut += " DONE.\n"
-        # other
-        elif len(curL):
-            addToErr += curL + '\n'
-        if len(curL.strip()) :
-            previousParse = curL.strip()
-
-    return progg, proggMax, proggTxt, addToOut, addToErr
 
 
 class Script(QObject) :
@@ -119,6 +25,8 @@ class Script(QObject) :
     bodySet = pyqtSignal()
     finished = pyqtSignal(int)
     started = pyqtSignal()
+    scriptPrefix = "script_"
+    procPrefix = "proc_"
 
 
     def __init__(self, parent=None):
@@ -131,6 +39,15 @@ class Script(QObject) :
         self.proc.setProgram(self.shell)
         self.proc.stateChanged.connect(self.onState)
         self.time=0
+
+
+    def setRole(self, role):
+        self.setObjectName(self.scriptPrefix + role)
+        self.proc.setObjectName(self.procPrefix + role)
+
+
+    def role(self):
+        return self.objectName().removeprefix(self.scriptPrefix)
 
 
     @pyqtSlot(str)
@@ -206,7 +123,7 @@ class Script(QObject) :
         self.finished.connect(q.quit)
         if self.isRunning():
             q.exec()
-        return self.exitCode()
+        return self.proc.exitCode()
 
 
     def evaluate(self, par=None):
@@ -235,6 +152,7 @@ def onBrowse(wdg, desc, forFile=False):
 class UScript(QtWidgets.QWidget) :
 
     editingFinished = pyqtSignal()
+    uscriptPrefix = "uscript_"
 
     def __init__(self, parent=None):
         super(QtWidgets.QWidget, self).__init__(parent)
@@ -247,6 +165,16 @@ class UScript(QtWidgets.QWidget) :
         self.script.started.connect(self.updateState)
         self.script.finished.connect(self.updateState)
         self.script.bodySet.connect(self.updateBody)
+
+
+    def setRole(self, role):
+        self.setObjectName(self.uscriptPrefix + role)
+        self.script.setRole(role)
+
+
+    def role(self):
+        return self.objectName().removeprefix(self.uscriptPrefix)
+
 
     @pyqtSlot()
     def onStartStop(self):
@@ -265,8 +193,10 @@ class UScript(QtWidgets.QWidget) :
 
     @pyqtSlot()
     def updateBody(self):
-        self.ui.body.setStyleSheet("color: rgb(255, 0, 0);" if self.script.evaluate() else "")
+        isGood = not self.script.evaluate()
+        self.ui.body.setStyleSheet( "" if isGood else "color: rgb(255, 0, 0);")
         self.ui.execute.setStyleSheet("")
+        self.ui.execute.setEnabled(self.ui.body.text().strip() and isGood)
 
 
 class ColumnResizer(QObject):
@@ -312,6 +242,7 @@ class MainWindow(QtWidgets.QMainWindow):
     configName = ".imbl-ui"
     etcConfigName = os.path.join(Path.home(), configName)
     amLoading = False
+    placePrefix="placeScript_"
 
 
     def __init__(self):
@@ -319,24 +250,30 @@ class MainWindow(QtWidgets.QMainWindow):
         cfgProp="saveInConfig" # objects with this property (containing int read order) will be saved in config
         self.ui = loadUi(execPath + '../share/imblproc/imbl-ui.ui', self)
 
-        self.previousParse = ""
-        self.proggMax = None
-        self.counter=0
-        placePrefix="placeScript_"
-        for place in self.ui.findChildren(QtWidgets.QLayout, QtCore.QRegExp(placePrefix+"\w+")):
+        self.scrInitiate = Script(self)
+        self.scrInitiate.setRole("initiate")
+        self.scrStitch = Script(self)
+        self.scrStitch.setRole("stitch")
+        self.scrPhase = Script(self)
+        self.scrPhase.setRole("phase")
+        self.scrCT = Script(self)
+        self.scrCT.setRole("ct")
+        for place in self.ui.findChildren(QtWidgets.QLayout, QtCore.QRegExp(self.placePrefix+"\w+")):
+            role = place.objectName().removeprefix(self.placePrefix)
             scrw = UScript(self)
-            scrw.setObjectName("script_"+place.objectName().removeprefix(placePrefix))
+            scrw.setRole(role)
             scrw.setProperty(cfgProp, 2)
-            self.ui.outPath.textChanged.connect(scrw.script.proc.setWorkingDirectory)
             place.addWidget(scrw)
-            scrw.script.proc.readyReadStandardOutput.connect(self.parseScriptOut)
-            scrw.script.proc.readyReadStandardError.connect(self.parseScriptOut)
-            scrw.script.started.connect(self.onScriptStarted)
-            scrw.script.finished.connect(self.onScriptFinished)
         self.cResizer = ColumnResizer(self)
         self.cResizer.addWidgetsFromLayout(self.ui.tabRec.layout(), 4)
         for script in self.ui.tabRec.findChildren(UScript):
             self.cResizer.addWidgetsFromLayout(script.ui.layout(), 1)
+        for script in self.ui.findChildren(Script):
+            self.ui.outPath.textChanged.connect(script.proc.setWorkingDirectory)
+            script.proc.readyReadStandardOutput.connect(self.parseScriptOut)
+            script.proc.readyReadStandardError.connect(self.parseScriptOut)
+            script.started.connect(self.onScriptStarted)
+            script.finished.connect(self.onScriptFinished)
 
         self.on_individualIO_toggled()
         self.ui.inProgress.setVisible(False)
@@ -498,71 +435,60 @@ class MainWindow(QtWidgets.QMainWindow):
     def parseScriptOut(self):
 
         proc = self.sender()
-        outed = proc.readAllStandardOutput().data().decode(sys.getdefaultencoding()).strip()
-        erred = proc.readAllStandardError().data().decode(sys.getdefaultencoding()).strip()
+        role = proc.objectName().removeprefix(Script.procPrefix)
+        outed = proc.readAllStandardOutput().data().decode(sys.getdefaultencoding())
+        erred = proc.readAllStandardError().data().decode(sys.getdefaultencoding())
         if not outed and not erred:
             return
-        if outed :
-          print(outed, end=None)
-        if erred :
-          print(erred, end=None, file=sys.stderr)
 
-        progg = proggTxt = None
-        addToOut = addToErr = ""
+        progg = proggMax = None
+        proggTxt = None
+        addToOut = ""
         for curL in outed.splitlines():
             # poptmx start
             if lres := re.search('Starting process \((.*) steps\)\: (.*)\.', curL) :
                 progg=0
-                self.proggMax=int(lres.group(1))
-                proggTxt=lres.group(2)
-                addToOut += curL + '\n'
+                proggMax=int(lres.group(1))
+                proggTxt = f"{role} - {lres.group(2)}"
+                addToOut += curL.strip() + '\n'
             # poptmx complete
             elif "Successfully finished" in curL or "DONE" in curL :
                 progg=-1
-                addToOut += curL + '\n'
+                addToOut += curL.strip() + '\n'
             # poptmx progg
             elif lres := re.search('^([0-9]+)/([0-9]+)$', curL) :
                 progg=int(lres.group(1))
-                self.proggMax=int(lres.group(2))
+                proggMax=int(lres.group(2))
             # other
             elif len(curL):
                 addToOut += curL + '\n'
-            if len(curL.strip()) :
-                self.previousParse = curL.strip()
+                print(curL, end=None)
 
+        addToErr = ""
         for curL in erred.splitlines(): # GNU parallel in err
+            # GNU parallel start
             if 'Computers / CPU cores / Max jobs to run' in curL:
-                if lres := re.search('Starting (.*)\:', self.previousParse) :
-                    progg=0
-                    proggTxt=lres.group(1)
+                proggTxt = role
             # GNU parallel skip
-            elif    'Computer:jobs running/jobs completed/%of started jobs/Average seconds to complete' in curL \
+            elif 'Computer:jobs running/jobs completed/%of started jobs/Average seconds to complete' in curL \
                  or re.search('.+ / [0-9]+ / [0-9]+', curL) :
                 progg=0
             # GNU parallel progg
             elif lres := re.search('ETA\: .* Left\: ([0-9]+) AVG\: .*\:[0-9]+/([0-9]+)/.*/.*', curL) :
                 leftToDo = int(lres.group(1))
-                progg = int(lres.group(2))
-                self.proggMax = progg + leftToDo
-                if not leftToDo :
-                    llres = re.search('ETA\: .* Left\: ([0-9]+) AVG\: .*\:[0-9]+/([0-9]+)/.*/.*', self.previousParse)
-                    if not llres or progg != int(llres.group(2)) :
-                      progg = -1
-                      addToOut += " DONE.\n"
+                progg = int(lres.group(2)) if leftToDo else -1
+                proggMax = progg + leftToDo
             # other
             elif len(curL):
                 addToErr += curL + '\n'
-            if len(curL.strip()) :
-                self.previousParse = curL.strip()
+                print(curL, end=None, file=sys.stderr)
 
         if progg is not None:
             if progg < 0:
                 self.counter += 1
-                self.ui.inProgress.setVisible(False)
-            else:
-                self.ui.inProgress.setValue(progg)
-        if self.proggMax  and  self.proggMax != self.ui.inProgress.maximum() :
-            self.ui.inProgress.setMaximum(self.proggMax)
+            self.ui.inProgress.setValue(0 if progg < 0 else progg)
+        if proggMax is not None  and  proggMax != self.ui.inProgress.maximum() :
+            self.ui.inProgress.setMaximum(proggMax)
         if proggTxt:
             self.ui.inProgress.setFormat( (f"({self.counter+1}) " if self.counter else "")
                                         + proggTxt + ": %v of %m (%p%)" )
@@ -572,22 +498,27 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def onScriptStarted(self):
+        self.counter = 0
+        script = self.sender()
+        role = "\"" + script.role() + "\""
         self.ui.inProgress.setValue(0)
         self.ui.inProgress.setMaximum(0)
-        self.ui.inProgress.setFormat("Starting...")
+        self.ui.inProgress.setFormat(f"Starting script {role}")
         self.ui.inProgress.setVisible(True)
-        script = self.sender()
-        self.addToConsole( f"Executing command in {script.proc.workingDirectory()}:\n"
-                           f"  {script.body()}"
-            , QtCore.Qt.green)
+        self.addToConsole(f"Executing script {role} in {os.path.realpath(script.proc.workingDirectory())}:")
+        self.addToConsole(f"{script.body()}", QtCore.Qt.green)
 
 
-    @pyqtSlot()
+    @pyqtSlot(int)
     def onScriptFinished(self):
         self.ui.inProgress.setVisible(False)
         script = self.sender()
-        (self.addErrToConsole if script.proc.exitCode() else self.addOutToConsole)
-        (f"Stopped after {int(script.time)}s with exit status {script.proc.exitCode()}.")
+        role = "\"" + script.role() + "\""
+        exitCode = script.proc.exitCode()
+        self.addToConsole(f"Script {role} stopped after {int(script.time)}s with exit code {exitCode}.")
+        if exitCode:
+            self.addErrToConsole(f"WARNING! Exit code {exitCode} of script {role} indicates error.")
+
 
 
     def execInBg(self, proc, parseProc=None):
@@ -645,8 +576,8 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 break
 
-        proc_time = time.time() - start_time
-        final_msg = f"Stopped after {int(proc_time)}s with exit status {proc.exitCode()}."
+        procTime = time.time() - start_time
+        final_msg = f"Stopped after {int(procTime)}s with exit status {proc.exitCode()}."
         if proc.exitCode():
             self.addErrToConsole(final_msg)
         else:
@@ -944,24 +875,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.tabWidget.widget(tabIdx).setEnabled(True)
 
 
-    initproc = QProcess()
-
     @pyqtSlot()
     def on_initiate_clicked(self):
-        if self.initproc.state():
-            killProcTree(self.initproc.processId())
+        if self.scrInitiate.isRunning():
+            self.scrInitiate.stop()
             return
 
-        self.needReinitiation()
-        self.ui.initInfo.setEnabled(False)
-        self.ui.initiate.setStyleSheet(warnStyle)
-        self.ui.initiate.setText('Stop')
-
         opath = self.ui.outPath.text()
-        if not self.ui.individualIO.isChecked() and \
-           not os.path.isdir(opath):
-            os.makedirs(opath, exist_ok=True)
-
         command = execPath + "imbl-init.sh "
         command += " -v "
         if self.ui.notFnS.isChecked():
@@ -983,18 +903,23 @@ class MainWindow(QtWidgets.QMainWindow):
                                  + ' | tail -n +3 | cut -d\' \' -f2 | cut -d\':\' -f 1 '
                                  + grepsPps).read().strip("\n").replace("\n", " ")
             command += f" -L \"{labels}\" "
-
         command += f" -o \"{opath}\" "
         command += f" \"{self.ui.inPath.text()}\" "
 
-        self.initproc.setProgram("/bin/sh")
-        self.initproc.setArguments(("-c", command))
-        self.execInBg(self.initproc, parseOutProgg)
+        self.needReinitiation()
+        self.ui.initInfo.setEnabled(False)
+        self.ui.initiate.setStyleSheet(warnStyle)
+        self.ui.initiate.setText('Stop')
+
+        if not self.ui.individualIO.isChecked() and \
+           not os.path.isdir(opath):
+            os.makedirs(opath, exist_ok=True)
+        self.scrInitiate.setBody(command)
+        self.scrInitiate.exec()
 
         self.ui.initInfo.setEnabled(True)
         self.ui.initiate.setStyleSheet('')
         self.ui.initiate.setText('Initiate')
-
         self.on_outPath_textChanged()
 
         if self.ui.procAfterInit.isChecked():
@@ -1185,8 +1110,16 @@ class MainWindow(QtWidgets.QMainWindow):
         print("rec is Not yet ready")
 
 
+    @pyqtSlot()
+    def on_termini_clicked(self):
+        for script in self.ui.findChildren(Script):
+            script.stop()
 
 
+
+
+
+signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+C will quit the app
 app = QApplication(sys.argv)
 my_mainWindow = MainWindow()
 my_mainWindow.show()
