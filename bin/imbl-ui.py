@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
-import sys, os, re, psutil, time
+import sys, os, re, psutil, time, itertools
 from tabnanny import check
 
+
 from PyQt5 import QtWidgets, QtCore, QtGui
-from PyQt5.QtCore import pyqtSlot, QSettings, QProcess, QEventLoop, QTimer
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, QSettings, QProcess, QEventLoop, QObject, QTimer
 from PyQt5.QtWidgets import QFileDialog, QApplication
 from PyQt5.uic import loadUi
 
@@ -112,7 +113,198 @@ def parseOutProgg(outed, erred):
     return progg, proggMax, proggTxt, addToOut, addToErr
 
 
+class Script(QObject) :
 
+    shell = os.environ['SHELL'] if os.environ['SHELL'] else "/bin/sh"
+    bodySet = pyqtSignal()
+    finished = pyqtSignal(int)
+    started = pyqtSignal()
+
+
+    def __init__(self, parent=None):
+        super(QObject, self).__init__(parent)
+        self.fileExec = QtCore.QTemporaryFile()
+        if not self.fileExec.open():
+            print("ERROR! Unable to open temporary file.")
+            return
+        self.proc = QProcess(self)
+        self.proc.setProgram(self.shell)
+        self.proc.stateChanged.connect(self.onState)
+        self.time=0
+
+
+    @pyqtSlot(str)
+    def setBody(self, body):
+        if not self.fileExec.isOpen() or self.isRunning():
+            return
+        self.fileExec.resize(0)
+        self.fileExec.write(body.strip().encode())
+        #self.fileExec.write(" $@\n".encode())
+        self.fileExec.flush()
+        self.bodySet.emit()
+
+
+    def body(self):
+        if not self.fileExec.isOpen():
+            return ""
+        self.fileExec.seek(0)
+        return self.fileExec.readAll().data().decode()
+
+
+    @pyqtSlot()
+    def onState(self):
+        state = self.proc.state()
+        if state == QProcess.NotRunning:
+            self.time = time.time() - self.time
+            self.finished.emit(self.proc.exitCode())
+        if state == QProcess.Running:
+            self.time = time.time()
+            self.started.emit()
+
+
+    def isRunning(self):
+        return self.proc.state() != QProcess.NotRunning
+
+
+    @pyqtSlot(list)
+    def start(self, par=None):
+        if self.isRunning():
+            return False
+        if not self.fileExec.size():
+            return True
+        args = [self.fileExec.fileName()]
+        if par:
+            if isinstance(par, str):
+                args.append(par)
+            else:
+                args += par
+        self.proc.setArguments(args)
+        self.proc.start()
+        self.proc.waitForStarted(500)
+        return self.isRunning()
+
+
+    @pyqtSlot(list)
+    def exec(self, par=None):
+        return self.waitStop() if self.start(par) else None
+
+
+    def stop(self):
+        if not self.isRunning():
+            return
+        try:
+            psproc=psutil.Process(self.proc.pid())
+            for child in psproc.children(recursive=True):
+                child.kill()
+            self.proc.kill()
+        except Exception:
+            pass
+
+
+    def waitStop(self):
+        q = QEventLoop()
+        self.finished.connect(q.quit)
+        if self.isRunning():
+            q.exec()
+        return self.exitCode()
+
+
+    def evaluate(self, par=None):
+        tempproc = QProcess(self)
+        args = ["-n", self.fileExec.fileName()]
+        if par:
+            if isinstance(par, str):
+                args.append(par)
+            else:
+                args += par
+        tempproc.start(self.shell, args)
+        tempproc.waitForFinished()
+        return tempproc.exitCode()
+
+
+def onBrowse(wdg, desc, forFile=False):
+    dest = ""
+    if forFile:
+        dest, _filter = QFileDialog.getOpenFileName(wdg, desc, wdg.text())
+    else:
+        dest = QFileDialog.getExistingDirectory(wdg, desc, wdg.text())
+    if dest:
+        wdg.setText(dest)
+
+
+class UScript(QtWidgets.QWidget) :
+
+    editingFinished = pyqtSignal()
+
+    def __init__(self, parent=None):
+        super(QtWidgets.QWidget, self).__init__(parent)
+        self.ui = loadUi(execPath + '../share/imblproc/script.ui', self)
+        self.script = Script(self)
+        self.ui.body.textChanged.connect(self.script.setBody)
+        self.ui.browse.clicked.connect(lambda : onBrowse(self.ui.body, "Command", True))
+        self.ui.execute.clicked.connect(self.onStartStop)
+        self.ui.body.editingFinished.connect(self.editingFinished.emit)
+        self.script.started.connect(self.updateState)
+        self.script.finished.connect(self.updateState)
+        self.script.bodySet.connect(self.updateBody)
+
+    @pyqtSlot()
+    def onStartStop(self):
+        if self.script.isRunning():
+            self.script.stop()
+        else:
+            self.script.start()
+
+    @pyqtSlot()
+    def updateState(self):
+        isrunning = self.script.isRunning()
+        self.ui.browse.setEnabled(not isrunning)
+        self.ui.body.setEnabled(not isrunning )
+        self.ui.execute.setText( "Stop" if isrunning else "Execute" )
+        self.ui.execute.setStyleSheet( "color: rgb(255, 0, 0);" if isrunning or self.script.proc.exitCode() else "")
+
+    @pyqtSlot()
+    def updateBody(self):
+        self.ui.body.setStyleSheet("color: rgb(255, 0, 0);" if self.script.evaluate() else "")
+        self.ui.execute.setStyleSheet("")
+
+
+class ColumnResizer(QObject):
+
+    def __init__(self, parent=None):
+        super(QObject, self).__init__(parent)
+        self.updateTimer = QTimer(self)
+        self.updateTimer.setSingleShot(True)
+        self.updateTimer.setInterval(0)
+        self.updateTimer.timeout.connect(self.updateWidth)
+        self.widgets = []
+        self.columnsInfo = {}
+
+    def addWidget(self, widget):
+        self.widgets.append(widget)
+        widget.installEventFilter(self)
+        self.updateTimer.start()
+
+    def addWidgetsFromLayout(self, layout, column):
+        if not layout or not isinstance(layout, QtWidgets.QGridLayout):
+            return
+        for row in range(0,layout.rowCount()):
+            if (item := layout.itemAtPosition(row, column)) and (wdg := item.widget()) and wdg not in self.widgets :
+                self.addWidget(wdg)
+        self.columnsInfo[layout] = column
+
+    @pyqtSlot()
+    def updateWidth(self):
+        width = 0
+        for wdg in self.widgets:
+            width = max(wdg.sizeHint().width(), width)
+        for layout, column in self.columnsInfo.items():
+            layout.setColumnMinimumWidth(column, width)
+
+    def eventFilter(self, obj, event):
+        if event.type() == QtCore.QEvent.Resize:
+            self.updateTimer.start()
+        return False
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -121,94 +313,53 @@ class MainWindow(QtWidgets.QMainWindow):
     etcConfigName = os.path.join(Path.home(), configName)
     amLoading = False
 
+
     def __init__(self):
         super(MainWindow, self).__init__()
+        cfgProp="saveInConfig" # objects with this property (containing int read order) will be saved in config
         self.ui = loadUi(execPath + '../share/imblproc/imbl-ui.ui', self)
-        # self.ui = ui_imbl.Ui_MainWindow()
-        # self.ui.setupUi(self)
-        self.on_individualIO_toggled()
-        self.on_xtractIn_textChanged()
-        self.on_ppIn_textChanged()
 
-        self.ui.splits.horizontalHeader().setStretchLastSection(False)
-        self.ui.splits.horizontalHeader().setSectionResizeMode(
-            0, QtWidgets.QHeaderView.Stretch)
-        self.ui.splits.horizontalHeader().setSectionResizeMode(
-            1, QtWidgets.QHeaderView.Fixed)
-        self.ui.splits.insertRow(0)
-        butt = QtWidgets.QToolButton(self)
-        butt.setText('add')
-        butt.clicked.connect(self.addToSplit)
-        self.ui.splits.setCellWidget(0, 0, butt)
-        self.ui.splits.setSpan(0, 0, 1, 2)
-        self.ui.splitSize.editingFinished.connect(self.ui.recalculateSplit)
-        self.ui.irregularSplit.toggled.connect(self.ui.recalculateSplit)
+        self.previousParse = ""
+        self.proggMax = None
+        self.counter=0
+        placePrefix="placeScript_"
+        for place in self.ui.findChildren(QtWidgets.QLayout, QtCore.QRegExp(placePrefix+"\w+")):
+            scrw = UScript(self)
+            scrw.setObjectName("script_"+place.objectName().removeprefix(placePrefix))
+            scrw.setProperty(cfgProp, 2)
+            self.ui.outPath.textChanged.connect(scrw.script.proc.setWorkingDirectory)
+            place.addWidget(scrw)
+            scrw.script.proc.readyReadStandardOutput.connect(self.parseScriptOut)
+            scrw.script.proc.readyReadStandardError.connect(self.parseScriptOut)
+            scrw.script.started.connect(self.onScriptStarted)
+            scrw.script.finished.connect(self.onScriptFinished)
+        self.cResizer = ColumnResizer(self)
+        self.cResizer.addWidgetsFromLayout(self.ui.tabRec.layout(), 4)
+        for script in self.ui.tabRec.findChildren(UScript):
+            self.cResizer.addWidgetsFromLayout(script.ui.layout(), 1)
+
+        self.on_individualIO_toggled()
         self.ui.inProgress.setVisible(False)
 
         saveBtn = QtWidgets.QPushButton("Save", self)
         saveBtn.setFlat(True)
-        saveBtn.clicked.connect(self.saveNewConfiguration)
+        saveBtn.clicked.connect(lambda : self.saveConfiguration(""))
         self.ui.statusBar().addPermanentWidget(saveBtn)
-
         loadBtn = QtWidgets.QPushButton("Load", self)
         loadBtn.setFlat(True)
-        loadBtn.clicked.connect(self.loadNewConfiguration)
+        loadBtn.clicked.connect(lambda : self.loadConfiguration(""))
         self.ui.statusBar().addPermanentWidget(loadBtn)
 
         self.doYst = False
         self.doZst = False
         self.doFnS = False
 
-        self.configObjects = (
-            self.ui.individualIO,
-            self.ui.expPath,
-            self.ui.expSample,
-            self.ui.inPath,
-            self.ui.outPath,  # must come early in loading
-            self.ui.ignoreLog,
-            self.ui.step,
-            self.ui.notFnS,
-            self.ui.excludes,
-            self.ui.yIndependent,
-            self.ui.zIndependent,
-            self.ui.noNewFF,
-            self.ui.procAfterInit,
-            self.ui.maskPath,
-            self.ui.rotate,
-            self.ui.edge,
-            self.ui.peakThr,
-            self.ui.peakRad,
-            self.ui.sCropTop,
-            self.ui.sCropBottom,
-            self.ui.sCropRight,
-            self.ui.sCropLeft,
-            self.ui.xBin,
-            self.ui.sameBin,  # must come between those two bins
-            self.ui.yBin,
-            self.ui.iStX,
-            self.ui.iStY,
-            self.ui.oStX,
-            self.ui.oStY,
-            self.ui.fStX,
-            self.ui.fStY,
-            self.ui.fCropTop,
-            self.ui.fCropBottom,
-            self.ui.fCropRight,
-            self.ui.fCropLeft,
-            self.ui.testProjection,
-            self.ui.splitSize,
-            self.ui.irregularSplit,
-            self.ui.testSubDir,
-            self.ui.noRecFF,
-            self.ui.xtractAfter,
-            self.ui.xtractIn,
-            self.ui.postproc,
-            self.ui.ppIn,
-            self.ui.minProj,
-            self.ui.maxProj,
-            self.ui.deleteClean
-        )
-
+        confsWithOrder = { wdg: wdg.property(cfgProp) for wdg in self.ui.findChildren(QObject)
+                                                      if wdg.property(cfgProp) is not None}
+        self.configObjects = [ pr[0] for pr in sorted(confsWithOrder.items(), key=lambda x:x[1]) ]
+        # dynamic property of the QButtonGroup is not read from ui file; have to add them manually:
+        self.configObjects.extend([grp for grp in self.ui.findChildren(QtWidgets.QButtonGroup)
+                                       if not grp in self.configObjects])
         for swdg in self.configObjects:
             if isinstance(swdg, QtWidgets.QLineEdit):
                 swdg.textChanged.connect(self.saveConfiguration)
@@ -218,41 +369,21 @@ class MainWindow(QtWidgets.QMainWindow):
                 swdg.valueChanged.connect(self.saveConfiguration)
             elif isinstance(swdg, QtWidgets.QComboBox):
                 swdg.currentTextChanged.connect(self.saveConfiguration)
+            elif isinstance(swdg, UScript):
+                swdg.editingFinished.connect(self.saveConfiguration)
+            elif isinstance(swdg, QtWidgets.QButtonGroup):
+                swdg.buttonClicked.connect(self.saveConfiguration)
 
         self.ui.notFnS.clicked.connect(self.needReinitiation)
         self.ui.ignoreLog.clicked.connect(self.needReinitiation)
         self.ui.yIndependent.clicked.connect(self.needReinitiation)
         self.ui.zIndependent.clicked.connect(self.needReinitiation)
         self.ui.excludes.editingFinished.connect(self.needReinitiation)
-        self.ui.xtractAfter.toggled.connect(self.on_xtractIn_textChanged)
-        self.ui.postproc.toggled.connect(self.on_ppIn_textChanged)
         self.ui.expUpdate.clicked.connect(self.on_expPath_textChanged)
         self.ui.ignoreLog.toggled.connect(self.on_inPath_textChanged)
         self.ui.excludes.editingFinished.connect(self.on_inPath_textChanged)
 
         QtCore.QTimer.singleShot(100, self.loadConfiguration)
-
-
-    def addToConsole(self, text, qcolor=None):
-        if not text:
-            return
-        if not qcolor:
-            qcolor = self.ui.console.palette().text().color()
-        self.ui.console.setTextColor(qcolor)
-        self.ui.console.append(str(text).strip('\n'))
-
-
-    def addOutToConsole(self, text):
-        self.addToConsole(text, QtCore.Qt.blue)
-
-
-    def addErrToConsole(self, text):
-        self.addToConsole(text, QtCore.Qt.red)
-
-
-    @pyqtSlot()
-    def saveNewConfiguration(self):
-        self.saveConfiguration("")
 
 
     @pyqtSlot()
@@ -281,19 +412,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 return wdg.value()
             elif isinstance(wdg, QtWidgets.QComboBox):
                 return wdg.currentText()
+            elif isinstance(wdg, UScript):
+                return wdg.ui.body.text()
+            elif isinstance(swdg, QtWidgets.QButtonGroup):
+                return swdg.checkedButton().text() if swdg.checkedButton() else ""
+
         for swdg in self.configObjects:
             config.setValue(swdg.objectName(), valToSave(swdg))
-
-        config.beginWriteArray('splits')
-        for crow in range(0, self.ui.splits.rowCount()-1):
-            config.setArrayIndex(crow)
-            config.setValue('pos', self.ui.splits.cellWidget(crow, 0).value())
-        config.endArray()
-
-
-    @pyqtSlot()
-    def loadNewConfiguration(self):
-        self.loadConfiguration("")
 
 
     @pyqtSlot()
@@ -331,6 +456,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 didx = wdg.findText(txt)
                 if not didx < 0:
                     wdg.setCurrentIndex(didx)
+            elif isinstance(wdg, UScript):
+                wdg.ui.body.setText(config.value(oName, type=str))
+            elif isinstance(swdg, QtWidgets.QButtonGroup):
+                txt = config.value(oName, type=str)
+                for but in wdg.buttons():
+                    if but.text() == txt:
+                        but.setChecked(True)
+
         for swdg in self.configObjects:
             oName = swdg.objectName()
             if config.contains(oName):
@@ -338,18 +471,123 @@ class MainWindow(QtWidgets.QMainWindow):
             if swdg is self.ui.outPath:
                 self.on_outPath_textChanged()
             if swdg is self.ui.sameBin:
-                self.on_sameBin_clicked()
-
-        while self.ui.splits.rowCount() > 1:
-                self.remFromSplit(0)
-        splitsize = config.beginReadArray('splits')
-        for crow in range(0, splitsize):
-            config.setArrayIndex(crow)
-            self.addToSplit(config.value('pos', type=int))
-        config.endArray()
-        self.recalculateSplit()
+                self.on_sameBin_toggled()
 
         self.amLoading = False
+
+
+    def addToConsole(self, text, qcolor=None):
+        text.strip()
+        if not text:
+            return
+        if not qcolor:
+            qcolor = self.ui.console.palette().text().color()
+        self.ui.console.setTextColor(qcolor)
+        self.ui.console.append(str(text).strip('\n'))
+
+
+    def addOutToConsole(self, text):
+        self.addToConsole(text, QtCore.Qt.cyan)
+
+
+    def addErrToConsole(self, text):
+        self.addToConsole(text, QtCore.Qt.red)
+
+
+    @pyqtSlot()
+    def parseScriptOut(self):
+
+        proc = self.sender()
+        outed = proc.readAllStandardOutput().data().decode(sys.getdefaultencoding()).strip()
+        erred = proc.readAllStandardError().data().decode(sys.getdefaultencoding()).strip()
+        if not outed and not erred:
+            return
+        if outed :
+          print(outed, end=None)
+        if erred :
+          print(erred, end=None, file=sys.stderr)
+
+        progg = proggTxt = None
+        addToOut = addToErr = ""
+        for curL in outed.splitlines():
+            # poptmx start
+            if lres := re.search('Starting process \((.*) steps\)\: (.*)\.', curL) :
+                progg=0
+                self.proggMax=int(lres.group(1))
+                proggTxt=lres.group(2)
+                addToOut += curL + '\n'
+            # poptmx complete
+            elif "Successfully finished" in curL or "DONE" in curL :
+                progg=-1
+                addToOut += curL + '\n'
+            # poptmx progg
+            elif lres := re.search('^([0-9]+)/([0-9]+)$', curL) :
+                progg=int(lres.group(1))
+                self.proggMax=int(lres.group(2))
+            # other
+            elif len(curL):
+                addToOut += curL + '\n'
+            if len(curL.strip()) :
+                self.previousParse = curL.strip()
+
+        for curL in erred.splitlines(): # GNU parallel in err
+            if 'Computers / CPU cores / Max jobs to run' in curL:
+                if lres := re.search('Starting (.*)\:', self.previousParse) :
+                    progg=0
+                    proggTxt=lres.group(1)
+            # GNU parallel skip
+            elif    'Computer:jobs running/jobs completed/%of started jobs/Average seconds to complete' in curL \
+                 or re.search('.+ / [0-9]+ / [0-9]+', curL) :
+                progg=0
+            # GNU parallel progg
+            elif lres := re.search('ETA\: .* Left\: ([0-9]+) AVG\: .*\:[0-9]+/([0-9]+)/.*/.*', curL) :
+                leftToDo = int(lres.group(1))
+                progg = int(lres.group(2))
+                self.proggMax = progg + leftToDo
+                if not leftToDo :
+                    llres = re.search('ETA\: .* Left\: ([0-9]+) AVG\: .*\:[0-9]+/([0-9]+)/.*/.*', self.previousParse)
+                    if not llres or progg != int(llres.group(2)) :
+                      progg = -1
+                      addToOut += " DONE.\n"
+            # other
+            elif len(curL):
+                addToErr += curL + '\n'
+            if len(curL.strip()) :
+                self.previousParse = curL.strip()
+
+        if progg is not None:
+            if progg < 0:
+                self.counter += 1
+                self.ui.inProgress.setVisible(False)
+            else:
+                self.ui.inProgress.setValue(progg)
+        if self.proggMax  and  self.proggMax != self.ui.inProgress.maximum() :
+            self.ui.inProgress.setMaximum(self.proggMax)
+        if proggTxt:
+            self.ui.inProgress.setFormat( (f"({self.counter+1}) " if self.counter else "")
+                                        + proggTxt + ": %v of %m (%p%)" )
+        self.addOutToConsole(addToOut)
+        self.addErrToConsole(addToErr)
+
+
+    @pyqtSlot()
+    def onScriptStarted(self):
+        self.ui.inProgress.setValue(0)
+        self.ui.inProgress.setMaximum(0)
+        self.ui.inProgress.setFormat("Starting...")
+        self.ui.inProgress.setVisible(True)
+        script = self.sender()
+        self.addToConsole( f"Executing command in {script.proc.workingDirectory()}:\n"
+                           f"  {script.body()}"
+            , QtCore.Qt.green)
+
+
+    @pyqtSlot()
+    def onScriptFinished(self):
+        self.ui.inProgress.setVisible(False)
+        script = self.sender()
+        (self.addErrToConsole if script.proc.exitCode() else self.addOutToConsole)
+        (f"Stopped after {int(script.time)}s with exit status {script.proc.exitCode()}.")
 
 
     def execInBg(self, proc, parseProc=None):
@@ -447,12 +685,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.on_outPath_textChanged()
 
 
+    def generalBrowse(self, wdg, desc, forFile=False):
+        dest = ""
+        if forFile:
+            dest, _filter = QFileDialog.getOpenFileName(self, desc, wdg.text())
+        else:
+            dest = QFileDialog.getExistingDirectory(self, desc, wdg.text())
+        if dest:
+            wdg.setText(dest)
+
+
     @pyqtSlot()
     def on_expBrowse_clicked(self):
-        newdir = QFileDialog.getExistingDirectory(
-            self, "Experiment directory", self.ui.expPath.text())
-        if newdir:
-            self.ui.expPath.setText(newdir)
+        onBrowse(self.ui.expPath, "Experiment directory")
 
 
     @pyqtSlot(bool)
@@ -505,10 +750,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def on_inBrowse_clicked(self):
-        newdir = QFileDialog.getExistingDirectory(
-            self, "Sample directory", os.path.dirname(self.ui.inPath.text()))
-        if newdir:
-            self.ui.inPath.setText(newdir)
+        onBrowse(self.ui.inPath, "Sample directory")
+
 
     @pyqtSlot()
     @pyqtSlot(str)
@@ -597,10 +840,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def on_outBrowse_clicked(self):
-        newdir = QFileDialog.getExistingDirectory(
-            self, "Output directory", os.path.dirname(self.ui.outPath.text()))
-        if newdir:
-            self.ui.outPath.setText(newdir)
+        onBrowse(self.ui.outPath, "Output directory")
 
 
     @pyqtSlot()
@@ -685,12 +925,10 @@ class MainWindow(QtWidgets.QMainWindow):
         setMyRange(self.ui.fStX, -2*width, 2*width)
         setMyRange(self.ui.fStY, -2*hight, 2*hight)
         msz = max(1,ys, zs)
-        setMyMax(self.ui.splitSize, hight*msz)
         setMyMax(self.ui.fCropTop, hight*msz)
         setMyMax(self.ui.fCropBottom, hight*msz)
         setMyMax(self.ui.fCropRight, width*msz)
         setMyMax(self.ui.fCropLeft, width*msz)
-        self.ui.recalculateSplit()
 
         self.ui.testSubDir.clear()
         sds = 'subdirs' in initDict
@@ -763,8 +1001,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.on_procAll_clicked()
 
 
-    @pyqtSlot()
-    def on_sameBin_clicked(self):
+    @pyqtSlot(bool)
+    def on_sameBin_toggled(self):
         if (self.ui.sameBin.isChecked()):
             self.ui.yBin.setValue(self.ui.xBin.value())
             self.ui.xBin.valueChanged.connect(self.ui.yBin.setValue)
@@ -778,10 +1016,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def on_maskBrowse_clicked(self):
-        newfile, _filter = QFileDialog.getOpenFileName(self,
-            "Mask image.", os.path.dirname(self.ui.maskPath.text()))
-        if newfile:
-            self.ui.maskPath.setText(newfile)
+        onBrowse(self.ui.maskPath, "Mask image.", True)
 
 
     @pyqtSlot()
@@ -791,67 +1026,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.maskPath.setStyleSheet("" if maskOK else warnStyle)
 
 
-    @pyqtSlot()
-    def addToSplit(self, pos=0):
-        nrow = self.ui.splits.rowCount() - 1
-        self.ui.splits.insertRow(nrow)
-        poss = QtWidgets.QSpinBox(self)
-        maxsz = max(1, self.ui.ys.value(), self.ui.zs.value()) * self.ui.hight.value()
-        poss.setMaximum(maxsz)
-        poss.setValue(pos)
-        poss.editingFinished.connect(self.saveConfiguration)
-        self.ui.splits.setCellWidget(nrow, 0, poss)
-        butt = QtWidgets.QToolButton(self)
-        butt.setText('delete')
-        butt.clicked.connect(self.remFromSplit)
-        self.ui.splits.setCellWidget(nrow, 1, butt)
-        self.saveConfiguration()
-
-
-    @pyqtSlot()
-    def remFromSplit(self, row=-1):
-        if row < 0:  # on rem click
-            for crow in range(0, self.ui.splits.rowCount()-1):
-                if self.ui.splits.cellWidget(crow, 1) is self.sender():
-                    self.remFromSplit(crow)
-                    break
-        elif row < self.ui.splits.rowCount()-1:
-            self.ui.splits.cellWidget(row, 0).destroy()
-            self.ui.splits.cellWidget(row, 1).destroy()
-            self.ui.splits.removeRow(row)
-        self.saveConfiguration()
-
-
-    @pyqtSlot()
-    def recalculateSplit(self):
-        self.ui.splitSize.setEnabled(not self.ui.irregularSplit.isChecked())
-        self.ui.splits.setEnabled(self.ui.irregularSplit.isChecked())
-        if self.ui.irregularSplit.isChecked() :
-            return
-        pixels = self.ui.splitSize.value()
-        maxsz = max(1, self.ui.ys.value(), self.ui.zs.value()) * self.ui.hight.value()
-        points = 0  if  pixels == 0  else  maxsz // pixels
-        for cpnt in range(points) :
-            cpos = (cpnt + 1 ) * pixels
-            pointWdg = self.ui.splits.cellWidget(cpnt,0)
-            if isinstance(pointWdg, QtWidgets.QSpinBox) :
-                pointWdg.setValue(cpos)
-            else :
-                self.addToSplit(cpos)
-        while self.ui.splits.rowCount() - 1 != points :
-            self.remFromSplit(self.ui.splits.rowCount()-2)
-
-
     stitchproc = QProcess()
 
-    def common_test_proc(self, ars, wdir, actButton):
+    def common_test_proc(self, wdir, actButton, ars=None):
         if self.stitchproc.state():
             killProcTree(self.stitchproc.processId())
             return
 
         disableWdgs = (*self.configObjects,
-                       self.ui.procAll, self.ui.procThis, self.ui.test,
-                       self.ui.splits, self.ui.initiate)
+                       self.ui.procAll, self.ui.procThis, self.ui.test.proj, self.ui.initiate)
         for wdg in disableWdgs:
             if wdg is not actButton:
                 wdg.setEnabled(False)
@@ -879,13 +1062,6 @@ class MainWindow(QtWidgets.QMainWindow):
             prms += f" -n {self.ui.peakRad.value()} -N {self.ui.peakThr.value()} "
         if 0.0 != self.ui.edge.value():
             prms += f" -E {self.ui.edge.value()} "
-        if self.ui.splits.rowCount() > 1:
-            splits = []
-            for crow in range(0, self.ui.splits.rowCount()-1):
-                splits.append(self.ui.splits.cellWidget(crow, 0).value())
-            splits.sort()
-            splits = set(splits)
-            prms += " -s %s " % ','.join([str(splt) for splt in splits])
         crops = (self.ui.sCropTop.value(), self.ui.sCropLeft.value(),
                  self.ui.sCropBottom.value(), self.ui.sCropRight.value())
         if sum(crops):
@@ -901,7 +1077,8 @@ class MainWindow(QtWidgets.QMainWindow):
             maxProj = pjs
         prms += f" -m {minProj} -M {maxProj} "
         prms += " -v "
-        prms += ars
+        if ars:
+            prms += ars
 
         self.stitchproc.setProgram("/bin/sh")
         self.stitchproc.setArguments(("-c", execPath + "imbl-proc.sh " + prms))
@@ -912,32 +1089,23 @@ class MainWindow(QtWidgets.QMainWindow):
             wdg.setEnabled(True)
         actButton.setText(actText)
         actButton.setStyleSheet("")
-        self.on_sameBin_clicked()  # to correct state of the yBin
-        # self.on_xtractIn_textChanged()  # to correct state of process all
+        self.on_sameBin_toggled()  # to correct state of the yBin
         self.update_initiate_state()
 
 
     @pyqtSlot()
-    def on_test_clicked(self):
+    def on_testProj_clicked(self):
         ars = f" -t {self.ui.testProjection.value()}"
         wdir = os.path.join(self.ui.outPath.text(),
                             self.ui.testSubDir.currentText())
-        self.common_test_proc(ars, wdir, self.ui.test)
-
-
-    def procParams(self):
-        ars = " -d " if self.ui.noRecFF.isChecked() else ""
-        ars += (f" -x \"{self.ui.xtractIn.text()}\" "
-                if self.ui.xtractAfter.isChecked() else "")
-        ars += " -w " if self.ui.deleteClean.isChecked() else ""
-        return ars
+        self.common_test_proc(wdir, self.ui.testProj, ars)
 
 
     @pyqtSlot()
     def on_procAll_clicked(self):
         wdir = self.ui.outPath.text()
         self.saveConfiguration(os.path.join(wdir, self.configName))
-        self.common_test_proc(self.procParams(), wdir, self.ui.procAll)
+        self.common_test_proc(wdir, self.ui.procAll)
 
 
     @pyqtSlot()
@@ -945,96 +1113,7 @@ class MainWindow(QtWidgets.QMainWindow):
         wdir = os.path.join(self.ui.outPath.text(),
                             self.ui.testSubDir.currentText())
         self.saveConfiguration(os.path.join(wdir, self.configName))
-        self.common_test_proc(self.procParams(), wdir, self.ui.procThis)
-
-
-    xtrproc = QProcess()
-
-    @pyqtSlot()
-    def on_xtractExecute_clicked(self):
-        if self.xtrproc.state():
-            killProcTree(self.xtrproc.processId())
-            return
-
-        xtrText = self.ui.xtractExecute.text()
-        self.ui.xtractExecute.setText('Stop')
-        self.ui.xtractExecute.setStyleSheet(warnStyle)
-
-        self.xtrproc.setProgram("/bin/sh")
-        self.xtrproc.setArguments(("-c",
-                                   execPath + "imbl-xtract-wrapper.sh " +
-                                   " -a " + self.ui.step.text() + " " +
-                                   self.ui.xtractIn.text() + " clean rec"))
-        wdir = os.path.join(self.ui.outPath.text(),
-                            self.ui.testSubDir.currentText())
-        self.xtrproc.setWorkingDirectory(wdir)
-        self.execInBg(self.xtrproc, parseOutProgg)
-
-        self.ui.xtractExecute.setText(xtrText)
-        self.ui.xtractExecute.setStyleSheet("")
-
-
-    @pyqtSlot()
-    def on_xtractBrowse_clicked(self):
-        newfile, _filter = QFileDialog.getOpenFileName(self,
-            "Xtract parameters file", os.path.dirname(self.ui.xtractIn.text()))
-        if newfile:
-            self.ui.xtractIn.setText(newfile)
-
-
-    @pyqtSlot()
-    @pyqtSlot(str)
-    def on_xtractIn_textChanged(self):
-        doXtract = self.ui.xtractAfter.isChecked()
-        xparfOK = os.path.exists(self.ui.xtractIn.text()) or not doXtract
-        self.ui.xtractWdg.setVisible(doXtract)
-        self.ui.xtractInLabel.setVisible(doXtract)
-        self.ui.xtractIn.setStyleSheet("" if xparfOK else warnStyle)
-        self.ui.xtractExecute.setEnabled(xparfOK)
-
-
-    ppproc = QProcess()
-
-    @pyqtSlot()
-    def on_ppExecute_clicked(self):
-        if self.ppproc.state():
-            killProcTree(self.ppproc.processId())
-            return
-
-        ppText = self.ui.ppExecute.text()
-        self.ui.ppExecute.setText('Stop')
-        self.ui.ppExecute.setStyleSheet(warnStyle)
-
-        self.ppproc.setProgram("/bin/sh")
-        self.ppproc.setArguments(("-c", self.ppIn.text()))
-        wdir = os.path.join(self.ui.outPath.text(),
-                            self.ui.testSubDir.currentText())
-        self.ppproc.setWorkingDirectory(wdir)
-        self.execInBg(self.ppproc)
-
-        self.ui.ppExecute.setText(ppText)
-        self.ui.ppExecute.setStyleSheet("")
-
-
-    @pyqtSlot()
-    def on_ppBrowse_clicked(self):
-        newfile, _filter = QFileDialog.getOpenFileName(self,
-            "Executable file", os.path.dirname(self.ui.ppIn.text()))
-        if newfile:
-            self.ui.ppIn.setText(newfile)
-
-
-    @pyqtSlot()
-    @pyqtSlot(str)
-    def on_ppIn_textChanged(self):
-        doPP = self.ui.postproc.isChecked()
-        self.ui.ppWdg.setVisible(doPP)
-        self.ui.ppInLabel.setVisible(doPP)
-        if not doPP:
-            return
-        ppOK = not QProcess.execute("/bin/sh", ("-n", "-c", self.ui.ppIn.text()))
-        self.ui.ppIn.setStyleSheet("" if ppOK else warnStyle)
-        self.ui.ppExecute.setEnabled(ppOK)
+        self.common_test_proc(wdir, self.ui.procThis)
 
 
     def onMinMaxProjectionChanged(self):
@@ -1055,6 +1134,57 @@ class MainWindow(QtWidgets.QMainWindow):
     @pyqtSlot(int)
     def on_maxProj_valueChanged(self):
         self.onMinMaxProjectionChanged()
+
+
+    def updateRingOrderVisibility(self):
+        vis = self.ui.distance.value() > 0 and self.ui.d2b.value() > 0 and self.ui.ring.value() > 0
+        self.ui.ringOrderLabel.setVisible(vis)
+        self.ui.ringOrder.setVisible(vis)
+
+
+    @pyqtSlot(int)
+    def on_distance_valueChanged(self):
+        phasevis = self.ui.distance.value() > 0
+        self.ui.d2b.setVisible(phasevis)
+        self.ui.d2bLabel.setVisible(phasevis)
+        self.updateRingOrderVisibility()
+
+
+    @pyqtSlot(float)
+    def on_d2b_valueChanged(self):
+        self.updateRingOrderVisibility()
+
+
+    @pyqtSlot(int)
+    def on_ring_valueChanged(self):
+        self.updateRingOrderVisibility()
+
+
+    @pyqtSlot(str)
+    def on_ctFilter_currentTextChanged(self):
+        if self.ui.ctFilter.currentText() == "Kaiser":
+            self.ui.ctFilterParam.setVisible(True)
+            self.ui.filterParamLabel.setVisible(True)
+            self.ui.filterParamLabel.setText("Alpha parameter")
+        elif self.ui.ctFilter.currentText() == "Gauss":
+            self.ui.ctFilterParam.setVisible(True)
+            self.ui.filterParamLabel.setVisible(True)
+            self.ui.filterParamLabel.setText("Sigma parameter")
+        else:
+            self.ui.ctFilterParam.setVisible(False)
+            self.ui.filterParamLabel.setVisible(False)
+
+
+    @pyqtSlot()
+    def on_testSlice_clicked(self):
+        print("Not yet ready")
+
+
+    @pyqtSlot()
+    def on_reconstruct_clicked(self):
+        print("rec is Not yet ready")
+
+
 
 
 app = QApplication(sys.argv)
