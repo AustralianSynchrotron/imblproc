@@ -19,6 +19,17 @@ execPath = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
 warnStyle = 'background-color: rgba(255, 0, 0, 128);'
 
 
+def onBrowse(wdg, desc, forFile=False):
+    dest = ""
+    if forFile:
+        dest, _filter = QFileDialog.getOpenFileName(wdg, desc, wdg.text())
+    else:
+        dest = QFileDialog.getExistingDirectory(wdg, desc, wdg.text())
+    if dest:
+        wdg.setText(dest)
+
+
+
 class Script(QObject) :
 
     shell = os.environ['SHELL'] if os.environ['SHELL'] else "/bin/sh"
@@ -139,15 +150,6 @@ class Script(QObject) :
         return tempproc.exitCode()
 
 
-def onBrowse(wdg, desc, forFile=False):
-    dest = ""
-    if forFile:
-        dest, _filter = QFileDialog.getOpenFileName(wdg, desc, wdg.text())
-    else:
-        dest = QFileDialog.getExistingDirectory(wdg, desc, wdg.text())
-    if dest:
-        wdg.setText(dest)
-
 
 class UScript(QtWidgets.QWidget) :
 
@@ -199,6 +201,7 @@ class UScript(QtWidgets.QWidget) :
         self.ui.execute.setEnabled(self.ui.body.text().strip() and isGood)
 
 
+
 class ColumnResizer(QObject):
 
     def __init__(self, parent=None):
@@ -235,6 +238,7 @@ class ColumnResizer(QObject):
         if event.type() == QtCore.QEvent.Resize:
             self.updateTimer.start()
         return False
+
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -274,6 +278,7 @@ class MainWindow(QtWidgets.QMainWindow):
             script.proc.readyReadStandardError.connect(self.parseScriptOut)
             script.started.connect(self.onScriptStarted)
             script.finished.connect(self.onScriptFinished)
+            script.proc.stateChanged.connect(self.update_termini_state)
 
         self.on_individualIO_toggled()
         self.ui.inProgress.setVisible(False)
@@ -319,6 +324,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.expUpdate.clicked.connect(self.on_expPath_textChanged)
         self.ui.ignoreLog.toggled.connect(self.on_inPath_textChanged)
         self.ui.excludes.editingFinished.connect(self.on_inPath_textChanged)
+        self.ui.minProj.valueChanged.connect(self.onMinMaxProjectionChanged)
+        self.ui.maxProj.valueChanged.connect(self.onMinMaxProjectionChanged)
 
         QtCore.QTimer.singleShot(100, self.loadConfiguration)
 
@@ -462,7 +469,6 @@ class MainWindow(QtWidgets.QMainWindow):
             # other
             elif len(curL):
                 addToOut += curL + '\n'
-                print(curL, end=None)
 
         addToErr = ""
         for curL in erred.splitlines(): # GNU parallel in err
@@ -481,8 +487,12 @@ class MainWindow(QtWidgets.QMainWindow):
             # other
             elif len(curL):
                 addToErr += curL + '\n'
-                print(curL, end=None, file=sys.stderr)
 
+        if progg is None or progg < 1:
+            if outed:
+                print(outed.strip('\n'), end=None)
+            if erred:
+                print(erred.strip('\n'), end=None, file=sys.stderr)
         if progg is not None:
             if progg < 0:
                 self.counter += 1
@@ -944,6 +954,17 @@ class MainWindow(QtWidgets.QMainWindow):
         onBrowse(self.ui.maskPath, "Mask image.", True)
 
 
+    @pyqtSlot(int)
+    def onMinMaxProjectionChanged(self):
+        minProj = self.ui.minProj.value()
+        maxProj = self.ui.maxProj.value()
+        if maxProj == self.ui.maxProj.minimum():
+            maxProj = int(self.ui.projections.text())
+        nstl = "" if minProj <= maxProj else warnStyle
+        self.ui.minProj.setStyleSheet(nstl)
+        self.ui.maxProj.setStyleSheet(nstl)
+
+
     @pyqtSlot()
     @pyqtSlot(str)
     def on_maskPath_textChanged(self):
@@ -951,23 +972,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.maskPath.setStyleSheet("" if maskOK else warnStyle)
 
 
-    stitchproc = QProcess()
-
     def common_test_proc(self, wdir, actButton, ars=None):
-        if self.stitchproc.state():
-            killProcTree(self.stitchproc.processId())
+        if self.scrStitch.isRunning():
+            self.scrStitch.stop()
             return
 
-        disableWdgs = (*self.configObjects,
-                       self.ui.procAll, self.ui.procThis, self.ui.test.proj, self.ui.initiate)
-        for wdg in disableWdgs:
-            if wdg is not actButton:
-                wdg.setEnabled(False)
-        actText = actButton.text()
-        actButton.setText('Stop')
-        actButton.setStyleSheet(warnStyle)
-
-        prms = str()
+        prms = " "
         if self.doYst or self.doZst:
             if self.doZst:
                 prms += f" -g {self.ui.iStX.value()},{self.ui.iStY.value()} "
@@ -1005,10 +1015,18 @@ class MainWindow(QtWidgets.QMainWindow):
         if ars:
             prms += ars
 
-        self.stitchproc.setProgram("/bin/sh")
-        self.stitchproc.setArguments(("-c", execPath + "imbl-proc.sh " + prms))
-        self.stitchproc.setWorkingDirectory(wdir)
-        self.execInBg(self.stitchproc, parseOutProgg)
+        disableWdgs = [ wdg for wdg in [*self.configObjects, *self.ui.findChildren(QtWidgets.QAbstractButton)]
+                            if wdg is not actButton and wdg is not self.ui.termini
+                               and not isinstance(wdg, QtWidgets.QButtonGroup) ]
+        for wdg in disableWdgs:
+            wdg.setEnabled(False)
+        actText = actButton.text()
+        actButton.setStyleSheet(warnStyle)
+        actButton.setText('Stop')
+
+        self.scrStitch.proc.setWorkingDirectory(wdir)
+        self.scrStitch.setBody(execPath + "imbl-stitch.sh" + prms)
+        self.scrStitch.exec()
 
         for wdg in disableWdgs:
             wdg.setEnabled(True)
@@ -1028,37 +1046,25 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def on_procAll_clicked(self):
-        wdir = self.ui.outPath.text()
-        self.saveConfiguration(os.path.join(wdir, self.configName))
-        self.common_test_proc(wdir, self.ui.procAll)
+        ars = ( "" if self.ui.wipeStitched.isChecked() else " -w " ) \
+            + ( "" if self.ui.saveStitched.isChecked() else " -s " )
+        for curIdx in range(self.ui.testSubDir.count()):
+            self.ui.testSubDir.setCurrentIndex(curIdx)
+            subdir = self.ui.testSubDir.currentText()
+            wdir = os.path.join(self.ui.outPath.text(), subdir)
+            self.saveConfiguration(os.path.join(wdir, self.configName))
+            self.addToConsole(f"Stitching {subdir}")
+            self.common_test_proc(wdir, self.ui.procAll, ars)
 
 
     @pyqtSlot()
     def on_procThis_clicked(self):
+        ars = ( "" if self.ui.wipeStitched.isChecked() else " -w " ) \
+            + ( "" if self.ui.saveStitched.isChecked() else " -s " )
         wdir = os.path.join(self.ui.outPath.text(),
                             self.ui.testSubDir.currentText())
         self.saveConfiguration(os.path.join(wdir, self.configName))
-        self.common_test_proc(wdir, self.ui.procThis)
-
-
-    def onMinMaxProjectionChanged(self):
-        minProj = self.ui.minProj.value()
-        maxProj = self.ui.maxProj.value()
-        if maxProj == self.ui.maxProj.minimum():
-            maxProj = int(self.ui.projections.text())
-        nstl = "" if minProj <= maxProj else warnStyle
-        self.ui.minProj.setStyleSheet(nstl)
-        self.ui.maxProj.setStyleSheet(nstl)
-
-
-    @pyqtSlot(int)
-    def on_minProj_valueChanged(self):
-        self.onMinMaxProjectionChanged()
-
-
-    @pyqtSlot(int)
-    def on_maxProj_valueChanged(self):
-        self.onMinMaxProjectionChanged()
+        self.common_test_proc(wdir, self.ui.procThis, ars)
 
 
     def updateRingOrderVisibility(self):
@@ -1108,6 +1114,15 @@ class MainWindow(QtWidgets.QMainWindow):
     @pyqtSlot()
     def on_reconstruct_clicked(self):
         print("rec is Not yet ready")
+
+
+    @pyqtSlot()
+    def update_termini_state(self):
+        isrunning = False
+        for script in self.ui.findChildren(Script):
+            isrunning = isrunning or script.isRunning()
+        self.ui.termini.setEnabled(isrunning)
+        self.ui.termini.setStyleSheet(warnStyle if isrunning else "")
 
 
     @pyqtSlot()

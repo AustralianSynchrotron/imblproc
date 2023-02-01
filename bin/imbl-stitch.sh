@@ -32,6 +32,8 @@ printhelp() {
   echo "  -M INT            Last projection to be processed."
   echo "  -d                Does not perform flat field correction on the images."
   echo "  -t INT            Test mode: keeps intermediate images for the projection in tmp."
+  echo "  -s                Don't save stitched volume in storage (if created in memory)."
+  echo "  -w                Don't wipe stitched volume from memory."
   echo "  -v                Be verbose to show progress."
   echo "  -h                Prints this help."
 }
@@ -71,9 +73,11 @@ ffcorrection=true
 stParam=""
 minProj=0
 maxProj=$(( $pjs - 1 ))
+volStore=true # save in storage
+volWipe=true # wipe from memory
 beverbose=false
 
-while getopts "i:g:G:f:c:C:r:b:m:M:E:n:N:dt:hv" opt ; do
+while getopts "i:g:G:f:c:C:r:b:m:M:E:n:N:dt:swhv" opt ; do
   case $opt in
     i)  gmask=$OPTARG;;
     g)  origin=$OPTARG
@@ -120,6 +124,8 @@ while getopts "i:g:G:f:c:C:r:b:m:M:E:n:N:dt:hv" opt ; do
         fi
         ;;
     d)  ffcorrection=false ;;
+    s)  volStore=false ;;
+    w)  volWipe=false ;;
     t)  testme="$OPTARG" ;;
     v)  beverbose=true ;;
     h)  printhelp ; exit 1 ;;
@@ -262,10 +268,12 @@ while read imgm ; do
     seqarg="$ipath/SAMPLE${imgm}_T%0${nlen}i.tif\n"
   fi
   cat "$projfile" | grep -v '#' | grep "${lbl}" | cut -d' ' -f 3  \
-    | head -n $pjs | prepare_seq "$seqarg" >> ".idxs${imgm}.o"
+    | head -n $pjs | head -n $(( $maxProj + 1 )) | tail -n+$(( $minProj + 1 )) \
+    | prepare_seq "$seqarg" >> ".idxs${imgm}.o"
   if (( $fshift >= 1 )) ; then
     cat "$projfile" | grep -v '#' | grep "${lbl}" | cut -d' ' -f 3 \
-      | tail -n +$fshift | head -n $pjs | prepare_seq "$seqarg" >> ".idxs${imgm}.f"
+      | tail -n +$fshift | head -n $pjs | head -n $(( $maxProj + 1 )) | tail -n+$(( $minProj + 1 )) \
+      | prepare_seq "$seqarg" >> ".idxs${imgm}.f"
   fi
 done <<< "$imagemask"
 
@@ -289,33 +297,41 @@ if [ "$testme" ] ; then
   echo "$tstOut"
   exit 0
 fi
-if [ -z "$tstOut" ] ; then
+read z y x testOFl <<< "$tstOut"
+if [ -z "$testOFl" ] ; then
   echo "ERROR! Test failed." >&2
   exit 1
 fi
 
-tpfx="/dev/shm/imblproc_$(echo "$ipath" | sed 's / _ g')_"
-while [ -n "$tpfx" ]  &&  read z y x fl ; do
-  flfix=$( basename "$fl" | sed 's '${tstfl}'[0-9]*  g' )
+
+crFilePrefix="" # create file on disk
+if ! $volWipe || ! $volStore ; then # create file in memory
+  crFilePrefix="/dev/shm/imblproc_$(echo "$ipath" | sed 's / _ g')_"
+  flfix=$( basename "$testOFl" | sed 's '${tstfl}'[0-9]*  g' )
   flfix="${flfix%.*}"
-  tpnm="${tpfx}clean${flfix}.hdf"
-  if ! ctas v2v "$fl" -o "${tpnm}:/data:-$(( $z - 1 ))" \
-     || ! (
+  tpnm="${crFilePrefix}clean${flfix}.hdf"
+  if $beverbose ; then
+    echo "Creating in memory interim file $tpnm for ${x}x${y}x${z} volume."
+  fi
+  if ! ctas v2v "$testOFl" -o "${tpnm}:/data:-$(( $z - 1 ))" \
+     ||
+     ! (
        vsize=$( du --block-size=1 "$tpnm" | cut -d$'\t' -f1 )
        esize=$(( 4 * x * y * z ))
        if (( $vsize  <  $esize )) ; then
          cp --sparse=never "$tpnm" "${tpnm}.tmp"  &&  mv "${tpnm}.tmp" "$tpnm"
        fi
-     ) ; then
+     )
+  then
     echo "WARNING! Could not create or allocate in memory interim file $tpnm for ${x}x${}x${z} volume." >&2
     echo "         Will use file storage for interim data, what can be significantly slower." >&2
-    rm -rf "$tpfx"*
-    tpfx=""
+    rm -rf "$crFilePrefix"*
+    crFilePrefix=""
   fi
-done <<< "$tstOut"
+fi
 
 
-cleanPath="${tpfx}clean.hdf"
+cleanPath="${crFilePrefix}clean.hdf"
 outParam=" --output ${cleanPath}:/data"
 if $beverbose ; then
   echo "Starting frame formation in $PWD."
@@ -324,28 +340,22 @@ fi
 ctas proj $stParam $outParam < "$idxsallf"  ||
   ( echo "There was an error executing:" >&2
     echo -e "ctas proj $stParam $outParam < $idxsallf"  >&2
+    rm "$cleanPath"
     exit 1 )
 
 
-
-if [ -z "$xtParamFile" ] ; then
-  exit $?
+if [ -n "$crFilePrefix" ] ; then # file is in memory
+  trgnm="$opath/clean.hdf"
+  if $volWipe || $volStore; then
+    if $beverbose ; then
+      echo "Copying in-memory interim file $cleanPath to $trgnm."
+    fi
+    cp "$cleanPath" "$trgnm"
+    if $volWipe ; then
+      rm "$cleanPath"
+    fi
+  else
+    ln -s "$cleanPath" "$trgnm"
+  fi
 fi
-addOpt=""
-if [ ! -z "$step" ] ; then
-  addOpt=" -a $step "
-fi
-if $beverbose ; then
-  echo "Starting CT reconstruction in $PWD."
-  echo "   imbl-xtract-wrapper.sh $addOpt "$xtParamFile" clean rec"
-fi
-imbl-xtract-wrapper.sh $addOpt "$xtParamFile" clean rec
-xret="$?"
-if [ "$xret" -eq "0" ] && $wipeClean ; then
-    mv clean/SAMPLE*$(printf \%0${nlen}i $minProj)*.tif . &> /dev/null
-    mv clean/SAMPLE*$(printf \%0${nlen}i $maxProj)*.tif . &> /dev/null
-    mv clean/SAMPLE*$(printf \%0${nlen}i $(( ( $minProj + $maxProj ) / 2 )) )*.tif . &> /dev/null
-    rm -rf clean/* &> /dev/null
-fi
-exit $xret
 
