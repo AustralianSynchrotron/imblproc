@@ -22,7 +22,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tabInit">
        <attribute name="title">
@@ -1632,6 +1632,9 @@
             <property name="decimals">
              <number>1</number>
             </property>
+            <property name="minimum">
+             <double>0.100000000000000</double>
+            </property>
             <property name="maximum">
              <double>10000.000000000000000</double>
             </property>
@@ -1766,6 +1769,9 @@
             <widget class="QDoubleSpinBox" name="energy">
              <property name="suffix">
               <string>keV</string>
+             </property>
+             <property name="minimum">
+              <double>1.000000000000000</double>
              </property>
              <property name="maximum">
               <double>500.000000000000000</double>

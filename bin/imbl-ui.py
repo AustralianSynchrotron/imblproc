@@ -1,21 +1,15 @@
 #!/usr/bin/env python3
 
 import sys, os, re, psutil, time, signal
-from tabnanny import check
+from os import path
 
-
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QSettings, QProcess, QEventLoop, QObject, QTimer
 from PyQt5.QtWidgets import QFileDialog, QApplication
 from PyQt5.uic import loadUi
 
-from subprocess import Popen
-from pathlib import Path
-# sys.path.append("..")
 
-
-
-execPath = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
+execPath = path.dirname(path.realpath(__file__)) + path.sep
 warnStyle = 'background-color: rgba(255, 0, 0, 128);'
 
 
@@ -244,7 +238,7 @@ class ColumnResizer(QObject):
 class MainWindow(QtWidgets.QMainWindow):
 
     configName = ".imbl-ui"
-    etcConfigName = os.path.join(Path.home(), configName)
+    etcConfigName = path.join(path.expanduser("~"), configName)
     amLoading = False
     placePrefix="placeScript_"
 
@@ -279,6 +273,8 @@ class MainWindow(QtWidgets.QMainWindow):
             script.started.connect(self.onScriptStarted)
             script.finished.connect(self.onScriptFinished)
             script.proc.stateChanged.connect(self.update_termini_state)
+        self.collectOut = None
+        self.collectErr = None
 
         self.on_individualIO_toggled()
         self.ui.inProgress.setVisible(False)
@@ -374,7 +370,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 directory=self.ui.outPath.text())
             if newfile:
                 fileName = newfile
-        if not os.path.exists(fileName):
+        if not path.exists(fileName):
             return
 
         self.amLoading = True
@@ -447,6 +443,10 @@ class MainWindow(QtWidgets.QMainWindow):
         erred = proc.readAllStandardError().data().decode(sys.getdefaultencoding())
         if not outed and not erred:
             return
+        if self.collectOut is not None:
+            self.collectOut += outed
+        if self.collectErr is not None:
+            self.collectErr += erred
 
         progg = proggMax = None
         proggTxt = None
@@ -515,7 +515,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.inProgress.setMaximum(0)
         self.ui.inProgress.setFormat(f"Starting script {role}")
         self.ui.inProgress.setVisible(True)
-        self.addToConsole(f"Executing script {role} in {os.path.realpath(script.proc.workingDirectory())}:")
+        self.addToConsole(f"Executing script {role} in {path.realpath(script.proc.workingDirectory())}:")
         self.addToConsole(f"{script.body()}", QtCore.Qt.green)
 
 
@@ -530,71 +530,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.addErrToConsole(f"WARNING! Exit code {exitCode} of script {role} indicates error.")
 
 
-
-    def execInBg(self, proc, parseProc=None):
-
-        self.addToConsole("Executing command:")
-        printproc = proc.program() + " " + ' '.join([ar for ar in proc.arguments()])
-        printpwd = os.path.realpath(proc.workingDirectory())
-        self.addToConsole(f"cd \"{printpwd}\"    && \\ \n {printproc}", QtCore.Qt.green)
-        eloop = QEventLoop(self)
-        proc.finished.connect(eloop.quit)
-        proc.readyReadStandardOutput.connect(eloop.quit)
-        proc.readyReadStandardError.connect(eloop.quit)
-        self.ui.inProgress.setValue(0)
-        self.ui.inProgress.setMaximum(0)
-        self.ui.inProgress.setFormat(f"Starting {printproc}")
-        counter=0
-
-        start_time = time.time()
-        proc.start()
-        proc.waitForStarted(500)
-        while True:
-            addOut = proc.readAllStandardOutput().data().decode(sys.getdefaultencoding())
-            if addOut and len(addOut.strip()):
-              print(addOut, end=None)
-            addErr = proc.readAllStandardError().data().decode(sys.getdefaultencoding())
-            if addErr and len(addErr.strip()):
-              print(addErr, end=None, file=sys.stderr)
-            if not parseProc:
-                self.addOutToConsole(addOut)
-                self.addErrToConsole(addErr)
-                continue
-            progg = proggMax = proggTxt = None
-            toOut = toErr = ""
-            try :
-                progg, proggMax, proggTxt, toOut, toErr = parseProc(addOut, addErr)
-                if progg is not None:
-                    if progg < 0:
-                        counter += 1
-                        self.ui.inProgress.setVisible(False)
-                    else:
-                        self.ui.inProgress.setValue(progg)
-                    self.ui.inProgress.setVisible(progg>=0)
-                if proggMax  and  proggMax != self.ui.inProgress.maximum() :
-                    self.ui.inProgress.setMaximum(proggMax)
-                if proggTxt:
-                    self.ui.inProgress.setFormat( (f"({counter+1}) " if counter else "")
-                                                  + proggTxt + ": %v of %m (%p%)" )
-            except Exception:
-                pass
-            self.addOutToConsole(toOut)
-            self.addErrToConsole(toErr)
-
-            if proc.state():
-                eloop.exec_()
-            else:
-                break
-
-        procTime = time.time() - start_time
-        final_msg = f"Stopped after {int(procTime)}s with exit status {proc.exitCode()}."
-        if proc.exitCode():
-            self.addErrToConsole(final_msg)
-        else:
-            self.addOutToConsole(final_msg)
-        self.ui.inProgress.setVisible(False)
-
-
     @pyqtSlot()
     def needReinitiation(self):
         self.ui.width.setValue(0)
@@ -604,8 +539,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def update_initiate_state(self):
-        self.ui.initiate.setEnabled(os.path.isdir(self.ui.inPath.text()) and
-                                    (os.path.isdir(self.ui.outPath.text()) or
+        self.ui.initiate.setEnabled(path.isdir(self.ui.inPath.text()) and
+                                    (path.isdir(self.ui.outPath.text()) or
                                      not self.ui.individualIO.isChecked()))
 
 
@@ -624,16 +559,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.outBrowse.setVisible(ind)
         self.on_expPath_textChanged()
         self.on_outPath_textChanged()
-
-
-    def generalBrowse(self, wdg, desc, forFile=False):
-        dest = ""
-        if forFile:
-            dest, _filter = QFileDialog.getOpenFileName(self, desc, wdg.text())
-        else:
-            dest = QFileDialog.getExistingDirectory(self, desc, wdg.text())
-        if dest:
-            wdg.setText(dest)
 
 
     @pyqtSlot()
@@ -655,11 +580,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.expSample.clear()
 
         epath = self.ui.expPath.text()
-        if not os.path.isdir(epath):
+        if not path.isdir(epath):
             self.ui.expSample.addItem("Experiment does not exist")
             return
-        eipath = os.path.join(epath, 'input')
-        if not os.path.exists(eipath):
+        eipath = path.join(epath, 'input')
+        if not path.exists(eipath):
             self.ui.expSample.addItem("No input subdirectory")
             return
 
@@ -667,12 +592,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.update()
         QtCore.QCoreApplication.processEvents()
         samples = [name for name in sorted(os.listdir(eipath))
-                   if os.path.isdir(os.path.join(eipath, name))]
+                   if path.isdir(path.join(eipath, name))]
         self.ui.expSample.clear()
         self.ui.expSample.setStyleSheet('')
         self.ui.expSample.addItems(samples)
         if ciName[:len(eipath)] == eipath:
-            sample = ciName[len(eipath):].lstrip(os.path.sep)
+            sample = ciName[len(eipath):].lstrip(path.sep)
             sidx = self.ui.expSample.findText(sample)
             if not sidx < 0:
                 self.ui.expSample.setCurrentIndex(sidx)
@@ -685,8 +610,8 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         epath = self.ui.expPath.text()
         sample = self.ui.expSample.currentText()
-        self.ui.inPath.setText(os.path.join(epath, 'input', sample))
-        self.ui.outPath.setText(os.path.join(epath, 'output', sample))
+        self.ui.inPath.setText(path.join(epath, 'input', sample))
+        self.ui.outPath.setText(path.join(epath, 'output', sample))
 
 
     @pyqtSlot()
@@ -708,15 +633,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.ignoreLog.hide()
 
         ipath = self.ui.inPath.text()
-        if not os.path.isdir(ipath):
+        if not path.isdir(ipath):
             self.ui.inPath.setStyleSheet(warnStyle)
             return
 
         cfgName = ''
         attempt = 0
         while True:
-            n_cfgName = os.path.join(ipath, f"acquisition.{attempt}.configuration")
-            if os.path.exists(n_cfgName):
+            n_cfgName = path.join(ipath, f"acquisition.{attempt}.configuration")
+            if path.exists(n_cfgName):
                 cfgName = n_cfgName
             else:
                 break
@@ -749,18 +674,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
         fromlog = False
         logName = re.sub(r"\.config.*", ".log", cfgName)
-        self.ui.ignoreLog.setVisible(os.path.exists(logName))
+        self.ui.ignoreLog.setVisible(path.exists(logName))
         logInfo = []
-        if os.path.exists(logName) and not self.ui.ignoreLog.isChecked() :
+        if path.exists(logName) and not self.ui.ignoreLog.isChecked() :
             grepsPps = ""
             if self.ui.excludes.isVisible() and self.ui.excludes.text():
                 for grep in self.ui.excludes.text().split():
                     grepsPps += f" | grep -v -e '{grep}' "
-            labels = os.popen('cat ' + os.path.join(ipath, "acquisition*log")
+            labels = os.popen('cat ' + path.join(ipath, "acquisition*log")
                                  + ' | ' + execPath + 'imbl-log.py'
                                  + ' | tail -n +3 | cut -d\' \' -f2 | cut -d\':\' -f 1 '
                                  + grepsPps).read().strip("\n").replace("\n", " ")
-            logInfo = os.popen('cat ' + os.path.join(ipath, "acquisition*log")
+            logInfo = os.popen('cat ' + path.join(ipath, "acquisition*log")
                                 + ' | ' + execPath + 'imbl-log.py ' + labels
                                 + ' | grep \'# Common\' '
                                 + ' | cut -d\' \' -f 4- ' ) \
@@ -792,14 +717,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.needReinitiation()
 
         opath = self.ui.outPath.text()
-        if not os.path.isdir(opath):
+        if not path.isdir(opath):
             self.ui.outPath.setStyleSheet(
                 warnStyle if self.ui.individualIO.isChecked() else "")
             return
         self.ui.outPath.setStyleSheet('')
+        os.chdir(opath)
 
-        initiatedFile = os.path.join(opath, '.initstitch')
-        if not os.path.exists(initiatedFile):
+        initiatedFile = path.join(opath, '.initstitch')
+        if not path.exists(initiatedFile):
             return
         initDict = dict()
         try:
@@ -908,7 +834,7 @@ class MainWindow(QtWidgets.QMainWindow):
             grepsPps = ""
             for grep in self.ui.excludes.text().split():
                 grepsPps += f" | grep -v -e '{grep}' "
-            labels = os.popen('cat ' + os.path.join(self.ui.inPath.text(), "acquisition*log")
+            labels = os.popen('cat ' + path.join(self.ui.inPath.text(), "acquisition*log")
                                  + ' | ' + execPath + 'imbl-log.py'
                                  + ' | tail -n +3 | cut -d\' \' -f2 | cut -d\':\' -f 1 '
                                  + grepsPps).read().strip("\n").replace("\n", " ")
@@ -922,7 +848,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.initiate.setText('Stop')
 
         if not self.ui.individualIO.isChecked() and \
-           not os.path.isdir(opath):
+           not path.isdir(opath):
             os.makedirs(opath, exist_ok=True)
         self.scrInitiate.setBody(command)
         self.scrInitiate.exec()
@@ -968,14 +894,14 @@ class MainWindow(QtWidgets.QMainWindow):
     @pyqtSlot()
     @pyqtSlot(str)
     def on_maskPath_textChanged(self):
-        maskOK = os.path.exists(self.ui.maskPath.text()) or not len(self.ui.maskPath.text().strip())
+        maskOK = path.exists(self.ui.maskPath.text()) or not len(self.ui.maskPath.text().strip())
         self.ui.maskPath.setStyleSheet("" if maskOK else warnStyle)
 
 
     def common_test_proc(self, wdir, actButton, ars=None):
         if self.scrStitch.isRunning():
             self.scrStitch.stop()
-            return
+            return -1
 
         prms = " "
         if self.doYst or self.doZst:
@@ -1026,7 +952,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.scrStitch.proc.setWorkingDirectory(wdir)
         self.scrStitch.setBody(execPath + "imbl-stitch.sh" + prms)
-        self.scrStitch.exec()
+        toRet = self.scrStitch.exec()
 
         for wdg in disableWdgs:
             wdg.setEnabled(True)
@@ -1034,14 +960,38 @@ class MainWindow(QtWidgets.QMainWindow):
         actButton.setStyleSheet("")
         self.on_sameBin_toggled()  # to correct state of the yBin
         self.update_initiate_state()
+        return toRet
 
 
     @pyqtSlot()
     def on_testProj_clicked(self):
+        self.collectOut = ""
         ars = f" -t {self.ui.testProjection.value()}"
-        wdir = os.path.join(self.ui.outPath.text(),
+        wdir = path.join(self.ui.outPath.text(),
                             self.ui.testSubDir.currentText())
-        self.common_test_proc(wdir, self.ui.testProj, ars)
+        hasFailed = self.common_test_proc(wdir, self.ui.testProj, ars)
+        lastLine = self.collectOut.splitlines()[-1]
+        self.collectOut = None
+        if hasFailed or not lastLine or not (lres := re.search('^([0-9]+) ([0-9]+) ([0-9]+) (.*)', lastLine)):
+            return
+        z, y, x, imageFile = lres.groups()
+        self.addToConsole(f"Results of stitching projection {self.ui.testProjection.value()}"
+                          f" are in {path.realpath(imageFile)}."
+                          f" Stitched volume will be {x}(w) x {y}(h) x {z}(d) pixels (at least "
+                          + '{0:,}'.format(4*int(x)*int(y)*int(z)).replace(',', ' ')+" B in size).")
+        if not self.ui.recAfterStitch.isChecked() or not self.ui.distance.value() or not self.ui.d2b.value():
+            return # no phase retruval
+        imcomp = path.splitext(imageFile)
+        oImageFile = imcomp[0] + "_phase" + imcomp[1]
+        self.scrPhase.setBody(f" ctas ipc {imageFile} -o {oImageFile} -e "
+                              f" -z {self.ui.distance.value()}"
+                              f" -d {self.ui.d2b.value()}"
+                              f" -r {self.ui.pixelSize.value()}"
+                              f" -w {12.398/self.ui.energy.value()} ") # keV to Angstrom
+        self.scrPhase.proc.setWorkingDirectory(wdir)
+        if not self.scrPhase.exec():
+            self.addToConsole(f"Results of phase retrival are in"
+                              f" {path.realpath(oImageFile)}.")
 
 
     @pyqtSlot()
@@ -1051,9 +1001,8 @@ class MainWindow(QtWidgets.QMainWindow):
         for curIdx in range(self.ui.testSubDir.count()):
             self.ui.testSubDir.setCurrentIndex(curIdx)
             subdir = self.ui.testSubDir.currentText()
-            wdir = os.path.join(self.ui.outPath.text(), subdir)
-            self.saveConfiguration(os.path.join(wdir, self.configName))
-            self.addToConsole(f"Stitching {subdir}")
+            wdir = path.join(self.ui.outPath.text(), subdir)
+            self.saveConfiguration(path.join(wdir, self.configName))
             self.common_test_proc(wdir, self.ui.procAll, ars)
 
 
@@ -1061,9 +1010,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def on_procThis_clicked(self):
         ars = ( "" if self.ui.wipeStitched.isChecked() else " -w " ) \
             + ( "" if self.ui.saveStitched.isChecked() else " -s " )
-        wdir = os.path.join(self.ui.outPath.text(),
+        wdir = path.join(self.ui.outPath.text(),
                             self.ui.testSubDir.currentText())
-        self.saveConfiguration(os.path.join(wdir, self.configName))
+        self.saveConfiguration(path.join(wdir, self.configName))
         self.common_test_proc(wdir, self.ui.procThis, ars)
 
 
@@ -1134,7 +1083,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 
-signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+C will quit the app
+signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+C to quit
 app = QApplication(sys.argv)
 my_mainWindow = MainWindow()
 my_mainWindow.show()
