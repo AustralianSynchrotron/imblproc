@@ -303,13 +303,13 @@ if [ -z "$testOFl" ] ; then
   exit 1
 fi
 
-
-crFilePrefix="" # create file on disk
+cleanPath="clean.hdf"
 if ! $volWipe || ! $volStore ; then # create file in memory
-  crFilePrefix="/dev/shm/imblproc_$(echo "$ipath" | sed 's / _ g')_"
-  flfix=$( basename "$testOFl" | sed 's '${tstfl}'[0-9]*  g' )
-  flfix="${flfix%.*}"
-  tpnm="${crFilePrefix}clean${flfix}.hdf"
+  crFilePrefix="/dev/shm/imblproc_$(realpath $PWD | sed 's / _ g')_"
+  #flfix=$( basename "$testOFl" | sed 's '${tstfl}'[0-9]*  g' )
+  #flfix="${flfix%.*}"
+  #tpnm="${crFilePrefix}clean${flfix}.hdf"
+  tpnm="${crFilePrefix}${cleanPath}"
   if $beverbose ; then
     echo "Creating in memory interim file $tpnm for ${x}x${y}x${z} volume."
   fi
@@ -326,7 +326,8 @@ if ! $volWipe || ! $volStore ; then # create file in memory
     echo "WARNING! Could not create or allocate in memory interim file $tpnm for ${x}x${}x${z} volume." >&2
     echo "         Will use file storage for interim data, what can be significantly slower." >&2
     rm -rf "$crFilePrefix"*
-    crFilePrefix=""
+  else
+    cleanPath="$tpnm"
   fi
 fi
 
@@ -355,7 +356,7 @@ if [ -n "$crFilePrefix" ] ; then # file is in memory
       rm "$cleanPath"
     fi
   else
-    ln -s "$cleanPath" "$trgnm"
+    ln -fs "$cleanPath" "$trgnm"
   fi
 fi
 

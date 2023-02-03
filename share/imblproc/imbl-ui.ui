@@ -22,7 +22,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tabInit">
        <attribute name="title">
@@ -1318,45 +1318,54 @@
         <string>Reconstruction</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_13">
-        <item row="0" column="2">
-         <spacer name="horizontalSpacer">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeType">
-           <enum>QSizePolicy::Fixed</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>50</width>
-            <height>0</height>
-           </size>
-          </property>
-         </spacer>
+        <item row="8" column="4">
+         <widget class="QWidget" name="widget" native="true">
+          <layout class="QHBoxLayout" name="horizontalLayout_33">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QPushButton" name="wipe">
+             <property name="text">
+              <string>Wipe from memory</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
         </item>
-        <item row="0" column="3">
-         <widget class="QLabel" name="label_43">
+        <item row="1" column="1" colspan="4">
+         <layout class="QHBoxLayout" name="placeScript_phase"/>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_42">
           <property name="text">
-           <string>Energy</string>
+           <string>Pixel size</string>
           </property>
          </widget>
         </item>
-        <item row="6" column="3">
-         <layout class="QHBoxLayout" name="horizontalLayout_32">
-          <item>
-           <widget class="QCheckBox" name="outMu">
-            <property name="text">
-             <string>Output mu</string>
-            </property>
-            <property name="saveInConfig" stdset="0">
-             <number>0</number>
-            </property>
-           </widget>
-          </item>
-         </layout>
+        <item row="7" column="0">
+         <widget class="QLabel" name="label_51">
+          <property name="text">
+           <string>Exec after CT</string>
+          </property>
+         </widget>
         </item>
-        <item row="4" column="1" colspan="4">
-         <layout class="QHBoxLayout" name="placeScript_ct"/>
+        <item row="9" column="0">
+         <widget class="QLabel" name="label_27">
+          <property name="text">
+           <string>Convert to int</string>
+          </property>
+         </widget>
         </item>
         <item row="2" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_25">
@@ -1375,11 +1384,8 @@
           </item>
          </layout>
         </item>
-        <item row="1" column="1" colspan="4">
-         <layout class="QHBoxLayout" name="placeScript_phase"/>
-        </item>
-        <item row="7" column="1" colspan="4">
-         <layout class="QHBoxLayout" name="placeScript_save"/>
+        <item row="10" column="1" colspan="4">
+         <layout class="QHBoxLayout" name="placeScript_exit"/>
         </item>
         <item row="4" column="0">
          <widget class="QLabel" name="label_50">
@@ -1388,37 +1394,92 @@
           </property>
          </widget>
         </item>
-        <item row="8" column="1">
-         <layout class="QHBoxLayout" name="horizontalLayout_20">
+        <item row="10" column="0">
+         <widget class="QLabel" name="label_53">
+          <property name="text">
+           <string>Exec on exit</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <layout class="QHBoxLayout" name="horizontalLayout_28">
           <item>
-           <widget class="QRadioButton" name="resHDF">
-            <property name="text">
-             <string>HDF5</string>
+           <widget class="QSpinBox" name="ring">
+            <property name="specialValueText">
+             <string>none</string>
             </property>
-            <property name="checked">
-             <bool>true</bool>
+            <property name="saveInConfig" stdset="0">
+             <number>0</number>
             </property>
-            <attribute name="buttonGroup">
-             <string notr="true">resGroup</string>
-            </attribute>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="resTIFF">
-            <property name="text">
-             <string>TIFF</string>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">resGroup</string>
-            </attribute>
            </widget>
           </item>
          </layout>
         </item>
-        <item row="6" column="0">
-         <widget class="QLabel" name="label_47">
+        <item row="8" column="0">
+         <widget class="QLabel" name="label_52">
           <property name="text">
-           <string>Rotation centre</string>
+           <string>Results</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="4">
+         <widget class="QWidget" name="ringOrder" native="true">
+          <layout class="QHBoxLayout" name="horizontalLayout_18">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QRadioButton" name="ringBeforePhase">
+             <property name="text">
+              <string>before</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">ringGroup</string>
+             </attribute>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="ringAfterPhase">
+             <property name="text">
+              <string>after</string>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">ringGroup</string>
+             </attribute>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_40">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>phase</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="0" column="3">
+         <widget class="QLabel" name="label_43">
+          <property name="text">
+           <string>Energy</string>
           </property>
          </widget>
         </item>
@@ -1429,19 +1490,124 @@
           </property>
          </widget>
         </item>
-        <item row="8" column="3">
-         <layout class="QHBoxLayout" name="horizontalLayout_34">
-          <item>
-           <widget class="QCheckBox" name="keepInMem">
-            <property name="text">
-             <string>Keep in memory</string>
-            </property>
-            <property name="saveInConfig" stdset="0">
-             <number>0</number>
-            </property>
-           </widget>
-          </item>
-         </layout>
+        <item row="0" column="2">
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Fixed</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>50</width>
+            <height>0</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_49">
+          <property name="text">
+           <string>Exec before phase</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1" colspan="4">
+         <layout class="QHBoxLayout" name="placeScript_ct"/>
+        </item>
+        <item row="2" column="3">
+         <widget class="QLabel" name="d2bLabel">
+          <property name="text">
+           <string>δ / β   ratio</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="3">
+         <widget class="QLabel" name="ringOrderLabel">
+          <property name="text">
+           <string>Apply ring filter</string>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="1" colspan="4">
+         <layout class="QHBoxLayout" name="placeScript_save"/>
+        </item>
+        <item row="5" column="0">
+         <widget class="QLabel" name="label_46">
+          <property name="text">
+           <string>CT filter</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="4">
+         <widget class="QWidget" name="widget" native="true">
+          <layout class="QHBoxLayout" name="horizontalLayout_30">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QDoubleSpinBox" name="ctFilterParam">
+             <property name="saveInConfig" stdset="0">
+              <number>0</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="0" column="4">
+         <widget class="QWidget" name="w" native="true">
+          <layout class="QHBoxLayout" name="horizontalLayout_24">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QDoubleSpinBox" name="energy">
+             <property name="suffix">
+              <string>keV</string>
+             </property>
+             <property name="minimum">
+              <double>1.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>500.000000000000000</double>
+             </property>
+             <property name="value">
+              <double>1.000000000000000</double>
+             </property>
+             <property name="saveInConfig" stdset="0">
+              <number>0</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_41">
+          <property name="text">
+           <string>Ring artefact size</string>
+          </property>
+         </widget>
         </item>
         <item row="6" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_13">
@@ -1475,83 +1641,6 @@
            </widget>
           </item>
          </layout>
-        </item>
-        <item row="5" column="3">
-         <widget class="QLabel" name="filterParamLabel">
-          <property name="text">
-           <string>Filter parameter</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="1">
-         <layout class="QHBoxLayout" name="horizontalLayout_28">
-          <item>
-           <widget class="QSpinBox" name="ring">
-            <property name="specialValueText">
-             <string>none</string>
-            </property>
-            <property name="saveInConfig" stdset="0">
-             <number>0</number>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item row="10" column="0">
-         <widget class="QLabel" name="label_53">
-          <property name="text">
-           <string>Exec on exit</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_49">
-          <property name="text">
-           <string>Exec before phase</string>
-          </property>
-         </widget>
-        </item>
-        <item row="9" column="0">
-         <widget class="QLabel" name="label_27">
-          <property name="text">
-           <string>Convert to int</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_42">
-          <property name="text">
-           <string>Pixel size</string>
-          </property>
-         </widget>
-        </item>
-        <item row="7" column="0">
-         <widget class="QLabel" name="label_51">
-          <property name="text">
-           <string>Exec after CT</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="3">
-         <widget class="QLabel" name="d2bLabel">
-          <property name="text">
-           <string>δ / β   ratio</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="3">
-         <widget class="QLabel" name="ringOrderLabel">
-          <property name="text">
-           <string>Apply ring filter</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0">
-         <widget class="QLabel" name="label_41">
-          <property name="text">
-           <string>Ring artefact size</string>
-          </property>
-         </widget>
         </item>
         <item row="5" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_31">
@@ -1622,6 +1711,13 @@
           </item>
          </layout>
         </item>
+        <item row="11" column="0">
+         <widget class="QLabel" name="label_34">
+          <property name="text">
+           <string>Projections file</string>
+          </property>
+         </widget>
+        </item>
         <item row="0" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_23">
           <item>
@@ -1647,145 +1743,6 @@
            </widget>
           </item>
          </layout>
-        </item>
-        <item row="8" column="0">
-         <widget class="QLabel" name="label_52">
-          <property name="text">
-           <string>Results</string>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="0">
-         <widget class="QLabel" name="label_46">
-          <property name="text">
-           <string>CT filter</string>
-          </property>
-         </widget>
-        </item>
-        <item row="10" column="1" colspan="4">
-         <layout class="QHBoxLayout" name="placeScript_exit"/>
-        </item>
-        <item row="11" column="1">
-         <widget class="QLabel" name="label_28">
-          <property name="text">
-           <string>slice</string>
-          </property>
-         </widget>
-        </item>
-        <item row="11" column="2" colspan="3">
-         <widget class="QSpinBox" name="testSliceNum">
-          <property name="maximum">
-           <number>999999999</number>
-          </property>
-          <property name="saveInConfig" stdset="0">
-           <number>0</number>
-          </property>
-         </widget>
-        </item>
-        <item row="12" column="0" colspan="5">
-         <widget class="QPushButton" name="reconstruct">
-          <property name="text">
-           <string>Reconstruct</string>
-          </property>
-         </widget>
-        </item>
-        <item row="11" column="0">
-         <widget class="QPushButton" name="testSlice">
-          <property name="text">
-           <string>Test</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="4">
-         <widget class="QWidget" name="ringOrder" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_18">
-           <property name="leftMargin">
-            <number>0</number>
-           </property>
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <property name="rightMargin">
-            <number>0</number>
-           </property>
-           <property name="bottomMargin">
-            <number>0</number>
-           </property>
-           <item>
-            <widget class="QRadioButton" name="ringBeforePhase">
-             <property name="text">
-              <string>before</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-             <attribute name="buttonGroup">
-              <string notr="true">ringGroup</string>
-             </attribute>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="ringAfterPhase">
-             <property name="text">
-              <string>after</string>
-             </property>
-             <attribute name="buttonGroup">
-              <string notr="true">ringGroup</string>
-             </attribute>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_40">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>phase</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="0" column="4">
-         <widget class="QWidget" name="w" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_24">
-           <property name="spacing">
-            <number>0</number>
-           </property>
-           <property name="leftMargin">
-            <number>0</number>
-           </property>
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <property name="rightMargin">
-            <number>0</number>
-           </property>
-           <item>
-            <widget class="QDoubleSpinBox" name="energy">
-             <property name="suffix">
-              <string>keV</string>
-             </property>
-             <property name="minimum">
-              <double>1.000000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>500.000000000000000</double>
-             </property>
-             <property name="value">
-              <double>1.000000000000000</double>
-             </property>
-             <property name="saveInConfig" stdset="0">
-              <number>0</number>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
         </item>
         <item row="2" column="4">
          <widget class="QWidget" name="widget" native="true">
@@ -1818,56 +1775,6 @@
              </property>
              <property name="saveInConfig" stdset="0">
               <number>0</number>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="5" column="4">
-         <widget class="QWidget" name="widget" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_30">
-           <property name="leftMargin">
-            <number>0</number>
-           </property>
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <property name="rightMargin">
-            <number>0</number>
-           </property>
-           <property name="bottomMargin">
-            <number>0</number>
-           </property>
-           <item>
-            <widget class="QDoubleSpinBox" name="ctFilterParam">
-             <property name="saveInConfig" stdset="0">
-              <number>0</number>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="8" column="4">
-         <widget class="QWidget" name="widget" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_33">
-           <property name="leftMargin">
-            <number>0</number>
-           </property>
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <property name="rightMargin">
-            <number>0</number>
-           </property>
-           <property name="bottomMargin">
-            <number>0</number>
-           </property>
-           <item>
-            <widget class="QPushButton" name="wipe">
-             <property name="text">
-              <string>Wipe from memory</string>
              </property>
             </widget>
            </item>
@@ -1928,6 +1835,116 @@
           </layout>
          </widget>
         </item>
+        <item row="6" column="3">
+         <layout class="QHBoxLayout" name="horizontalLayout_32">
+          <item>
+           <widget class="QCheckBox" name="outMu">
+            <property name="text">
+             <string>Output mu</string>
+            </property>
+            <property name="saveInConfig" stdset="0">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="12" column="2" colspan="3">
+         <widget class="QSpinBox" name="testSliceNum">
+          <property name="maximum">
+           <number>999999999</number>
+          </property>
+          <property name="saveInConfig" stdset="0">
+           <number>0</number>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="3">
+         <layout class="QHBoxLayout" name="horizontalLayout_34">
+          <item>
+           <widget class="QCheckBox" name="keepInMem">
+            <property name="text">
+             <string>Keep in memory</string>
+            </property>
+            <property name="saveInConfig" stdset="0">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="8" column="1">
+         <layout class="QHBoxLayout" name="horizontalLayout_20">
+          <item>
+           <widget class="QRadioButton" name="resHDF">
+            <property name="text">
+             <string>HDF5</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+            <attribute name="buttonGroup">
+             <string notr="true">resGroup</string>
+            </attribute>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="resTIFF">
+            <property name="text">
+             <string>TIFF</string>
+            </property>
+            <attribute name="buttonGroup">
+             <string notr="true">resGroup</string>
+            </attribute>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="6" column="0">
+         <widget class="QLabel" name="label_47">
+          <property name="text">
+           <string>Rotation centre</string>
+          </property>
+         </widget>
+        </item>
+        <item row="12" column="0">
+         <widget class="QPushButton" name="testSlice">
+          <property name="text">
+           <string>Test</string>
+          </property>
+         </widget>
+        </item>
+        <item row="13" column="0" colspan="5">
+         <widget class="QPushButton" name="reconstruct">
+          <property name="text">
+           <string>Reconstruct</string>
+          </property>
+         </widget>
+        </item>
+        <item row="11" column="4">
+         <widget class="QLabel" name="prShape">
+          <property name="text">
+           <string>shape</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="12" column="1">
+         <widget class="QLabel" name="label_28">
+          <property name="text">
+           <string>slice</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="3">
+         <widget class="QLabel" name="filterParamLabel">
+          <property name="text">
+           <string>Filter parameter</string>
+          </property>
+         </widget>
+        </item>
         <item row="9" column="1">
          <widget class="QWidget" name="widget" native="true">
           <layout class="QHBoxLayout" name="horizontalLayout_21">
@@ -1968,6 +1985,22 @@
             </widget>
            </item>
           </layout>
+         </widget>
+        </item>
+        <item row="11" column="1" colspan="3">
+         <widget class="QPushButton" name="prFile">
+          <property name="toolTip">
+           <string>click me to copy full path to the clipboard</string>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">text-align: left;</string>
+          </property>
+          <property name="text">
+           <string>None</string>
+          </property>
+          <property name="flat">
+           <bool>true</bool>
+          </property>
          </widget>
         </item>
        </layout>

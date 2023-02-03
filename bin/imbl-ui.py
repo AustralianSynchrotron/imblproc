@@ -3,7 +3,7 @@
 import sys, os, re, psutil, time, signal
 from os import path
 
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QSettings, QProcess, QEventLoop, QObject, QTimer
 from PyQt5.QtWidgets import QFileDialog, QApplication
 from PyQt5.uic import loadUi
@@ -144,6 +144,14 @@ class Script(QObject) :
         return tempproc.exitCode()
 
 
+    def run(body) :
+        scr = Script()
+        scr.setBody(body)
+        scr.exec()
+        return scr.proc.exitCode() \
+             , scr.proc.readAllStandardOutput().data().decode() \
+             , scr.proc.readAllStandardError().data().decode()
+
 
 class UScript(QtWidgets.QWidget) :
 
@@ -161,6 +169,7 @@ class UScript(QtWidgets.QWidget) :
         self.script.started.connect(self.updateState)
         self.script.finished.connect(self.updateState)
         self.script.bodySet.connect(self.updateBody)
+        self.updateBody()
 
 
     def setRole(self, role):
@@ -187,12 +196,13 @@ class UScript(QtWidgets.QWidget) :
         self.ui.execute.setText( "Stop" if isrunning else "Execute" )
         self.ui.execute.setStyleSheet( "color: rgb(255, 0, 0);" if isrunning or self.script.proc.exitCode() else "")
 
+
     @pyqtSlot()
     def updateBody(self):
         isGood = not self.script.evaluate()
         self.ui.body.setStyleSheet( "" if isGood else "color: rgb(255, 0, 0);")
         self.ui.execute.setStyleSheet("")
-        self.ui.execute.setEnabled(self.ui.body.text().strip() and isGood)
+        self.ui.execute.setEnabled(self.script.isRunning() or (len(self.ui.body.text().strip()) and isGood) )
 
 
 
@@ -312,6 +322,7 @@ class MainWindow(QtWidgets.QMainWindow):
             elif isinstance(swdg, QtWidgets.QButtonGroup):
                 swdg.buttonClicked.connect(self.saveConfiguration)
 
+        # connect signals which are not connected by name
         self.ui.notFnS.clicked.connect(self.needReinitiation)
         self.ui.ignoreLog.clicked.connect(self.needReinitiation)
         self.ui.yIndependent.clicked.connect(self.needReinitiation)
@@ -322,6 +333,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.excludes.editingFinished.connect(self.on_inPath_textChanged)
         self.ui.minProj.valueChanged.connect(self.onMinMaxProjectionChanged)
         self.ui.maxProj.valueChanged.connect(self.onMinMaxProjectionChanged)
+        self.ui.procAll.clicked.connect(self.onStitch)
+        self.ui.procThis.clicked.connect(self.onStitch)
+        self.ui.prFile.clicked.connect(lambda :
+            QApplication.clipboard().setText(path.realpath(self.ui.prFile.text())))
 
         QtCore.QTimer.singleShot(100, self.loadConfiguration)
 
@@ -423,7 +438,11 @@ class MainWindow(QtWidgets.QMainWindow):
         if not qcolor:
             qcolor = self.ui.console.palette().text().color()
         self.ui.console.setTextColor(qcolor)
+        scrollBar = self.ui.console.verticalScrollBar()
+        atTheBottom = scrollBar.value() == scrollBar.maximum()
         self.ui.console.append(str(text).strip('\n'))
+        if atTheBottom:
+            scrollBar.setValue(scrollBar.maximum())
 
 
     def addOutToConsole(self, text):
@@ -799,7 +818,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.ui.testSubDir.clear()
         sds = 'subdirs' in initDict
-        self.ui.testSubDir.addItems(filemask.split() if sds else (".",))
+        self.ui.testSubDir.addItems(filemask.split() if sds else ["."])
         self.ui.testSubDir.setVisible(sds)
         self.ui.testSubDirLabel.setVisible(sds)
         self.ui.procThis.setVisible(sds)
@@ -809,6 +828,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         for tabIdx in range(1, self.ui.tabWidget.count()-1):
             self.ui.tabWidget.widget(tabIdx).setEnabled(True)
+        self.update_reconstruction_state()
 
 
     @pyqtSlot()
@@ -857,9 +877,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.initiate.setStyleSheet('')
         self.ui.initiate.setText('Initiate')
         self.on_outPath_textChanged()
-
         if self.ui.procAfterInit.isChecked():
-            self.on_procAll_clicked()
+            self.ui.procAll.click()
 
 
     @pyqtSlot(bool)
@@ -995,25 +1014,42 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     @pyqtSlot()
-    def on_procAll_clicked(self):
+    def onStitch(self):
         ars = ( "" if self.ui.wipeStitched.isChecked() else " -w " ) \
             + ( "" if self.ui.saveStitched.isChecked() else " -s " )
-        for curIdx in range(self.ui.testSubDir.count()):
+        subOnStart = self.ui.testSubDir.currentIndex()
+        pidxs = [subOnStart] if self.sender() is self.ui.procThis else \
+                range(self.ui.testSubDir.count())
+        for curIdx in pidxs:
             self.ui.testSubDir.setCurrentIndex(curIdx)
             subdir = self.ui.testSubDir.currentText()
             wdir = path.join(self.ui.outPath.text(), subdir)
             self.saveConfiguration(path.join(wdir, self.configName))
             self.common_test_proc(wdir, self.ui.procAll, ars)
+        self.ui.testSubDir.setCurrentIndex(subOnStart)
+        self.update_reconstruction_state()
 
 
-    @pyqtSlot()
-    def on_procThis_clicked(self):
-        ars = ( "" if self.ui.wipeStitched.isChecked() else " -w " ) \
-            + ( "" if self.ui.saveStitched.isChecked() else " -s " )
-        wdir = path.join(self.ui.outPath.text(),
-                            self.ui.testSubDir.currentText())
-        self.saveConfiguration(path.join(wdir, self.configName))
-        self.common_test_proc(wdir, self.ui.procThis, ars)
+    def update_reconstruction_state(self):
+        cOpath = path.join(self.ui.outPath.text(), self.ui.testSubDir.currentText())
+        cOpath = path.realpath(cOpath)
+        file_postfix = "clean.hdf"
+        tmpn=f"/dev/shm/imblproc_{cOpath.replace('/','_')}_{file_postfix}"
+        projFile = tmpn if path.exists(tmpn) else path.join(cOpath, file_postfix)
+        _, outed, _ = Script.run(f"h5ls {projFile}/data")
+
+        print(cOpath)
+        print(tmpn)
+        print(projFile)
+
+        projShape = f"{lres.group(3)} x {lres.group(2)} x {lres.group(1)}" \
+            if (lres := re.search('.*{([0-9]+), ([0-9]+), ([0-9]+)}.*', outed)) else None
+        self.ui.prShape.setText(projShape)
+        self.ui.prFile.setText(projFile if projShape else "can't find projections volume.")
+        self.ui.prFile.setEnabled(projShape is not None)
+        self.ui.testSlice.setEnabled(projShape is not None)
+        self.ui.testSliceNum.setEnabled(projShape is not None)
+        self.ui.reconstruct.setEnabled(projShape is not None)
 
 
     def updateRingOrderVisibility(self):
