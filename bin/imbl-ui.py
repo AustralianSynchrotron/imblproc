@@ -45,6 +45,7 @@ class Script(QObject) :
         self.proc.setProgram(self.shell)
         self.proc.stateChanged.connect(self.onState)
         self.time=0
+        self.dryRun = False
 
 
     def setRole(self, role):
@@ -102,9 +103,15 @@ class Script(QObject) :
             else:
                 args += par
         self.proc.setArguments(args)
-        self.proc.start()
-        self.proc.waitForStarted(500)
-        return self.isRunning()
+        if self.dryRun:
+            self.started.emit()
+            print(f"Dry run for:\n{self.body()}")
+            self.finished.emit(True)
+            return True
+        else:
+            self.proc.start()
+            self.proc.waitForStarted(500)
+            return self.isRunning()
 
 
     @pyqtSlot(list)
@@ -269,14 +276,7 @@ class MainWindow(QtWidgets.QMainWindow):
         cfgProp="saveInConfig" # objects with this property (containing int read order) will be saved in config
         self.ui = loadUi(execPath + '../share/imblproc/imbl-ui.ui', self)
 
-        self.scrInitiate = Script(self)
-        self.scrInitiate.setRole("initiate")
-        self.scrStitch = Script(self)
-        self.scrStitch.setRole("stitch")
-        self.scrCOR = Script(self)
-        self.scrCOR.setRole("rotation center")
-        self.scrRec = Script(self)
-        self.scrRec.setRole("reconstruct")
+        self.scrProc = Script(self)
         for place in self.ui.findChildren(QtWidgets.QLayout, QtCore.QRegExp(self.placePrefix+"\w+")):
             role = place.objectName().removeprefix(self.placePrefix)
             scrw = UScript(self)
@@ -847,8 +847,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def on_initiate_clicked(self):
-        if self.scrInitiate.isRunning():
-            self.scrInitiate.stop()
+        if self.scrProc.isRunning():
+            self.scrProc.stop()
             return
 
         opath = self.ui.outPath.text()
@@ -884,8 +884,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.ui.individualIO.isChecked() and \
            not path.isdir(opath):
             os.makedirs(opath, exist_ok=True)
-        self.scrInitiate.setBody(command)
-        self.scrInitiate.exec()
+        self.scrProc.setRole("Initiating")
+        self.scrProc.setBody(command)
+        self.scrProc.exec()
 
         self.ui.initInfo.setEnabled(True)
         self.ui.initiate.setStyleSheet('')
@@ -932,8 +933,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def common_test_proc(self, wdir, actButton, ars=None):
-        if self.scrStitch.isRunning():
-            self.scrStitch.stop()
+        if self.scrProc.isRunning():
+            self.scrProc.stop()
             return -1
 
         prms = " "
@@ -983,9 +984,10 @@ class MainWindow(QtWidgets.QMainWindow):
         actButton.setStyleSheet(warnStyle)
         actButton.setText('Stop')
 
-        self.scrStitch.proc.setWorkingDirectory(wdir)
-        self.scrStitch.setBody(execPath + "imbl-stitch.sh" + prms)
-        toRet = self.scrStitch.exec()
+        self.scrProc.setRole("Stitching")
+        self.scrProc.proc.setWorkingDirectory(wdir)
+        self.scrProc.setBody(execPath + "imbl-stitch.sh" + prms)
+        toRet = self.scrProc.exec()
 
         for wdg in disableWdgs:
             wdg.setEnabled(True)
@@ -1016,13 +1018,13 @@ class MainWindow(QtWidgets.QMainWindow):
             return # no phase retruval
         imcomp = path.splitext(imageFile)
         oImageFile = imcomp[0] + "_phase" + imcomp[1]
-        self.scrPhase.setBody(f" ctas ipc {imageFile} -o {oImageFile} -e "
+        self.scrProc.setBody(f" ctas ipc {imageFile} -o {oImageFile} -e "
                               f" -z {self.ui.distance.value()}"
                               f" -d {self.ui.d2b.value()}"
                               f" -r {self.ui.pixelSize.value()}"
                               f" -w {12.398/self.ui.energy.value()} ") # keV to Angstrom
-        self.scrPhase.proc.setWorkingDirectory(wdir)
-        if not self.scrPhase.exec():
+        self.scrProc.proc.setWorkingDirectory(wdir)
+        if not self.scrProc.exec():
             self.addToConsole(f"Results of phase retrival are in"
                               f" {path.realpath(oImageFile)}.")
 
@@ -1040,6 +1042,8 @@ class MainWindow(QtWidgets.QMainWindow):
             wdir = path.join(self.ui.outPath.text(), subdir)
             self.saveConfiguration(path.join(wdir, self.configName))
             self.common_test_proc(wdir, self.ui.procAll, ars)
+            if self.ui.recAfterStitch.isChecked():
+                self.on_reconstruct_clicked()
         self.ui.testSubDir.setCurrentIndex(subOnStart)
         self.update_reconstruction_state()
 
@@ -1114,18 +1118,21 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def on_testSlice_clicked(self):
-        if self.scrRec.isRunning():
-            self.scrRec.stop()
+        if self.scrProc.isRunning():
+            self.scrProc.stop()
             return -1
 
 
     @pyqtSlot()
     def on_reconstruct_clicked(self):
-        if self.scrRec.isRunning():
-            self.scrRec.stop()
+        if self.scrProc.isRunning():
+            self.scrProc.stop()
             return -1
 
+        self.scrProc.dryRun = True
+
         wdir = path.join(self.ui.outPath.text(), self.ui.testSubDir.currentText())
+        self.scrProc.proc.setWorkingDirectory(wdir)
         projFile = path.realpath(self.ui.prFile.text())
         x, y, z = hdf5shape(projFile, "data")
         if not x or not y or not z:
@@ -1142,36 +1149,56 @@ class MainWindow(QtWidgets.QMainWindow):
             self.addErrToConsole(f"Failed to get step from init file \"{myInitFile}\". Aborting reconstruction.")
             return -1
         ark180 = int(180.0/step) + 1
-        if ark180 >= z:
+        if ark180 >= z and self.ui.autocor.isChecked():
             self.addErrToConsole(f"Not enough projections {z} for step {step} to form 180 deg ark. Aborting reconstruction.")
             return -1
 
+        self.ui.reconstruct.setStyleSheet(warnStyle)
+        self.ui.reconstruct.setText('Stop')
+        def stopReconstruction():
+            self.ui.reconstruct.setStyleSheet("")
+            self.ui.reconstruct.setText('Reconstruct')
+            return self.scrProc.proc.exitCode()
+
         if self.ui.autocor.isChecked():
             self.collectOut = ""
-            self.scrCOR.setBody(f"ctas ax {projFile}:/data:0 {projFile}:/data:{ark180}")
-            self.scrCOR.proc.setWorkingDirectory(wdir)
-            self.scrCOR.exec()
+            self.scrProc.setRole("Searching for rotation centre")
+            self.scrProc.setBody(f"ctas ax {projFile}:/data:0 {projFile}:/data:{ark180}")
+            if self.scrProc.exec():
+                return stopReconstruction()
             try:
-                cor = float(self.collectOut)
+                cor = 0.0 if self.scrProc.dryRun else float(self.collectOut)
                 self.ui.cor.setValue(cor)
             except Exception:
                 self.addErrToConsole(f"Failed to calculate rotation centre. Aborting reconstruction.")
+                stopReconstruction()
                 return -1
             self.collectOut = None
 
-        command = ""
-        ringLine = "" if self.ui.ring.value() == 0 else \
-            f"ctas ring -v -R {self.ui.ring.value()} {projFile}:/data:y \n"
-        phaseLine = "" if self.ui.distance.value() == 0 or self.ui.d2b.value() == 0.0 else \
-            f"ctas ipc {projFile}:/data -e -v " \
-            f" -z {self.ui.distance.value()}" \
-            f" -d {self.ui.d2b.value()}" \
-            f" -r {self.ui.pixelSize.value()}" \
-            f" -w {12.398/self.ui.energy.value()} \n"  # keV to Angstrom
+        def applyRing():
+            if self.ui.ring.value() == 0:
+                return 0
+            self.scrProc.setRole("Applying ring filter")
+            self.scrProc.setBody(f"ctas ring -v -R {self.ui.ring.value()} {projFile}:/data:y")
+            return self.scrProc.exec()
+
+        def applyPhase():
+            if self.ui.distance.value() == 0 or self.ui.d2b.value() == 0.0:
+                return 0
+            self.scrProc.setRole("Retrieving phase")
+            self.scrProc.setBody(   f"ctas ipc {projFile}:/data -e -v " \
+                                    f" -z {self.ui.distance.value()}" \
+                                    f" -d {self.ui.d2b.value()}" \
+                                    f" -r {self.ui.pixelSize.value()}" \
+                                    f" -w {12.398/self.ui.energy.value()}" )  # keV to Angstrom
+            return self.scrProc.exec()
+
         if self.ui.ringGroup.checkedButton() is self.ui.ringBeforePhase :
-            command = ringLine + phaseLine
+            if applyRing() or applyPhase():
+                return stopReconstruction()
         else:
-            command = phaseLine + ringLine
+            if applyPhase() or applyRing():
+                return stopReconstruction()
 
         fltLine = self.ui.ctFilter.currentText().upper()
         if self.ui.ctFilterParam.isVisible():
@@ -1187,22 +1214,30 @@ class MainWindow(QtWidgets.QMainWindow):
             outPath = path.join(odir,"rec_@.tif")
         else:
             outPath = "rec.hdf:/data"
-        command += f"ctas ct -v {projFile}:/data:y " \
-                   f" -o {outPath}" \
-                   f" -k {kontrLine} " \
-                   f" -c {self.ui.cor.value()}" \
-                   f" -a {step} -r {self.ui.pixelSize.value()}" \
-                   f"{fltLine}" \
-                   f"{mmLine}" \
-                   "\n"
+        command =   f"ctas ct -v {projFile}:/data:y " \
+                    f" -o {outPath}" \
+                    f" -k {kontrLine} " \
+                    f" -c {self.ui.cor.value()}" \
+                    f" -a {step} -r {self.ui.pixelSize.value()}" \
+                    f"{fltLine}" \
+                    f"{mmLine}"
+        self.scrProc.setRole("Reconstructing")
+        self.scrProc.setBody(command)
+        if self.scrProc.exec():
+            return stopReconstruction()
 
-        self.addToConsole(f"Reconstruction command: {command}", QtCore.Qt.magenta)
+        if self.ui.resHDF.isChecked() and self.ui.resToInt.isChecked() :
+            Script.run(f"mkdir -p {path.join(wdir,'rec8int')} ")
+            self.scrProc.setRole("Converting to integer")
+            self.scrProc.setBody(   f"ctas v2v {outPath} -v rec8int/rec_@.tif " \
+                                    f" -m {self.ui.min.value()} -M {self.ui.max.value()}" )
+            self.scrProc.exec()
 
+        if self.scrProc.dryRun:
+            self.addErrToConsole("Dry run. No reconstruction performed.")
+            return 0
 
-
-
-
-
+        return stopReconstruction()
 
 
     @pyqtSlot()
