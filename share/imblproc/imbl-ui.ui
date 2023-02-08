@@ -1334,7 +1334,7 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string/>
+           <string>           </string>
           </property>
          </widget>
         </item>
@@ -1376,7 +1376,7 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string> </string>
+           <string/>
           </property>
          </widget>
         </item>
@@ -1879,7 +1879,7 @@
          </widget>
         </item>
         <item row="5" column="1">
-         <widget class="QWidget" name="" native="true">
+         <widget class="QWidget" name="widget" native="true">
           <layout class="QHBoxLayout" name="horizontalLayout_20">
            <item>
             <widget class="QRadioButton" name="resHDF">
