@@ -11,6 +11,7 @@ from PyQt5.uic import loadUi
 
 execPath = path.dirname(path.realpath(__file__)) + path.sep
 warnStyle = 'background-color: rgba(255, 0, 0, 128);'
+initFileName = '.initstitch'
 
 
 def onBrowse(wdg, desc, forFile=False):
@@ -153,6 +154,7 @@ class Script(QObject) :
              , scr.proc.readAllStandardError().data().decode()
 
 
+
 class UScript(QtWidgets.QWidget) :
 
     editingFinished = pyqtSignal()
@@ -245,6 +247,15 @@ class ColumnResizer(QObject):
 
 
 
+def hdf5shape(filename, dataset):
+    _, outed, _ = Script.run(f"h5ls {filename}/{dataset}")
+    if lres := re.search('.*{([0-9]+), ([0-9]+), ([0-9]+)}.*', outed) :
+        return int(lres.group(3)), int(lres.group(2)), int(lres.group(1))
+    else:
+        return None, None, None
+
+
+
 class MainWindow(QtWidgets.QMainWindow):
 
     configName = ".imbl-ui"
@@ -262,10 +273,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.scrInitiate.setRole("initiate")
         self.scrStitch = Script(self)
         self.scrStitch.setRole("stitch")
-        self.scrPhase = Script(self)
-        self.scrPhase.setRole("phase")
-        self.scrCT = Script(self)
-        self.scrCT.setRole("ct")
+        self.scrCOR = Script(self)
+        self.scrCOR.setRole("rotation center")
+        self.scrRec = Script(self)
+        self.scrRec.setRole("reconstruct")
         for place in self.ui.findChildren(QtWidgets.QLayout, QtCore.QRegExp(self.placePrefix+"\w+")):
             role = place.objectName().removeprefix(self.placePrefix)
             scrw = UScript(self)
@@ -287,7 +298,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.collectErr = None
 
         self.on_individualIO_toggled()
+        self.on_ctFilter_currentTextChanged()
         self.ui.inProgress.setVisible(False)
+        self.ui.autoMin.setVisible(False) # feature not implemented
+        self.ui.autoMax.setVisible(False) # feature not implemented
 
         saveBtn = QtWidgets.QPushButton("Save", self)
         saveBtn.setFlat(True)
@@ -743,7 +757,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.outPath.setStyleSheet('')
         os.chdir(opath)
 
-        initiatedFile = path.join(opath, '.initstitch')
+        initiatedFile = path.join(opath, initFileName)
         if not path.exists(initiatedFile):
             return
         initDict = dict()
@@ -978,7 +992,7 @@ class MainWindow(QtWidgets.QMainWindow):
         actButton.setText(actText)
         actButton.setStyleSheet("")
         self.on_sameBin_toggled()  # to correct state of the yBin
-        self.update_initiate_state()
+        self.update_reconstruction_state()
         return toRet
 
 
@@ -1030,20 +1044,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.update_reconstruction_state()
 
 
-    def update_reconstruction_state(self):
+    def inMemNamePrexix(self):
         cOpath = path.join(self.ui.outPath.text(), self.ui.testSubDir.currentText())
         cOpath = path.realpath(cOpath)
+        return f"/dev/shm/imblproc_{cOpath.replace('/','_')}_"
+
+
+    def update_reconstruction_state(self):
         file_postfix = "clean.hdf"
-        tmpn=f"/dev/shm/imblproc_{cOpath.replace('/','_')}_{file_postfix}"
-        projFile = tmpn if path.exists(tmpn) else path.join(cOpath, file_postfix)
-        _, outed, _ = Script.run(f"h5ls {projFile}/data")
-
-        print(cOpath)
-        print(tmpn)
-        print(projFile)
-
-        projShape = f"{lres.group(3)} x {lres.group(2)} x {lres.group(1)}" \
-            if (lres := re.search('.*{([0-9]+), ([0-9]+), ([0-9]+)}.*', outed)) else None
+        memName = self.inMemNamePrexix() + file_postfix
+        diskName=path.join(self.ui.outPath.text(), self.ui.testSubDir.currentText(), file_postfix)
+        projFile = memName if path.exists(memName) else diskName
+        x, y, z = hdf5shape(projFile, "data")
+        projShape = f"{x} x {y} x {z}" if x and y and z else None
         self.ui.prShape.setText(projShape)
         self.ui.prFile.setText(projFile if projShape else "can't find projections volume.")
         self.ui.prFile.setEnabled(projShape is not None)
@@ -1080,10 +1093,13 @@ class MainWindow(QtWidgets.QMainWindow):
     def on_ctFilter_currentTextChanged(self):
         if self.ui.ctFilter.currentText() == "Kaiser":
             self.ui.ctFilterParam.setVisible(True)
+            self.ui.ctFilterParam.setMinimum(0)
             self.ui.filterParamLabel.setVisible(True)
             self.ui.filterParamLabel.setText("Alpha parameter")
+
         elif self.ui.ctFilter.currentText() == "Gauss":
             self.ui.ctFilterParam.setVisible(True)
+            self.ui.ctFilterParam.setMinimum(0.01)
             self.ui.filterParamLabel.setVisible(True)
             self.ui.filterParamLabel.setText("Sigma parameter")
         else:
@@ -1092,13 +1108,101 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     @pyqtSlot()
+    def on_wipe_clicked(self):
+        Script.run(f"rm -rf {self.inMemNamePrexix()}*")
+
+
+    @pyqtSlot()
     def on_testSlice_clicked(self):
-        print("Not yet ready")
+        if self.scrRec.isRunning():
+            self.scrRec.stop()
+            return -1
 
 
     @pyqtSlot()
     def on_reconstruct_clicked(self):
-        print("rec is Not yet ready")
+        if self.scrRec.isRunning():
+            self.scrRec.stop()
+            return -1
+
+        wdir = path.join(self.ui.outPath.text(), self.ui.testSubDir.currentText())
+        projFile = path.realpath(self.ui.prFile.text())
+        x, y, z = hdf5shape(projFile, "data")
+        if not x or not y or not z:
+            self.addErrToConsole(f"Can't find projections in file \"{projFile}\". Aborting reconstruction.")
+            return -1
+        step = 0
+        try:
+            myInitFile = path.join(wdir,initFileName)
+            _, outed, _ = Script.run(f"cat {myInitFile} | grep 'step=' | cut -d'=' -f 2 ")
+            step = abs(float(outed))
+            if step == 0:
+                raise Exception("Step is 0.")
+        except Exception:
+            self.addErrToConsole(f"Failed to get step from init file \"{myInitFile}\". Aborting reconstruction.")
+            return -1
+        ark180 = int(180.0/step) + 1
+        if ark180 >= z:
+            self.addErrToConsole(f"Not enough projections {z} for step {step} to form 180 deg ark. Aborting reconstruction.")
+            return -1
+
+        if self.ui.autocor.isChecked():
+            self.collectOut = ""
+            self.scrCOR.setBody(f"ctas ax {projFile}:/data:0 {projFile}:/data:{ark180}")
+            self.scrCOR.proc.setWorkingDirectory(wdir)
+            self.scrCOR.exec()
+            try:
+                cor = float(self.collectOut)
+                self.ui.cor.setValue(cor)
+            except Exception:
+                self.addErrToConsole(f"Failed to calculate rotation centre. Aborting reconstruction.")
+                return -1
+            self.collectOut = None
+
+        command = ""
+        ringLine = "" if self.ui.ring.value() == 0 else \
+            f"ctas ring -v -R {self.ui.ring.value()} {projFile}:/data:y \n"
+        phaseLine = "" if self.ui.distance.value() == 0 or self.ui.d2b.value() == 0.0 else \
+            f"ctas ipc {projFile}:/data -e -v " \
+            f" -z {self.ui.distance.value()}" \
+            f" -d {self.ui.d2b.value()}" \
+            f" -r {self.ui.pixelSize.value()}" \
+            f" -w {12.398/self.ui.energy.value()} \n"  # keV to Angstrom
+        if self.ui.ringGroup.checkedButton() is self.ui.ringBeforePhase :
+            command = ringLine + phaseLine
+        else:
+            command = phaseLine + ringLine
+
+        fltLine = self.ui.ctFilter.currentText().upper()
+        if self.ui.ctFilterParam.isVisible():
+            fltLine += f":{self.ui.ctFilterParam.value()}"
+        kontrLine = "FLT" if fltLine == "NONE" else "ABS"
+        fltLine = "" if fltLine == "NONE" else f" -f {fltLine}"
+        mmLine = f" -m {self.ui.min.value()} -M {self.ui.max.value()}" \
+            if self.ui.resTIFF.isChecked() and self.ui.resToInt.isChecked() else ""
+        outPath = ""
+        if self.ui.resTIFF.isChecked():
+            odir = "rec8int" if self.ui.resToInt.isChecked() else "rec"
+            Script.run(f"mkdir -p {path.join(wdir,odir)} ")
+            outPath = path.join(odir,"rec_@.tif")
+        else:
+            outPath = "rec.hdf:/data"
+        command += f"ctas ct -v {projFile}:/data:y " \
+                   f" -o {outPath}" \
+                   f" -k {kontrLine} " \
+                   f" -c {self.ui.cor.value()}" \
+                   f" -a {step} -r {self.ui.pixelSize.value()}" \
+                   f"{fltLine}" \
+                   f"{mmLine}" \
+                   "\n"
+
+        self.addToConsole(f"Reconstruction command: {command}", QtCore.Qt.magenta)
+
+
+
+
+
+
 
 
     @pyqtSlot()

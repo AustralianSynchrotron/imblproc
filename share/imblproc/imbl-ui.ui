@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>930</width>
-    <height>633</height>
+    <width>929</width>
+    <height>605</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -39,151 +39,6 @@
         <item row="2" column="0">
          <widget class="QWidget" name="initInfo" native="true">
           <layout class="QGridLayout" name="gridLayout_8">
-           <item row="2" column="1">
-            <widget class="QWidget" name="sampleWdg" native="true">
-             <layout class="QHBoxLayout" name="horizontalLayout_10">
-              <property name="leftMargin">
-               <number>0</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
-               <number>0</number>
-              </property>
-              <item>
-               <widget class="QComboBox" name="expSample">
-                <property name="saveInConfig" stdset="0">
-                 <number>-2</number>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="expUpdate">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="text">
-                 <string>Update</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="expSampleLbl">
-             <property name="text">
-              <string>Sample</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QWidget" name="expWdg" native="true">
-             <layout class="QHBoxLayout" name="horizontalLayout_7">
-              <property name="spacing">
-               <number>0</number>
-              </property>
-              <property name="leftMargin">
-               <number>0</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
-               <number>0</number>
-              </property>
-              <item>
-               <widget class="QLineEdit" name="expPath">
-                <property name="saveInConfig" stdset="0">
-                 <number>-2</number>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="expBrowse">
-                <property name="text">
-                 <string>Browse</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_15">
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="0">
-            <widget class="QLabel" name="label">
-             <property name="text">
-              <string>Input</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QCheckBox" name="individualIO">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>Select input and output individually</string>
-             </property>
-             <property name="saveInConfig" stdset="0">
-              <number>-3</number>
-             </property>
-            </widget>
-           </item>
-           <item row="8" column="1">
-            <widget class="QWidget" name="widget_3" native="true">
-             <layout class="QHBoxLayout" name="horizontalLayout_9">
-              <property name="spacing">
-               <number>0</number>
-              </property>
-              <property name="leftMargin">
-               <number>0</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
-               <number>0</number>
-              </property>
-              <item>
-               <widget class="QLineEdit" name="outPath">
-                <property name="saveInConfig" stdset="0">
-                 <number>-1</number>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="outBrowse">
-                <property name="text">
-                 <string>Browse</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
            <item row="3" column="1">
             <widget class="QWidget" name="widget_2" native="true">
              <layout class="QHBoxLayout" name="horizontalLayout_8">
@@ -217,13 +72,6 @@
                </widget>
               </item>
              </layout>
-            </widget>
-           </item>
-           <item row="9" column="0">
-            <widget class="QLabel" name="label_6">
-             <property name="text">
-              <string>Exec before</string>
-             </property>
             </widget>
            </item>
            <item row="6" column="1" rowspan="2">
@@ -409,33 +257,98 @@
              </item>
             </layout>
            </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="expLbl">
+           <item row="8" column="1">
+            <widget class="QWidget" name="widget_3" native="true">
+             <layout class="QHBoxLayout" name="horizontalLayout_9">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QLineEdit" name="outPath">
+                <property name="saveInConfig" stdset="0">
+                 <number>-1</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="outBrowse">
+                <property name="text">
+                 <string>Browse</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item row="8" column="0">
+            <widget class="QLabel" name="label_2">
              <property name="text">
-              <string>Experiment</string>
+              <string>Output</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QWidget" name="expWdg" native="true">
+             <layout class="QHBoxLayout" name="horizontalLayout_7">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QLineEdit" name="expPath">
+                <property name="saveInConfig" stdset="0">
+                 <number>-2</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="expBrowse">
+                <property name="text">
+                 <string>Browse</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>Input</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="expSampleLbl">
+             <property name="text">
+              <string>Sample</string>
              </property>
             </widget>
            </item>
            <item row="9" column="1">
-            <layout class="QHBoxLayout" name="placeScript_start"/>
-           </item>
-           <item row="5" column="1">
-            <widget class="QLabel" name="oldConfigLabel">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">color: rgb(255, 0, 4);</string>
-             </property>
-             <property name="text">
-              <string>Old version. Use imbl4massive tools to process</string>
-             </property>
-            </widget>
-           </item>
-           <item row="10" column="1">
             <layout class="QHBoxLayout" name="horizontalLayout_17">
              <item>
               <widget class="QCheckBox" name="noNewFF">
@@ -471,10 +384,80 @@
              </item>
             </layout>
            </item>
-           <item row="8" column="0">
-            <widget class="QLabel" name="label_2">
+           <item row="5" column="1">
+            <widget class="QLabel" name="oldConfigLabel">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">color: rgb(255, 0, 4);</string>
+             </property>
              <property name="text">
-              <string>Output</string>
+              <string>Old version. Use imbl4massive tools to process</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="expLbl">
+             <property name="text">
+              <string>Experiment</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QWidget" name="sampleWdg" native="true">
+             <layout class="QHBoxLayout" name="horizontalLayout_10">
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QComboBox" name="expSample">
+                <property name="saveInConfig" stdset="0">
+                 <number>-2</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="expUpdate">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="text">
+                 <string>Update</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QCheckBox" name="individualIO">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Select input and output individually</string>
+             </property>
+             <property name="saveInConfig" stdset="0">
+              <number>-3</number>
              </property>
             </widget>
            </item>
@@ -491,6 +474,13 @@
              </property>
              <property name="text">
               <string>Directory does not contain configuration file</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_15">
+             <property name="text">
+              <string/>
              </property>
             </widget>
            </item>
@@ -881,63 +871,11 @@
         <string>Stitching</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_5" columnstretch="0,0,0">
-        <item row="1" column="0">
-         <widget class="QLabel" name="oStLbl">
+        <item row="8" column="1">
+         <widget class="QLabel" name="label_26">
           <property name="text">
-           <string>Outer series [Y] stitching</string>
+           <string>projection</string>
           </property>
-         </widget>
-        </item>
-        <item row="2" column="1" colspan="2">
-         <widget class="QWidget" name="fStWdg" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_6">
-           <item>
-            <widget class="QLabel" name="label_30">
-             <property name="text">
-              <string>X</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QDoubleSpinBox" name="fStX">
-             <property name="minimum">
-              <double>-999999999.000000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>999999999.000000000000000</double>
-             </property>
-             <property name="saveInConfig" stdset="0">
-              <number>0</number>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_31">
-             <property name="text">
-              <string>Y</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QDoubleSpinBox" name="fStY">
-             <property name="minimum">
-              <double>-999999999.000000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>999999999.000000000000000</double>
-             </property>
-             <property name="saveInConfig" stdset="0">
-              <number>0</number>
-             </property>
-            </widget>
-           </item>
-          </layout>
          </widget>
         </item>
         <item row="3" column="0">
@@ -948,16 +886,6 @@
          </widget>
         </item>
         <item row="7" column="1" colspan="2">
-         <layout class="QHBoxLayout" name="placeScript_prestitch"/>
-        </item>
-        <item row="10" column="1">
-         <widget class="QLabel" name="testSubDirLabel">
-          <property name="text">
-           <string>subdirectory</string>
-          </property>
-         </widget>
-        </item>
-        <item row="8" column="1" colspan="2">
          <layout class="QHBoxLayout" name="horizontalLayout_16">
           <item>
            <widget class="QLabel" name="label_32">
@@ -1017,71 +945,118 @@
           </item>
          </layout>
         </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="iStLbl">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
+        <item row="2" column="1" colspan="2">
+         <widget class="QWidget" name="fStWdg" native="true">
+          <layout class="QHBoxLayout" name="horizontalLayout_6">
+           <item>
+            <widget class="QLabel" name="label_30">
+             <property name="text">
+              <string>X</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QDoubleSpinBox" name="fStX">
+             <property name="minimum">
+              <double>-999999999.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>999999999.000000000000000</double>
+             </property>
+             <property name="saveInConfig" stdset="0">
+              <number>0</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_31">
+             <property name="text">
+              <string>Y</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QDoubleSpinBox" name="fStY">
+             <property name="minimum">
+              <double>-999999999.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>999999999.000000000000000</double>
+             </property>
+             <property name="saveInConfig" stdset="0">
+              <number>0</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="1" column="1" colspan="2">
+         <widget class="QWidget" name="oStWdg" native="true">
+          <layout class="QHBoxLayout" name="horizontalLayout_5">
+           <item>
+            <widget class="QLabel" name="label_23">
+             <property name="text">
+              <string>X</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QDoubleSpinBox" name="oStX">
+             <property name="minimum">
+              <double>-999999999.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>999999999.000000000000000</double>
+             </property>
+             <property name="saveInConfig" stdset="0">
+              <number>0</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_24">
+             <property name="text">
+              <string>Y</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QDoubleSpinBox" name="oStY">
+             <property name="minimum">
+              <double>-999999999.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>999999999.000000000000000</double>
+             </property>
+             <property name="saveInConfig" stdset="0">
+              <number>0</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="9" column="1">
+         <widget class="QLabel" name="testSubDirLabel">
           <property name="text">
-           <string>Innear series [Z] stitching</string>
+           <string>subdirectory</string>
           </property>
          </widget>
         </item>
-        <item row="3" column="1" colspan="2">
-         <layout class="QGridLayout" name="gridLayout_6">
-          <item row="0" column="1" colspan="2">
-           <widget class="QSpinBox" name="fCropTop">
-            <property name="maximum">
-             <number>999999999</number>
-            </property>
-            <property name="saveInConfig" stdset="0">
-             <number>0</number>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1" colspan="2">
-           <widget class="QSpinBox" name="fCropBottom">
-            <property name="maximum">
-             <number>999999999</number>
-            </property>
-            <property name="saveInConfig" stdset="0">
-             <number>0</number>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0" colspan="2">
-           <widget class="QSpinBox" name="fCropLeft">
-            <property name="maximum">
-             <number>999999999</number>
-            </property>
-            <property name="saveInConfig" stdset="0">
-             <number>0</number>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2" colspan="2">
-           <widget class="QSpinBox" name="fCropRight">
-            <property name="maximum">
-             <number>999999999</number>
-            </property>
-            <property name="saveInConfig" stdset="0">
-             <number>0</number>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="fStLbl">
-          <property name="text">
-           <string>Flipped 180deg stitching</string>
-          </property>
-         </widget>
-        </item>
-        <item row="10" column="0">
+        <item row="9" column="0">
          <widget class="QPushButton" name="procThis">
           <property name="text">
            <string>Stitch only</string>
@@ -1138,89 +1113,6 @@
             </widget>
            </item>
           </layout>
-         </widget>
-        </item>
-        <item row="9" column="1">
-         <widget class="QLabel" name="label_26">
-          <property name="text">
-           <string>projection</string>
-          </property>
-         </widget>
-        </item>
-        <item row="11" column="0" colspan="3">
-         <widget class="QPushButton" name="procAll">
-          <property name="text">
-           <string>Stitch all</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1" colspan="2">
-         <widget class="QWidget" name="oStWdg" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_5">
-           <item>
-            <widget class="QLabel" name="label_23">
-             <property name="text">
-              <string>X</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QDoubleSpinBox" name="oStX">
-             <property name="minimum">
-              <double>-999999999.000000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>999999999.000000000000000</double>
-             </property>
-             <property name="saveInConfig" stdset="0">
-              <number>0</number>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_24">
-             <property name="text">
-              <string>Y</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QDoubleSpinBox" name="oStY">
-             <property name="minimum">
-              <double>-999999999.000000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>999999999.000000000000000</double>
-             </property>
-             <property name="saveInConfig" stdset="0">
-              <number>0</number>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="9" column="2">
-         <widget class="QSpinBox" name="testProjection">
-          <property name="maximum">
-           <number>999999999</number>
-          </property>
-          <property name="saveInConfig" stdset="0">
-           <number>0</number>
-          </property>
-         </widget>
-        </item>
-        <item row="9" column="0">
-         <widget class="QPushButton" name="testProj">
-          <property name="text">
-           <string>Test</string>
-          </property>
          </widget>
         </item>
         <item row="4" column="1" colspan="2">
@@ -1283,17 +1175,61 @@
           </item>
          </layout>
         </item>
-        <item row="7" column="0">
-         <widget class="QLabel" name="label_35">
+        <item row="1" column="0">
+         <widget class="QLabel" name="oStLbl">
           <property name="text">
-           <string>Exec before stitching</string>
+           <string>Outer series [Y] stitching</string>
           </property>
          </widget>
         </item>
-        <item row="10" column="2">
+        <item row="10" column="0" colspan="3">
+         <widget class="QPushButton" name="procAll">
+          <property name="text">
+           <string>Stitch all</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="iStLbl">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Innear series [Z] stitching</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="fStLbl">
+          <property name="text">
+           <string>Flipped 180deg stitching</string>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="2">
+         <widget class="QSpinBox" name="testProjection">
+          <property name="maximum">
+           <number>999999999</number>
+          </property>
+          <property name="saveInConfig" stdset="0">
+           <number>0</number>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="2">
          <widget class="QComboBox" name="testSubDir">
           <property name="saveInConfig" stdset="0">
            <number>0</number>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="0">
+         <widget class="QPushButton" name="testProj">
+          <property name="text">
+           <string>Test</string>
           </property>
          </widget>
         </item>
@@ -1304,12 +1240,56 @@
           </property>
          </widget>
         </item>
-        <item row="8" column="0">
+        <item row="7" column="0">
          <widget class="QLabel" name="label_29">
           <property name="text">
            <string>After stitching</string>
           </property>
          </widget>
+        </item>
+        <item row="3" column="1" colspan="2">
+         <layout class="QGridLayout" name="gridLayout_6">
+          <item row="0" column="1" colspan="2">
+           <widget class="QSpinBox" name="fCropTop">
+            <property name="maximum">
+             <number>999999999</number>
+            </property>
+            <property name="saveInConfig" stdset="0">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1" colspan="2">
+           <widget class="QSpinBox" name="fCropBottom">
+            <property name="maximum">
+             <number>999999999</number>
+            </property>
+            <property name="saveInConfig" stdset="0">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0" colspan="2">
+           <widget class="QSpinBox" name="fCropLeft">
+            <property name="maximum">
+             <number>999999999</number>
+            </property>
+            <property name="saveInConfig" stdset="0">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2" colspan="2">
+           <widget class="QSpinBox" name="fCropRight">
+            <property name="maximum">
+             <number>999999999</number>
+            </property>
+            <property name="saveInConfig" stdset="0">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </widget>
@@ -1318,56 +1298,17 @@
         <string>Reconstruction</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_13">
-        <item row="8" column="4">
-         <widget class="QWidget" name="widget" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_33">
-           <property name="leftMargin">
-            <number>0</number>
-           </property>
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <property name="rightMargin">
-            <number>0</number>
-           </property>
-           <property name="bottomMargin">
-            <number>0</number>
-           </property>
-           <item>
-            <widget class="QPushButton" name="wipe">
-             <property name="text">
-              <string>Wipe from memory</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="1" column="1" colspan="4">
-         <layout class="QHBoxLayout" name="placeScript_phase"/>
-        </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_42">
-          <property name="text">
-           <string>Pixel size</string>
-          </property>
-         </widget>
-        </item>
-        <item row="7" column="0">
-         <widget class="QLabel" name="label_51">
-          <property name="text">
-           <string>Exec after CT</string>
-          </property>
-         </widget>
-        </item>
+        <property name="sizeConstraint">
+         <enum>QLayout::SetDefaultConstraint</enum>
+        </property>
         <item row="9" column="0">
-         <widget class="QLabel" name="label_27">
+         <widget class="QPushButton" name="testSlice">
           <property name="text">
-           <string>Convert to int</string>
+           <string>Test</string>
           </property>
          </widget>
         </item>
-        <item row="2" column="1">
+        <item row="1" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_25">
           <item>
            <widget class="QSpinBox" name="distance">
@@ -1384,163 +1325,20 @@
           </item>
          </layout>
         </item>
-        <item row="10" column="1" colspan="4">
-         <layout class="QHBoxLayout" name="placeScript_exit"/>
-        </item>
-        <item row="4" column="0">
-         <widget class="QLabel" name="label_50">
-          <property name="text">
-           <string>Exec before CT</string>
-          </property>
-         </widget>
-        </item>
-        <item row="10" column="0">
-         <widget class="QLabel" name="label_53">
-          <property name="text">
-           <string>Exec on exit</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="1">
-         <layout class="QHBoxLayout" name="horizontalLayout_28">
-          <item>
-           <widget class="QSpinBox" name="ring">
-            <property name="specialValueText">
-             <string>none</string>
-            </property>
-            <property name="saveInConfig" stdset="0">
-             <number>0</number>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
         <item row="8" column="0">
-         <widget class="QLabel" name="label_52">
+         <widget class="QLabel" name="label_56">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="text">
-           <string>Results</string>
+           <string/>
           </property>
          </widget>
         </item>
         <item row="3" column="4">
-         <widget class="QWidget" name="ringOrder" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_18">
-           <property name="leftMargin">
-            <number>0</number>
-           </property>
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <property name="rightMargin">
-            <number>0</number>
-           </property>
-           <property name="bottomMargin">
-            <number>0</number>
-           </property>
-           <item>
-            <widget class="QRadioButton" name="ringBeforePhase">
-             <property name="text">
-              <string>before</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-             <attribute name="buttonGroup">
-              <string notr="true">ringGroup</string>
-             </attribute>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="ringAfterPhase">
-             <property name="text">
-              <string>after</string>
-             </property>
-             <attribute name="buttonGroup">
-              <string notr="true">ringGroup</string>
-             </attribute>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_40">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>phase</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="0" column="3">
-         <widget class="QLabel" name="label_43">
-          <property name="text">
-           <string>Energy</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="label_44">
-          <property name="text">
-           <string>Object to detector distance</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="2">
-         <spacer name="horizontalSpacer">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeType">
-           <enum>QSizePolicy::Fixed</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>50</width>
-            <height>0</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_49">
-          <property name="text">
-           <string>Exec before phase</string>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="1" colspan="4">
-         <layout class="QHBoxLayout" name="placeScript_ct"/>
-        </item>
-        <item row="2" column="3">
-         <widget class="QLabel" name="d2bLabel">
-          <property name="text">
-           <string>δ / β   ratio</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="3">
-         <widget class="QLabel" name="ringOrderLabel">
-          <property name="text">
-           <string>Apply ring filter</string>
-          </property>
-         </widget>
-        </item>
-        <item row="7" column="1" colspan="4">
-         <layout class="QHBoxLayout" name="placeScript_save"/>
-        </item>
-        <item row="5" column="0">
-         <widget class="QLabel" name="label_46">
-          <property name="text">
-           <string>CT filter</string>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="4">
          <widget class="QWidget" name="widget" native="true">
           <layout class="QHBoxLayout" name="horizontalLayout_30">
            <property name="leftMargin">
@@ -1556,18 +1354,118 @@
             <number>0</number>
            </property>
            <item>
-            <widget class="QDoubleSpinBox" name="ctFilterParam">
-             <property name="saveInConfig" stdset="0">
-              <number>0</number>
-             </property>
-            </widget>
+            <layout class="QHBoxLayout" name="horizontalLayout_32">
+             <item>
+              <widget class="QDoubleSpinBox" name="ctFilterParam">
+               <property name="saveInConfig" stdset="0">
+                <number>0</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </item>
           </layout>
          </widget>
         </item>
+        <item row="1" column="2">
+         <widget class="QLabel" name="label_48">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string> </string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="3">
+         <widget class="QLabel" name="ringOrderLabel">
+          <property name="text">
+           <string>Apply ring filter</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_44">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Object to detector distance</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="3">
+         <widget class="QLabel" name="label_43">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Energy</string>
+          </property>
+         </widget>
+        </item>
         <item row="0" column="4">
-         <widget class="QWidget" name="w" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_24">
+         <layout class="QHBoxLayout" name="horizontalLayout_27">
+          <item>
+           <widget class="QDoubleSpinBox" name="energy">
+            <property name="suffix">
+             <string>keV</string>
+            </property>
+            <property name="minimum">
+             <double>1.000000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>500.000000000000000</double>
+            </property>
+            <property name="value">
+             <double>1.000000000000000</double>
+            </property>
+            <property name="saveInConfig" stdset="0">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="5" column="0">
+         <widget class="QLabel" name="label_52">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Results format</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <layout class="QHBoxLayout" name="horizontalLayout_28">
+          <item>
+           <widget class="QSpinBox" name="ring">
+            <property name="specialValueText">
+             <string>none</string>
+            </property>
+            <property name="saveInConfig" stdset="0">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="1" column="4">
+         <widget class="QWidget" name="widget" native="true">
+          <layout class="QHBoxLayout" name="horizontalLayout_26">
            <property name="spacing">
             <number>0</number>
            </property>
@@ -1580,37 +1478,37 @@
            <property name="rightMargin">
             <number>0</number>
            </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
            <item>
-            <widget class="QDoubleSpinBox" name="energy">
-             <property name="suffix">
-              <string>keV</string>
-             </property>
-             <property name="minimum">
-              <double>1.000000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>500.000000000000000</double>
-             </property>
-             <property name="value">
-              <double>1.000000000000000</double>
-             </property>
-             <property name="saveInConfig" stdset="0">
-              <number>0</number>
-             </property>
-            </widget>
+            <layout class="QHBoxLayout" name="horizontalLayout_29">
+             <item>
+              <widget class="QDoubleSpinBox" name="d2b">
+               <property name="specialValueText">
+                <string>no phase</string>
+               </property>
+               <property name="decimals">
+                <number>1</number>
+               </property>
+               <property name="maximum">
+                <double>1000.000000000000000</double>
+               </property>
+               <property name="saveInConfig" stdset="0">
+                <number>0</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </item>
           </layout>
          </widget>
         </item>
-        <item row="3" column="0">
-         <widget class="QLabel" name="label_41">
-          <property name="text">
-           <string>Ring artefact size</string>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="1">
+        <item row="4" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_13">
+          <property name="sizeConstraint">
+           <enum>QLayout::SetNoConstraint</enum>
+          </property>
           <item>
            <widget class="QCheckBox" name="autocor">
             <property name="sizePolicy">
@@ -1642,7 +1540,20 @@
           </item>
          </layout>
         </item>
-        <item row="5" column="1">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_42">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Pixel size</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_31">
           <item>
            <widget class="QComboBox" name="ctFilter">
@@ -1711,11 +1622,85 @@
           </item>
          </layout>
         </item>
-        <item row="11" column="0">
-         <widget class="QLabel" name="label_34">
+        <item row="3" column="3">
+         <widget class="QLabel" name="filterParamLabel">
           <property name="text">
-           <string>Projections file</string>
+           <string>Filter parameter</string>
           </property>
+         </widget>
+        </item>
+        <item row="1" column="3">
+         <widget class="QLabel" name="d2bLabel">
+          <property name="text">
+           <string>δ / β   ratio</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_41">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Ring artefact size</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="4">
+         <widget class="QWidget" name="ringOrder" native="true">
+          <layout class="QHBoxLayout" name="horizontalLayout_18">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QRadioButton" name="ringBeforePhase">
+             <property name="text">
+              <string>before</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">ringGroup</string>
+             </attribute>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="ringAfterPhase">
+             <property name="text">
+              <string>after</string>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">ringGroup</string>
+             </attribute>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_40">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>phase</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </widget>
         </item>
         <item row="0" column="1">
@@ -1744,58 +1729,116 @@
           </item>
          </layout>
         </item>
-        <item row="2" column="4">
-         <widget class="QWidget" name="widget" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_26">
-           <property name="spacing">
-            <number>0</number>
-           </property>
-           <property name="leftMargin">
-            <number>0</number>
-           </property>
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <property name="rightMargin">
-            <number>0</number>
-           </property>
-           <property name="bottomMargin">
-            <number>0</number>
-           </property>
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_47">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Rotation centre</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Fixed</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>50</width>
+            <height>0</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="7" column="0">
+         <widget class="QLabel" name="label_34">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Projections file</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_46">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>CT filter</string>
+          </property>
+         </widget>
+        </item>
+        <item row="10" column="0" colspan="5">
+         <widget class="QPushButton" name="reconstruct">
+          <property name="text">
+           <string>Reconstruct</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="3" colspan="2">
+         <widget class="QWidget" name="mmWdg" native="true">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <layout class="QHBoxLayout" name="_2">
            <item>
-            <widget class="QDoubleSpinBox" name="d2b">
-             <property name="specialValueText">
-              <string>no phase</string>
+            <widget class="QCheckBox" name="autoMin">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
              </property>
-             <property name="decimals">
-              <number>1</number>
-             </property>
-             <property name="maximum">
-              <double>1000.000000000000000</double>
+             <property name="text">
+              <string>auto</string>
              </property>
              <property name="saveInConfig" stdset="0">
               <number>0</number>
              </property>
             </widget>
            </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="9" column="4">
-         <widget class="QWidget" name="widget" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_22">
-           <property name="leftMargin">
-            <number>0</number>
-           </property>
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <property name="rightMargin">
-            <number>0</number>
-           </property>
-           <property name="bottomMargin">
-            <number>0</number>
-           </property>
+           <item>
+            <widget class="QLabel" name="label_54">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Min</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QDoubleSpinBox" name="min">
+             <property name="saveInConfig" stdset="0">
+              <number>0</number>
+             </property>
+            </widget>
+           </item>
            <item>
             <widget class="QLabel" name="label_55">
              <property name="sizePolicy">
@@ -1835,8 +1878,65 @@
           </layout>
          </widget>
         </item>
-        <item row="6" column="3">
-         <layout class="QHBoxLayout" name="horizontalLayout_32">
+        <item row="5" column="1">
+         <widget class="QWidget" name="" native="true">
+          <layout class="QHBoxLayout" name="horizontalLayout_20">
+           <item>
+            <widget class="QRadioButton" name="resHDF">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>HDF5</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">resGroup</string>
+             </attribute>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="resTIFF">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>TIFF</string>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">resGroup</string>
+             </attribute>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="resToInt">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>int</string>
+             </property>
+             <property name="saveInConfig" stdset="0">
+              <number>0</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="4" column="4">
+         <layout class="QHBoxLayout" name="horizontalLayout_33">
           <item>
            <widget class="QCheckBox" name="outMu">
             <property name="text">
@@ -1849,22 +1949,25 @@
           </item>
          </layout>
         </item>
-        <item row="12" column="2" colspan="3">
-         <widget class="QSpinBox" name="testSliceNum">
-          <property name="maximum">
-           <number>999999999</number>
-          </property>
-          <property name="saveInConfig" stdset="0">
-           <number>0</number>
-          </property>
-         </widget>
-        </item>
-        <item row="8" column="3">
-         <layout class="QHBoxLayout" name="horizontalLayout_34">
+        <item row="9" column="1" colspan="4">
+         <layout class="QHBoxLayout" name="horizontalLayout_36">
           <item>
-           <widget class="QCheckBox" name="keepInMem">
+           <widget class="QLabel" name="label_28">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="text">
-             <string>Keep in memory</string>
+             <string>slice</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="testSliceNum">
+            <property name="maximum">
+             <number>999999999</number>
             </property>
             <property name="saveInConfig" stdset="0">
              <number>0</number>
@@ -1873,133 +1976,147 @@
           </item>
          </layout>
         </item>
-        <item row="8" column="1">
-         <layout class="QHBoxLayout" name="horizontalLayout_20">
+        <item row="8" column="1" colspan="4">
+         <layout class="QHBoxLayout" name="horizontalLayout_35">
           <item>
-           <widget class="QRadioButton" name="resHDF">
+           <widget class="QCheckBox" name="keepInMem">
             <property name="text">
-             <string>HDF5</string>
+             <string>Keep projections  in memory after reconstruction</string>
             </property>
-            <property name="checked">
-             <bool>true</bool>
+            <property name="saveInConfig" stdset="0">
+             <number>0</number>
             </property>
-            <attribute name="buttonGroup">
-             <string notr="true">resGroup</string>
-            </attribute>
            </widget>
           </item>
           <item>
-           <widget class="QRadioButton" name="resTIFF">
+           <widget class="QPushButton" name="wipe">
             <property name="text">
-             <string>TIFF</string>
+             <string>Wipe memory</string>
             </property>
-            <attribute name="buttonGroup">
-             <string notr="true">resGroup</string>
-            </attribute>
            </widget>
           </item>
          </layout>
         </item>
-        <item row="6" column="0">
-         <widget class="QLabel" name="label_47">
+        <item row="7" column="1" colspan="4">
+         <layout class="QHBoxLayout" name="horizontalLayout_34" stretch="0,0">
+          <item>
+           <widget class="QPushButton" name="prFile">
+            <property name="toolTip">
+             <string>click me to copy full path to clipboard</string>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">text-align: left;</string>
+            </property>
+            <property name="text">
+             <string>projections file</string>
+            </property>
+            <property name="flat">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="prShape">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tabInject">
+       <attribute name="title">
+        <string>Inject process</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_7">
+        <item row="5" column="0">
+         <widget class="QLabel" name="label_51">
           <property name="text">
-           <string>Rotation centre</string>
+           <string>After reconstreuction</string>
           </property>
          </widget>
         </item>
-        <item row="12" column="0">
-         <widget class="QPushButton" name="testSlice">
-          <property name="text">
-           <string>Test</string>
-          </property>
-         </widget>
+        <item row="5" column="1">
+         <layout class="QHBoxLayout" name="placeScript_save"/>
         </item>
-        <item row="13" column="0" colspan="5">
-         <widget class="QPushButton" name="reconstruct">
-          <property name="text">
-           <string>Reconstruct</string>
-          </property>
-         </widget>
+        <item row="6" column="1">
+         <layout class="QHBoxLayout" name="placeScript_exit"/>
         </item>
-        <item row="11" column="4">
-         <widget class="QLabel" name="prShape">
+        <item row="1" column="1">
+         <layout class="QHBoxLayout" name="placeScript_start"/>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_27">
           <property name="text">
-           <string>shape</string>
+           <string>Stage</string>
           </property>
           <property name="alignment">
-           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           <set>Qt::AlignCenter</set>
           </property>
          </widget>
         </item>
-        <item row="12" column="1">
-         <widget class="QLabel" name="label_28">
+        <item row="2" column="1">
+         <layout class="QHBoxLayout" name="placeScript_prestitch"/>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_35">
           <property name="text">
-           <string>slice</string>
+           <string>Before stitching</string>
           </property>
          </widget>
         </item>
-        <item row="5" column="3">
-         <widget class="QLabel" name="filterParamLabel">
+        <item row="0" column="1">
+         <widget class="QLabel" name="label_45">
           <property name="text">
-           <string>Filter parameter</string>
+           <string>Executable</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
           </property>
          </widget>
         </item>
-        <item row="9" column="1">
-         <widget class="QWidget" name="widget" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_21">
-           <item>
-            <widget class="QLabel" name="label_54">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>Min</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="autoMin">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>auto</string>
-             </property>
-             <property name="saveInConfig" stdset="0">
-              <number>0</number>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QDoubleSpinBox" name="min">
-             <property name="saveInConfig" stdset="0">
-              <number>0</number>
-             </property>
-            </widget>
-           </item>
-          </layout>
+        <item row="4" column="1">
+         <layout class="QHBoxLayout" name="placeScript_ct"/>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_49">
+          <property name="text">
+           <string>Before phase</string>
+          </property>
          </widget>
         </item>
-        <item row="11" column="1" colspan="3">
-         <widget class="QPushButton" name="prFile">
-          <property name="toolTip">
-           <string>click me to copy full path to the clipboard</string>
+        <item row="6" column="0">
+         <widget class="QLabel" name="label_53">
+          <property name="text">
+           <string>Before exit</string>
           </property>
-          <property name="styleSheet">
-           <string notr="true">text-align: left;</string>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_6">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
           </property>
           <property name="text">
-           <string>None</string>
+           <string>Before initialization</string>
           </property>
-          <property name="flat">
-           <bool>true</bool>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <layout class="QHBoxLayout" name="placeScript_phase"/>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_50">
+          <property name="text">
+           <string>Before reconstruction</string>
           </property>
          </widget>
         </item>
@@ -2043,12 +2160,12 @@
    <slot>setDisabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>265</x>
-     <y>330</y>
+     <x>291</x>
+     <y>343</y>
     </hint>
     <hint type="destinationlabel">
-     <x>342</x>
-     <y>330</y>
+     <x>432</x>
+     <y>315</y>
     </hint>
    </hints>
   </connection>
