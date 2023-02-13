@@ -22,7 +22,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>4</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tabInit">
        <attribute name="title">
@@ -1302,7 +1302,7 @@
          <enum>QLayout::SetDefaultConstraint</enum>
         </property>
         <item row="3" column="1">
-         <widget class="QWidget" name="" native="true">
+         <widget class="QWidget" name="widget" native="true">
           <layout class="QHBoxLayout" name="horizontalLayout_31">
            <item>
             <widget class="QComboBox" name="ctFilter">
@@ -1391,7 +1391,7 @@
             <number>0</number>
            </property>
            <item>
-            <widget class="QWidget" name="" native="true">
+            <widget class="QWidget" name="widget" native="true">
              <layout class="QHBoxLayout" name="horizontalLayout_29">
               <item>
                <widget class="QDoubleSpinBox" name="d2b">
@@ -1449,7 +1449,7 @@
          </widget>
         </item>
         <item row="2" column="1">
-         <widget class="QWidget" name="" native="true">
+         <widget class="QWidget" name="widget" native="true">
           <layout class="QHBoxLayout" name="horizontalLayout_28">
            <item>
             <widget class="QSpinBox" name="ring">
@@ -1611,7 +1611,7 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>           </string>
+           <string/>
           </property>
          </widget>
         </item>
@@ -1750,7 +1750,7 @@
          </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QWidget" name="" native="true">
+         <widget class="QWidget" name="widget" native="true">
           <layout class="QHBoxLayout" name="horizontalLayout_25">
            <item>
             <widget class="QSpinBox" name="distance">
@@ -1881,7 +1881,7 @@
          </widget>
         </item>
         <item row="0" column="4">
-         <widget class="QWidget" name="" native="true">
+         <widget class="QWidget" name="widget" native="true">
           <layout class="QHBoxLayout" name="horizontalLayout_27">
            <item>
             <widget class="QDoubleSpinBox" name="energy">
@@ -1921,7 +1921,7 @@
             <number>0</number>
            </property>
            <item>
-            <widget class="QWidget" name="" native="true">
+            <widget class="QWidget" name="widget" native="true">
              <layout class="QHBoxLayout" name="horizontalLayout_32">
               <item>
                <widget class="QDoubleSpinBox" name="ctFilterParam">
@@ -1937,7 +1937,7 @@
          </widget>
         </item>
         <item row="4" column="1">
-         <widget class="QWidget" name="" native="true">
+         <widget class="QWidget" name="widget" native="true">
           <layout class="QHBoxLayout" name="horizontalLayout_13">
            <property name="sizeConstraint">
             <enum>QLayout::SetNoConstraint</enum>
@@ -1988,7 +1988,7 @@
          </widget>
         </item>
         <item row="4" column="4">
-         <widget class="QWidget" name="" native="true">
+         <widget class="QWidget" name="widget" native="true">
           <layout class="QHBoxLayout" name="horizontalLayout_33">
            <item>
             <widget class="QCheckBox" name="outMu">
@@ -2004,7 +2004,7 @@
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QWidget" name="" native="true">
+         <widget class="QWidget" name="widget" native="true">
           <layout class="QHBoxLayout" name="horizontalLayout_23">
            <item>
             <widget class="QDoubleSpinBox" name="pixelSize">
@@ -2179,12 +2179,12 @@
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="ringGroup">
+  <buttongroup name="resGroup">
    <property name="saveInConfig" stdset="0">
     <number>1</number>
    </property>
   </buttongroup>
-  <buttongroup name="resGroup">
+  <buttongroup name="ringGroup">
    <property name="saveInConfig" stdset="0">
     <number>1</number>
    </property>
