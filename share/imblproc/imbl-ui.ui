@@ -22,7 +22,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tabInit">
        <attribute name="title">
@@ -1399,7 +1399,7 @@
                  <string>no phase</string>
                 </property>
                 <property name="decimals">
-                 <number>1</number>
+                 <number>0</number>
                 </property>
                 <property name="maximum">
                  <double>1000.000000000000000</double>
@@ -1960,6 +1960,9 @@
            </item>
            <item>
             <widget class="QDoubleSpinBox" name="cor">
+             <property name="decimals">
+              <number>1</number>
+             </property>
              <property name="minimum">
               <double>-10000.000000000000000</double>
              </property>
@@ -2179,12 +2182,12 @@
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="resGroup">
+  <buttongroup name="ringGroup">
    <property name="saveInConfig" stdset="0">
     <number>1</number>
    </property>
   </buttongroup>
-  <buttongroup name="ringGroup">
+  <buttongroup name="resGroup">
    <property name="saveInConfig" stdset="0">
     <number>1</number>
    </property>

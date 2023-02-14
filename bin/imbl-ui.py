@@ -262,6 +262,20 @@ def hdf5shape(filename, dataset):
         return None, None, None
 
 
+class ScrollToEnd(QObject):
+    def __init__(self, parent):
+        super(ScrollToEnd, self).__init__(parent)
+    def eventFilter(self, obj, event):
+        if isinstance(self.parent(), QtWidgets.QTextBrowser) and event.type() == QtCore.QEvent.Resize:
+            scrollBar = self.parent().verticalScrollBar()
+            if scrollBar.value() == scrollBar.maximum():
+                QtCore.QTimer.singleShot(100, self.scrollMe)
+        return False
+    def scrollMe(self):
+        if isinstance(self.parent(), QtWidgets.QTextBrowser):
+            scrollBar = self.parent().verticalScrollBar()
+            scrollBar.setValue(scrollBar.maximum())
+
 
 class MainWindow(QtWidgets.QMainWindow):
 
@@ -302,6 +316,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.inProgress.setVisible(False)
         self.ui.autoMin.setVisible(False) # feature not implemented
         self.ui.autoMax.setVisible(False) # feature not implemented
+        self.ui.console.installEventFilter(ScrollToEnd(self.ui.console))
 
         saveBtn = QtWidgets.QPushButton("Save", self)
         saveBtn.setFlat(True)
@@ -445,10 +460,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.amLoading = False
 
 
-    def addToConsole(self, text, qcolor=None):
-        text.strip()
-        if not text:
-            return
+    def addToConsole(self, text=None, qcolor=None):
+        if text is None:
+            text=""
+        else:
+            text.strip()
+            if not text:
+                return
         if not qcolor:
             qcolor = self.ui.console.palette().text().color()
         self.ui.console.setTextColor(qcolor)
@@ -932,7 +950,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.maskPath.setStyleSheet("" if maskOK else warnStyle)
 
 
-    def common_test_proc(self, wdir, actButton, ars=None):
+    def common_stitch(self, wdir, actButton, ars=None):
         if self.scrProc.isRunning():
             self.scrProc.stop()
             return -1
@@ -1000,11 +1018,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def on_testProj_clicked(self):
+        self.addToConsole()
         self.collectOut = ""
         ars = f" -t {self.ui.testProjection.value()}"
         wdir = path.join(self.ui.outPath.text(),
                             self.ui.testSubDir.currentText())
-        hasFailed = self.common_test_proc(wdir, self.ui.testProj, ars)
+        hasFailed = self.common_stitch(wdir, self.ui.testProj, ars)
         lastLine = self.collectOut.splitlines()[-1]
         self.collectOut = None
         if hasFailed or not lastLine or not (lres := re.search('^([0-9]+) ([0-9]+) ([0-9]+) (.*)', lastLine)):
@@ -1027,6 +1046,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def onStitch(self):
+        self.addToConsole()
         ars = ( "" if self.ui.wipeStitched.isChecked() else " -w " ) \
             + ( "" if self.ui.saveStitched.isChecked() else " -s " )
         subOnStart = self.ui.testSubDir.currentIndex()
@@ -1037,7 +1057,7 @@ class MainWindow(QtWidgets.QMainWindow):
             subdir = self.ui.testSubDir.currentText()
             wdir = path.join(self.ui.outPath.text(), subdir)
             self.saveConfiguration(path.join(wdir, self.configName))
-            self.common_test_proc(wdir, self.ui.procAll, ars)
+            self.common_stitch(wdir, self.ui.procAll, ars)
             if self.ui.recAfterStitch.isChecked():
                 self.on_reconstruct_clicked()
         self.ui.testSubDir.setCurrentIndex(subOnStart)
@@ -1055,6 +1075,7 @@ class MainWindow(QtWidgets.QMainWindow):
         memName = self.inMemNamePrexix() + file_postfix
         diskName=path.join(self.ui.outPath.text(), self.ui.testSubDir.currentText(), file_postfix)
         projFile = memName if path.exists(memName) else diskName
+        projFile = path.realpath(projFile)
         x, y, z = hdf5shape(projFile, "data")
         projShape = f"{x} x {y} x {z}" if x and y and z else None
         self.ui.prShape.setText(projShape)
@@ -1110,6 +1131,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @pyqtSlot()
     def on_wipe_clicked(self):
         Script.run(f"rm -rf {self.inMemNamePrexix()}*")
+        self.update_reconstruction_state()
 
 
     def applyPhase(self, volumeDesc):
@@ -1134,26 +1156,26 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def applyCT(self, step, istr, ostr):
-
-        fltLine = self.ui.ctFilter.currentText().upper()
+        fltLine = self.ui.ctFilter.currentText().upper().split()[0]
         if self.ui.ctFilterParam.isVisible():
             fltLine += f":{self.ui.ctFilterParam.value()}"
         kontrLine = "FLT" if fltLine == "NONE" else "ABS"
         fltLine = "" if fltLine == "NONE" else f" -f {fltLine}"
-        mmLine = f" -m {self.ui.min.value()} -M {self.ui.max.value()}" \
+        resLine = f" -r {self.ui.pixelSize.value()} " if self.ui.outMu.isChecked() else ""
+        mmLine = f" -m {self.ui.min.value()} -M {self.ui.max.value()} " \
             if self.ui.resTIFF.isChecked() and self.ui.resToInt.isChecked() else ""
         command =   f"ctas ct -v {istr} " \
                     f" -o {ostr}" \
                     f" -k {kontrLine} " \
                     f" -c {self.ui.cor.value()}" \
-                    f" -a {step} -r {self.ui.pixelSize.value()}" \
-                    f"{fltLine} {mmLine}"
+                    f" -a {step}" + \
+                    resLine + fltLine + mmLine
         self.scrProc.setRole("Reconstructing")
         self.scrProc.setBody(command)
         return self.scrProc.exec()
 
 
-    def common_rec_check(self, isTest):
+    def common_rec(self, isTest):
         if self.scrProc.isRunning():
             self.scrProc.stop()
             return None
@@ -1217,24 +1239,26 @@ class MainWindow(QtWidgets.QMainWindow):
         return projFile, slice, z, step, wdir
 
 
-
     @pyqtSlot()
     def on_testSlice_clicked(self):
-        if commres := self.common_rec_check(True) is None:
-            return -1
-        projFile, slice, z, step, wdir = commres
-        dgln=len(f"{z-1}")
-        testPrefix = f"tmp/SINO_{slice:0{dgln}d}"
 
-        phaseSubVol = None
+        self.addToConsole()
         self.ui.testSlice.setStyleSheet(warnStyle)
         self.ui.testSlice.setText('Stop')
+        phaseSubVol = None
         def onStopMe():
             if phaseSubVol:
                 Script.run(f"rm {phaseSubVol}")
             self.ui.testSlice.setStyleSheet("")
             self.ui.testSlice.setText('Test slice')
             return self.scrProc.proc.exitCode()
+
+        if (commres := self.common_rec(True)) is None:
+            onStopMe()
+            return -1
+        projFile, slice, z, step, _ = commres
+        dgln=len(f"{z-1}")
+        testPrefix = f"tmp/SINO_{slice:0{dgln}d}"
 
         def saveSino(istr, ostr, role):
             self.scrProc.setRole(f"Saving {role} sinogram into {ostr}")
@@ -1244,11 +1268,11 @@ class MainWindow(QtWidgets.QMainWindow):
         rawSino = f"{testPrefix}_raw.tif"
         if saveSino(f"{projFile}:/data:y{slice}", rawSino, "raw"):
             return onStopMe()
+        recSino = rawSino
 
-        recSino = f"{projFile}:/data:y{slice}"
         if self.ui.distance.value() > 0 and self.ui.d2b.value() != 0.0:
 
-            phaseSubVol = f"{path.splitext(projFile)}_phase.hdf"
+            phaseSubVol = f"{path.splitext(projFile)[0]}_phase.hdf"
             self.scrProc.setRole("Extracting phase subvolume.")
             self.scrProc.setBody(f"ctas v2v -v {projFile}:/data -o {phaseSubVol}:/data" \
                                  f" -c {slice-64},0,{z-slice-64},0 ")
@@ -1287,7 +1311,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if self.ui.resHDF.isChecked() and self.ui.resToInt.isChecked():
             self.scrProc.setRole("Converting to integer")
-            self.scrProc.setBody(   f"ctas v2v {outPath} -v -o {outPrefix}_rec8int.tif  " \
+            self.scrProc.setBody(   f"ctas v2v {outPath} -v -o {testPrefix}_rec8int.tif  " \
                                     f" -m {self.ui.min.value()} -M {self.ui.max.value()}" )
             self.scrProc.exec()
 
@@ -1298,16 +1322,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def on_reconstruct_clicked(self):
-        if commres := self.common_rec_check(True) is None:
-            return -1
-        projFile, _, _, step, wdir = commres
 
+        self.addToConsole()
         self.ui.reconstruct.setStyleSheet(warnStyle)
         self.ui.reconstruct.setText('Stop')
         def onStopMe():
             self.ui.reconstruct.setStyleSheet("")
             self.ui.reconstruct.setText('Reconstruct')
             return self.scrProc.proc.exitCode()
+
+        if (commres := self.common_rec(False)) is None:
+            onStopMe()
+            return -1
+        projFile, _, _, step, wdir = commres
 
         if self.ui.ringGroup.checkedButton() is self.ui.ringBeforePhase :
             if self.applyRing(f"{projFile}:/data:y") or self.applyPhase(f"{projFile}:/data"):
@@ -1333,9 +1360,13 @@ class MainWindow(QtWidgets.QMainWindow):
                                     f" -m {self.ui.min.value()} -M {self.ui.max.value()}" )
             self.scrProc.exec()
 
+        if not self.ui.keepInMem.isChecked():
+            self.on_wipe_clicked()
         if self.scrProc.dryRun:
             self.addErrToConsole("Dry run. No reconstruction performed.")
         return onStopMe()
+
+
 
 
     @pyqtSlot()
