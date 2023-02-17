@@ -297,10 +297,10 @@ class MainWindow(QtWidgets.QMainWindow):
             scrw.setRole(role)
             scrw.setProperty(cfgProp, 2)
             place.addWidget(scrw)
-        self.cResizer = ColumnResizer(self)
-        self.cResizer.addWidgetsFromLayout(self.ui.tabRec.layout(), 4)
-        for script in self.ui.tabRec.findChildren(UScript):
-            self.cResizer.addWidgetsFromLayout(script.ui.layout(), 1)
+        #self.cResizer = ColumnResizer(self)
+        #self.cResizer.addWidgetsFromLayout(self.ui.tabRec.layout(), 4)
+        #for script in self.ui.tabRec.findChildren(UScript):
+        #    self.cResizer.addWidgetsFromLayout(script.ui.layout(), 1)
         for script in self.ui.findChildren(Script):
             self.ui.outPath.textChanged.connect(script.proc.setWorkingDirectory)
             script.proc.readyReadStandardOutput.connect(self.parseScriptOut)
@@ -314,6 +314,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.on_individualIO_toggled()
         self.on_ctFilter_currentTextChanged()
         self.ui.inProgress.setVisible(False)
+        self.ui.recInMemOnly.setVisible(False)
         self.ui.autoMin.setVisible(False) # feature not implemented
         self.ui.autoMax.setVisible(False) # feature not implemented
         self.ui.console.installEventFilter(ScrollToEnd(self.ui.console))
@@ -368,6 +369,21 @@ class MainWindow(QtWidgets.QMainWindow):
             QApplication.clipboard().setText(path.realpath(self.ui.prFile.text())))
 
         QtCore.QTimer.singleShot(100, self.loadConfiguration)
+
+
+    def execScrRole(self, role):
+        for script in self.ui.findChildren(Script):
+            if script.role() == role:
+                return script.exec()
+        return -1
+
+
+    def execScrProc(self, role, command, wdir=None):
+        if wdir is not None and wdir:
+            self.scrProc.proc.setWorkingDirectory(wdir)
+        self.scrProc.setRole(role)
+        self.scrProc.setBody(command)
+        return self.scrProc.exec()
 
 
     @pyqtSlot()
@@ -902,9 +918,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.ui.individualIO.isChecked() and \
            not path.isdir(opath):
             os.makedirs(opath, exist_ok=True)
-        self.scrProc.setRole("Initiating")
-        self.scrProc.setBody(command)
-        self.scrProc.exec()
+        self.execScrRole("initialization")
+        self.execScrProc("Initiating", command)
 
         self.ui.initInfo.setEnabled(True)
         self.ui.initiate.setStyleSheet('')
@@ -1002,10 +1017,8 @@ class MainWindow(QtWidgets.QMainWindow):
         actButton.setStyleSheet(warnStyle)
         actButton.setText('Stop')
 
-        self.scrProc.setRole("Stitching")
-        self.scrProc.proc.setWorkingDirectory(wdir)
-        self.scrProc.setBody(execPath + "imbl-stitch.sh" + prms)
-        toRet = self.scrProc.exec()
+        self.execScrRole("stitching")
+        toRet = self.execScrProc("Stitching", execPath + "imbl-stitch.sh" + prms, wdir)
 
         for wdg in disableWdgs:
             wdg.setEnabled(True)
@@ -1078,12 +1091,30 @@ class MainWindow(QtWidgets.QMainWindow):
         projFile = path.realpath(projFile)
         x, y, z = hdf5shape(projFile, "data")
         projShape = f"{x} x {y} x {z}" if x and y and z else None
-        self.ui.prShape.setText(projShape)
-        self.ui.prFile.setText(projFile if projShape else "can't find projections volume.")
-        self.ui.prFile.setEnabled(projShape is not None)
-        self.ui.testSlice.setEnabled(projShape is not None)
-        self.ui.testSliceNum.setEnabled(projShape is not None)
-        self.ui.reconstruct.setEnabled(projShape is not None)
+        recFile = self.inMemNamePrexix() + "rec.hdf"
+        x, y, z = hdf5shape(recFile, "data")
+        recShape = f"{x} x {y} x {z}" if x and y and z else None
+        enableRec = projShape is not None
+        self.ui.testSlice.setEnabled(enableRec)
+        self.ui.testSliceNum.setEnabled(enableRec)
+        self.ui.reconstruct.setEnabled(enableRec)
+        if enableRec:
+            self.ui.prShape.setText(projShape)
+            self.ui.prFile.setText(projFile)
+            self.ui.prFile.setEnabled(True)
+        elif recShape is not None:
+            self.ui.prShape.setText(recShape)
+            self.ui.prFile.setText(recFile)
+            self.ui.prFile.setEnabled(True)
+        else:
+            self.ui.prShape.setText("")
+            self.ui.prFile.setText("no projection or reconstruction volumes found in memory.")
+            self.ui.prFile.setEnabled(False)
+        if projShape is None: # check for broken link
+            Script.run(f" if [ -e \"{file_postfix}\" ] && " \
+                       f"    [ -n \"$(readlink {file_postfix})\" ] && " \
+                       f"    [ ! -e \"$(readlink {file_postfix})\" ] ; " \
+                       f" then rm -f {file_postfix} ; fi ")
 
 
     def updateRingOrderVisibility(self):
@@ -1130,29 +1161,28 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def on_wipe_clicked(self):
-        Script.run(f"rm -rf {self.inMemNamePrexix()}*")
+        self.execScrProc("Wiping memory", f"rm -rf {self.inMemNamePrexix()}*")
         self.update_reconstruction_state()
 
 
     def applyPhase(self, volumeDesc):
         if self.ui.distance.value() == 0 or self.ui.d2b.value() == 0.0:
             return 0
-        self.scrProc.setRole("Retrieving phase")
-        self.scrProc.setBody(   f"ctas ipc {volumeDesc} -e -v " \
+        self.execScrRole("phase")
+        return self.execScrProc( "Retrieving phase",
+                                f"ctas ipc {volumeDesc} -e -v " \
                                 f" -z {self.ui.distance.value()}" \
                                 f" -d {self.ui.d2b.value()}" \
                                 f" -r {self.ui.pixelSize.value()}" \
                                 f" -w {12.398/self.ui.energy.value()}" )  # keV to Angstrom
-        return self.scrProc.exec()
 
 
     def applyRing(self, iVol, oVol=None):
         if self.ui.ring.value() == 0:
             return 0
-        self.scrProc.setRole("Applying ring filter")
-        self.scrProc.setBody(f"ctas ring -v -R {self.ui.ring.value()} {iVol} " \
-                            + f" -o {oVol}" if oVol else "" )
-        return self.scrProc.exec()
+        return self.execScrProc( "Applying ring filter",
+                                f"ctas ring -v -R {self.ui.ring.value()} {iVol} "
+                                f" -o {oVol}" if oVol else "" )
 
 
     def applyCT(self, step, istr, ostr):
@@ -1161,7 +1191,8 @@ class MainWindow(QtWidgets.QMainWindow):
             fltLine += f":{self.ui.ctFilterParam.value()}"
         kontrLine = "FLT" if fltLine == "NONE" else "ABS"
         fltLine = "" if fltLine == "NONE" else f" -f {fltLine}"
-        resLine = f" -r {self.ui.pixelSize.value()} " if self.ui.outMu.isChecked() else ""
+        resLine = f" -r {self.ui.pixelSize.value()} " + \
+            "" if self.ui.outMu.isChecked() else f" -w {12.398/self.ui.energy.value()}"
         mmLine = f" -m {self.ui.min.value()} -M {self.ui.max.value()} " \
             if self.ui.resTIFF.isChecked() and self.ui.resToInt.isChecked() else ""
         command =   f"ctas ct -v {istr} " \
@@ -1170,9 +1201,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     f" -c {self.ui.cor.value()}" \
                     f" -a {step}" + \
                     resLine + fltLine + mmLine
-        self.scrProc.setRole("Reconstructing")
-        self.scrProc.setBody(command)
-        return self.scrProc.exec()
+        self.execScrRole("ct")
+        return self.execScrProc("Reconstructing", command)
 
 
     def common_rec(self, isTest):
@@ -1211,10 +1241,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.ui.autocor.isChecked():
             cor = None
             self.collectOut = ""
-            self.scrProc.setRole("Searching for rotation centre")
-            self.scrProc.setBody(f"ctas ax {projFile}:/data:0 {projFile}:/data:{ark180}" \
-                                 + f" -o tmp/SAMPLE_autoCOR.tif" if isTest else ""  )
-            if self.scrProc.exec():
+            if self.execScrProc( "Searching for rotation centre",
+                                f"ctas ax {projFile}:/data:0 {projFile}:/data:{ark180}" \
+                                f" -o tmp/SAMPLE_autoCOR.tif" if isTest else ""  ) :
                 return None
             try:
                 cor = 0.0 if self.scrProc.dryRun else float(self.collectOut)
@@ -1261,9 +1290,8 @@ class MainWindow(QtWidgets.QMainWindow):
         testPrefix = f"tmp/SINO_{slice:0{dgln}d}"
 
         def saveSino(istr, ostr, role):
-            self.scrProc.setRole(f"Saving {role} sinogram into {ostr}")
-            self.scrProc.setBody(f"ctas v2v {istr} -o {ostr}")
-            return self.scrProc.exec()
+            return self.execScrProc(f"Saving {role} sinogram into {ostr}",
+                                    f"ctas v2v {istr} -o {ostr}")
 
         rawSino = f"{testPrefix}_raw.tif"
         if saveSino(f"{projFile}:/data:y{slice}", rawSino, "raw"):
@@ -1273,10 +1301,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.ui.distance.value() > 0 and self.ui.d2b.value() != 0.0:
 
             phaseSubVol = f"{path.splitext(projFile)[0]}_phase.hdf"
-            self.scrProc.setRole("Extracting phase subvolume.")
-            self.scrProc.setBody(f"ctas v2v -v {projFile}:/data -o {phaseSubVol}:/data" \
-                                 f" -c {slice-64},0,{z-slice-64},0 ")
-            if self.scrProc.exec():
+            if self.execScrProc( "Extracting phase subvolume.",
+                                f"ctas v2v -v {projFile}:/data -o {phaseSubVol}:/data" \
+                                f" -c {slice-64},0,{z-slice-64},0 ") :
                 return onStopMe()
 
             if  self.ui.ringGroup.checkedButton() is self.ui.ringBeforePhase:
@@ -1310,9 +1337,9 @@ class MainWindow(QtWidgets.QMainWindow):
             return onStopMe()
 
         if self.ui.resHDF.isChecked() and self.ui.resToInt.isChecked():
-            self.scrProc.setRole("Converting to integer")
-            self.scrProc.setBody(   f"ctas v2v {outPath} -v -o {testPrefix}_rec8int.tif  " \
-                                    f" -m {self.ui.min.value()} -M {self.ui.max.value()}" )
+            self.execScrProc( "Converting to integer",
+                             f"ctas v2v {outPath} -v -o {testPrefix}_rec8int.tif  " \
+                             f" -m {self.ui.min.value()} -M {self.ui.max.value()}" )
             self.scrProc.exec()
 
         if self.scrProc.dryRun:
@@ -1324,17 +1351,22 @@ class MainWindow(QtWidgets.QMainWindow):
     def on_reconstruct_clicked(self):
 
         self.addToConsole()
+        if (commres := self.common_rec(False)) is None:
+            return -1
+        projFile, _, _, step, wdir = commres
+
         self.ui.reconstruct.setStyleSheet(warnStyle)
         self.ui.reconstruct.setText('Stop')
         def onStopMe():
+            self.execScrProc("Cleaning projections volume.",
+                             f"rm -f {projFile} && " \
+                             f" if [ \"$(readlink clean.hdf)\" == \"{projFile}\" ]; then rm clean.hdf; fi")
+            if not self.ui.recInMem.isChecked():
+                self.on_wipe_clicked()
             self.ui.reconstruct.setStyleSheet("")
             self.ui.reconstruct.setText('Reconstruct')
+            self.update_reconstruction_state()
             return self.scrProc.proc.exitCode()
-
-        if (commres := self.common_rec(False)) is None:
-            onStopMe()
-            return -1
-        projFile, _, _, step, wdir = commres
 
         if self.ui.ringGroup.checkedButton() is self.ui.ringBeforePhase :
             if self.applyRing(f"{projFile}:/data:y") or self.applyPhase(f"{projFile}:/data"):
@@ -1344,7 +1376,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 return onStopMe()
 
         outPath = ""
-        if self.ui.resTIFF.isChecked():
+        if self.ui.recInMem.isChecked():
+            outPath = self.inMemNamePrexix() + "rec.hdf:/data"
+            self.addToConsole(f"Reconstructing into memory: {outPath}.")
+        elif self.ui.resTIFF.isChecked():
             odir = "rec8int" if self.ui.resToInt.isChecked() else "rec"
             Script.run(f"mkdir -p {path.join(wdir,odir)} ")
             outPath = path.join(odir,"rec_@.tif")
@@ -1355,18 +1390,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if self.ui.resHDF.isChecked() and self.ui.resToInt.isChecked() :
             Script.run(f"mkdir -p {path.join(wdir,'rec8int')} ")
-            self.scrProc.setRole("Converting to integer")
-            self.scrProc.setBody(   f"ctas v2v {outPath} -v -o rec8int/rec_@.tif " \
-                                    f" -m {self.ui.min.value()} -M {self.ui.max.value()}" )
-            self.scrProc.exec()
+            self.execScrProc( "Converting to integer",
+                             f"ctas v2v {outPath} -v -o rec8int/rec_@.tif " \
+                             f" -m {self.ui.min.value()} -M {self.ui.max.value()}" )
+        if self.ui.recInMem.isChecked() and not self.ui.recInMemOnly.isChecked():
+            resPath = path.join(path.realpath(wdir),'rec.hdf')
+            self.execScrProc(f"Copying reconstruction to the storage into {resPath}.",
+                             f"cp -f {self.inMemNamePrexix()}rec.hdf {resPath}")
 
-        if not self.ui.keepInMem.isChecked():
-            self.on_wipe_clicked()
+        self.execScrRole("finish")
         if self.scrProc.dryRun:
             self.addErrToConsole("Dry run. No reconstruction performed.")
         return onStopMe()
-
-
 
 
     @pyqtSlot()
@@ -1391,4 +1426,5 @@ signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+C to quit
 app = QApplication(sys.argv)
 my_mainWindow = MainWindow()
 my_mainWindow.show()
-sys.exit(app.exec_())
+exitSts=app.exec_()
+sys.exit(exitSts)
