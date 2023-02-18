@@ -12,7 +12,7 @@ from PyQt5.uic import loadUi
 execPath = path.dirname(path.realpath(__file__)) + path.sep
 warnStyle = 'background-color: rgba(255, 0, 0, 128);'
 initFileName = '.initstitch'
-
+listOfCreatedMemFiles = []
 
 def onBrowse(wdg, desc, forFile=False):
     dest = ""
@@ -1042,13 +1042,14 @@ class MainWindow(QtWidgets.QMainWindow):
         if hasFailed or not lastLine or not (lres := re.search('^([0-9]+) ([0-9]+) ([0-9]+) (.*)', lastLine)):
             return
         z, y, x, imageFile = lres.groups()
+        imageFile =  Script.run(f"cd {wdir} ; realpath {imageFile}")[1].strip()
         self.addToConsole(f"Results of stitching projection {self.ui.testProjection.value()}"
-                          f" are in {path.realpath(imageFile)}."
+                          f" are in {imageFile}."
                           f" Stitched volume will be {x}(w) x {y}(h) x {z}(d) pixels (at least "
                           + '{0:,}'.format(4*int(x)*int(y)*int(z)).replace(',', ' ')+" B in size).")
         if not self.ui.recAfterStitch.isChecked() or not self.ui.distance.value() or not self.ui.d2b.value():
             return # no phase retruval
-        imcomp = path.splitext(imageFile)
+        imcomp = path.splitext(imageFile.strip())
         oImageFile = imcomp[0] + "_phase" + imcomp[1]
         Script.run(f"cp -f {imageFile} {oImageFile} ")
         if self.applyPhase(oImageFile):
@@ -1078,9 +1079,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def inMemNamePrexix(self):
+        global listOfCreatedMemFiles
         cOpath = path.join(self.ui.outPath.text(), self.ui.testSubDir.currentText())
         cOpath = path.realpath(cOpath)
-        return f"/dev/shm/imblproc_{cOpath.replace('/','_')}_"
+        toRet = f"/dev/shm/imblproc_{cOpath.replace('/','_')}_"
+        if toRet not in listOfCreatedMemFiles:
+            listOfCreatedMemFiles.append(toRet)
+        return toRet
 
 
     def update_reconstruction_state(self):
@@ -1181,8 +1186,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.ui.ring.value() == 0:
             return 0
         return self.execScrProc( "Applying ring filter",
-                                f"ctas ring -v -R {self.ui.ring.value()} {iVol} "
-                                f" -o {oVol}" if oVol else "" )
+                                f"ctas ring -v -R {self.ui.ring.value()} {iVol} " + \
+                                (f" -o {oVol}" if oVol else "") )
 
 
     def applyCT(self, step, istr, ostr):
@@ -1241,6 +1246,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.ui.autocor.isChecked():
             cor = None
             self.collectOut = ""
+            Script.run(f"mkdir -p \"tmp\"")
             if self.execScrProc( "Searching for rotation centre",
                                 f"ctas ax {projFile}:/data:0 {projFile}:/data:{ark180}" \
                                 f" -o tmp/SAMPLE_autoCOR.tif" if isTest else ""  ) :
@@ -1265,7 +1271,7 @@ class MainWindow(QtWidgets.QMainWindow):
             #    return -1
             self.collectOut = None
 
-        return projFile, slice, z, step, wdir
+        return projFile, slice, y, step, wdir
 
 
     @pyqtSlot()
@@ -1285,8 +1291,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if (commres := self.common_rec(True)) is None:
             onStopMe()
             return -1
-        projFile, slice, z, step, _ = commres
-        dgln=len(f"{z-1}")
+        Script.run(f"mkdir -p \"tmp\"")
+        projFile, slice, y, step, _ = commres
+        dgln=len(f"{y-1}")
         testPrefix = f"tmp/SINO_{slice:0{dgln}d}"
 
         def saveSino(istr, ostr, role):
@@ -1301,9 +1308,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.ui.distance.value() > 0 and self.ui.d2b.value() != 0.0:
 
             phaseSubVol = f"{path.splitext(projFile)[0]}_phase.hdf"
-            if self.execScrProc( "Extracting phase subvolume.",
+            if self.execScrProc( "Extracting phase subvolume",
                                 f"ctas v2v -v {projFile}:/data -o {phaseSubVol}:/data" \
-                                f" -c {slice-64},0,{z-slice-64},0 ") :
+                                f" -c {slice-64},0,{y-slice-64},0 ") :
                 return onStopMe()
 
             if  self.ui.ringGroup.checkedButton() is self.ui.ringBeforePhase:
@@ -1358,7 +1365,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.reconstruct.setStyleSheet(warnStyle)
         self.ui.reconstruct.setText('Stop')
         def onStopMe():
-            self.execScrProc("Cleaning projections volume.",
+            self.execScrProc("Cleaning projections volume",
                              f"rm -f {projFile} && " \
                              f" if [ \"$(readlink clean.hdf)\" == \"{projFile}\" ]; then rm clean.hdf; fi")
             if not self.ui.recInMem.isChecked():
@@ -1395,7 +1402,7 @@ class MainWindow(QtWidgets.QMainWindow):
                              f" -m {self.ui.min.value()} -M {self.ui.max.value()}" )
         if self.ui.recInMem.isChecked() and not self.ui.recInMemOnly.isChecked():
             resPath = path.join(path.realpath(wdir),'rec.hdf')
-            self.execScrProc(f"Copying reconstruction to the storage into {resPath}.",
+            self.execScrProc(f"Copying reconstruction to the storage into {resPath}",
                              f"cp -f {self.inMemNamePrexix()}rec.hdf {resPath}")
 
         self.execScrRole("finish")
@@ -1422,9 +1429,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 
+
+
 signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+C to quit
 app = QApplication(sys.argv)
 my_mainWindow = MainWindow()
 my_mainWindow.show()
 exitSts=app.exec_()
+toRm = ""
+for rmfn in listOfCreatedMemFiles:
+    toRm += f" {rmfn}*"
+if toRm:
+    Script.run(f"rm -f {toRm} &")
 sys.exit(exitSts)

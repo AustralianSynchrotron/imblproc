@@ -286,6 +286,10 @@ fi
 rm .idxs*o .idxs*f 2> /dev/null
 
 
+if ! mkdir -p "tmp" ; then
+  echo "Could not create output sub-directory $(realpath "tmp"). Aborting."  >&2
+  exit 1
+fi
 tstfl="SAMPLE_T"
 tstParam=" --output tmp/${tstfl}@.tif --test $( [ -n "$testme" ] && echo "$testme" || echo "0" )"
 if $beverbose ; then
