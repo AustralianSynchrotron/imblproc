@@ -2156,9 +2156,6 @@
         </item>
         <item>
          <widget class="QPushButton" name="termini">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
           <property name="text">
            <string>Terminate all</string>
           </property>
@@ -2208,12 +2205,12 @@
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="ringGroup">
+  <buttongroup name="resGroup">
    <property name="saveInConfig" stdset="0">
     <number>1</number>
    </property>
   </buttongroup>
-  <buttongroup name="resGroup">
+  <buttongroup name="ringGroup">
    <property name="saveInConfig" stdset="0">
     <number>1</number>
    </property>

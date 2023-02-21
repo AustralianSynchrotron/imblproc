@@ -314,16 +314,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.on_individualIO_toggled()
         self.on_ctFilter_currentTextChanged()
         self.ui.inProgress.setVisible(False)
+        self.ui.termini.setVisible(False)
         self.ui.recInMemOnly.setVisible(False)
         self.ui.autoMin.setVisible(False) # feature not implemented
         self.ui.autoMax.setVisible(False) # feature not implemented
         self.ui.console.installEventFilter(ScrollToEnd(self.ui.console))
 
-        saveBtn = QtWidgets.QPushButton("Save", self)
+        saveBtn = QtWidgets.QPushButton("Save", self.ui)
         saveBtn.setFlat(True)
         saveBtn.clicked.connect(lambda : self.saveConfiguration(""))
         self.ui.statusBar().addPermanentWidget(saveBtn)
-        loadBtn = QtWidgets.QPushButton("Load", self)
+        loadBtn = QtWidgets.QPushButton("Load", self.ui)
         loadBtn.setFlat(True)
         loadBtn.clicked.connect(lambda : self.loadConfiguration(""))
         self.ui.statusBar().addPermanentWidget(loadBtn)
@@ -331,6 +332,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.doYst = False
         self.doZst = False
         self.doFnS = False
+        exceptFromDisabled = [ self.ui.tabWidget.tabBar(), *self.ui.tabConsole.findChildren(QtWidgets.QWidget)]
+        exceptMe = self.ui.tabConsole
+        while isinstance(exceptMe, QtWidgets.QWidget):
+            exceptFromDisabled.append(exceptMe)
+            exceptMe = exceptMe.parent()
+        self.disabledWidgetws = [ wdg for wdg in self.ui.findChildren(QtWidgets.QWidget)
+                                      if wdg not in exceptFromDisabled ]
+        self.wereDisabled = []
 
         confsWithOrder = { wdg: wdg.property(cfgProp) for wdg in self.ui.findChildren(QObject)
                                                       if wdg.property(cfgProp) is not None}
@@ -965,6 +974,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.maskPath.setStyleSheet("" if maskOK else warnStyle)
 
 
+    def enableWidgets(self, onlyMe=None):
+        enableAll = onlyMe is None
+        topDisable = not enableAll and self.ui.statusBar().isEnabled()
+        if topDisable:
+            self.wereDisabled = []
+        for wdg in self.disabledWidgetws :
+            if topDisable and not wdg.isEnabledTo(wdg.parent()):
+                self.wereDisabled.append(wdg)
+            wdg.setEnabled(enableAll and wdg not in self.wereDisabled)
+        while isinstance(onlyMe, QtWidgets.QWidget):
+            onlyMe.setEnabled(True)
+            onlyMe = onlyMe.parent()
+
+
     def common_stitch(self, wdir, actButton, ars=None):
         if self.scrProc.isRunning():
             self.scrProc.stop()
@@ -1008,11 +1031,6 @@ class MainWindow(QtWidgets.QMainWindow):
         if ars:
             prms += ars
 
-        disableWdgs = [ wdg for wdg in [*self.configObjects, *self.ui.findChildren(QtWidgets.QAbstractButton)]
-                            if wdg is not actButton and wdg is not self.ui.termini
-                               and not isinstance(wdg, QtWidgets.QButtonGroup) ]
-        for wdg in disableWdgs:
-            wdg.setEnabled(False)
         actText = actButton.text()
         actButton.setStyleSheet(warnStyle)
         actButton.setText('Stop')
@@ -1020,8 +1038,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.execScrRole("stitching")
         toRet = self.execScrProc("Stitching", execPath + "imbl-stitch.sh" + prms, wdir)
 
-        for wdg in disableWdgs:
-            wdg.setEnabled(True)
         actButton.setText(actText)
         actButton.setStyleSheet("")
         self.on_sameBin_toggled()  # to correct state of the yBin
@@ -1032,49 +1048,54 @@ class MainWindow(QtWidgets.QMainWindow):
     @pyqtSlot()
     def on_testProj_clicked(self):
         self.addToConsole()
+        self.enableWidgets(self.ui.testProj)
         self.collectOut = ""
         ars = f" -t {self.ui.testProjection.value()}"
         wdir = path.join(self.ui.outPath.text(),
                             self.ui.testSubDir.currentText())
         hasFailed = self.common_stitch(wdir, self.ui.testProj, ars)
-        lastLine = self.collectOut.splitlines()[-1]
+        lres = False if hasFailed else re.search('^([0-9]+) ([0-9]+) ([0-9]+) (.*)',
+                                                 self.collectOut.splitlines()[-1])
         self.collectOut = None
-        if hasFailed or not lastLine or not (lres := re.search('^([0-9]+) ([0-9]+) ([0-9]+) (.*)', lastLine)):
-            return
-        z, y, x, imageFile = lres.groups()
-        imageFile =  Script.run(f"cd {wdir} ; realpath {imageFile}")[1].strip()
-        self.addToConsole(f"Results of stitching projection {self.ui.testProjection.value()}"
-                          f" are in {imageFile}."
-                          f" Stitched volume will be {x}(w) x {y}(h) x {z}(d) pixels (at least "
-                          + '{0:,}'.format(4*int(x)*int(y)*int(z)).replace(',', ' ')+" B in size).")
-        if not self.ui.recAfterStitch.isChecked() or not self.ui.distance.value() or not self.ui.d2b.value():
-            return # no phase retruval
-        imcomp = path.splitext(imageFile.strip())
-        oImageFile = imcomp[0] + "_phase" + imcomp[1]
-        Script.run(f"cp -f {imageFile} {oImageFile} ")
-        if self.applyPhase(oImageFile):
-            Script.run(f"rm -f {oImageFile} ")
-        else:
-            self.addToConsole(f"Results of phase retrival are in {path.realpath(oImageFile)}.")
+        if not hasFailed and lres:
+            z, y, x, imageFile = lres.groups()
+            imageFile =  Script.run(f"cd {wdir} ; realpath {imageFile}")[1].strip()
+            self.addToConsole(f"Results of stitching projection {self.ui.testProjection.value()}"
+                              f" are in {imageFile}."
+                              f" Stitched volume will be {x}(w) x {y}(h) x {z}(d) pixels (at least "
+                              + '{0:,}'.format(4*int(x)*int(y)*int(z)).replace(',', ' ')+" B in size).")
+            if self.ui.recAfterStitch.isChecked() and self.ui.distance.value() and self.ui.d2b.value():
+                # phase proc
+                imcomp = path.splitext(imageFile.strip())
+                oImageFile = imcomp[0] + "_phase" + imcomp[1]
+                Script.run(f"cp -f {imageFile} {oImageFile} ")
+                if self.applyPhase(oImageFile):
+                    Script.run(f"rm -f {oImageFile} ")
+                else:
+                    self.addToConsole(f"Results of phase retrival are in {path.realpath(oImageFile)}.")
+        self.enableWidgets()
 
 
     @pyqtSlot()
     def onStitch(self):
         self.addToConsole()
+        actBut = self.ui.procThis if self.sender() is self.ui.procThis else self.ui.procAll
+        subOnStart = self.ui.testSubDir.currentIndex()
+        pidxs = [subOnStart] if actBut is self.ui.procThis else range(self.ui.testSubDir.count())
         ars = ( "" if self.ui.wipeStitched.isChecked() else " -w " ) \
             + ( "" if self.ui.saveStitched.isChecked() else " -s " )
-        subOnStart = self.ui.testSubDir.currentIndex()
-        pidxs = [subOnStart] if self.sender() is self.ui.procThis else \
-                range(self.ui.testSubDir.count())
         for curIdx in pidxs:
             self.ui.testSubDir.setCurrentIndex(curIdx)
             subdir = self.ui.testSubDir.currentText()
             wdir = path.join(self.ui.outPath.text(), subdir)
             self.saveConfiguration(path.join(wdir, self.configName))
-            self.common_stitch(wdir, self.ui.procAll, ars)
-            if self.ui.recAfterStitch.isChecked():
-                self.on_reconstruct_clicked()
+            self.enableWidgets(actBut)
+            if self.common_stitch(wdir, actBut, ars) :
+                break
+            if self.ui.recAfterStitch.isChecked() and self.on_reconstruct_clicked():
+                break
         self.ui.testSubDir.setCurrentIndex(subOnStart)
+        self.enableWidgets()
         self.update_reconstruction_state()
 
 
@@ -1277,6 +1298,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @pyqtSlot()
     def on_testSlice_clicked(self):
 
+        self.enableWidgets(self.ui.testSlice)
         self.addToConsole()
         self.ui.testSlice.setStyleSheet(warnStyle)
         self.ui.testSlice.setText('Stop')
@@ -1286,6 +1308,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 Script.run(f"rm {phaseSubVol}")
             self.ui.testSlice.setStyleSheet("")
             self.ui.testSlice.setText('Test slice')
+            self.enableWidgets()
             return self.scrProc.proc.exitCode()
 
         if (commres := self.common_rec(True)) is None:
@@ -1358,23 +1381,28 @@ class MainWindow(QtWidgets.QMainWindow):
     def on_reconstruct_clicked(self):
 
         self.addToConsole()
-        if (commres := self.common_rec(False)) is None:
-            return -1
-        projFile, _, _, step, wdir = commres
-
-        self.ui.reconstruct.setStyleSheet(warnStyle)
-        self.ui.reconstruct.setText('Stop')
+        recBut = self.ui.reconstruct
+        self.enableWidgets(recBut)
+        recBut.setStyleSheet(warnStyle)
+        recBut.setText('Stop')
         def onStopMe():
-            self.execScrProc("Cleaning projections volume",
-                             f"rm -f {projFile} && " \
-                             f" if [ \"$(readlink clean.hdf)\" == \"{projFile}\" ]; then rm clean.hdf; fi")
+            if path.exists(delMe := self.ui.prFile.text()):
+                self.execScrProc("Cleaning projections volume", f"rm -f {delMe} & " )
             if not self.ui.recInMem.isChecked():
                 self.on_wipe_clicked()
-            self.ui.reconstruct.setStyleSheet("")
-            self.ui.reconstruct.setText('Reconstruct')
-            self.update_reconstruction_state()
+            recBut.setStyleSheet("")
+            recBut.setText('Reconstruct')
+            if self.sender() is recBut:
+                self.enableWidgets()
+                self.update_reconstruction_state()
+            else:
+                recBut.setEnabled(False)
             return self.scrProc.proc.exitCode()
 
+        if (commres := self.common_rec(False)) is None:
+            onStopMe()
+            return -1
+        projFile, _, _, step, wdir = commres
         if self.ui.ringGroup.checkedButton() is self.ui.ringBeforePhase :
             if self.applyRing(f"{projFile}:/data:y") or self.applyPhase(f"{projFile}:/data"):
                 return onStopMe()
@@ -1416,7 +1444,7 @@ class MainWindow(QtWidgets.QMainWindow):
         isrunning = False
         for script in self.ui.findChildren(Script):
             isrunning = isrunning or script.isRunning()
-        self.ui.termini.setEnabled(isrunning)
+        self.ui.termini.setVisible(isrunning)
         self.ui.termini.setStyleSheet(warnStyle if isrunning else "")
 
 

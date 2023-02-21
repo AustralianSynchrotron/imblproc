@@ -359,8 +359,6 @@ if [ -n "$crFilePrefix" ] ; then # file is in memory
     if $volWipe ; then
       rm "$cleanPath"
     fi
-  else
-    ln -fs "$cleanPath" "$trgnm"
   fi
 fi
 
