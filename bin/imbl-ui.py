@@ -27,7 +27,7 @@ def onBrowse(wdg, desc, forFile=False):
 
 class Script(QObject) :
 
-    shell = os.environ['SHELL'] if os.environ['SHELL'] else "/bin/sh"
+    shell = os.environ['SHELL'] if 'SHELL' in os.environ else "/bin/sh"
     bodySet = pyqtSignal()
     finished = pyqtSignal(int)
     started = pyqtSignal()
