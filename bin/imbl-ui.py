@@ -612,8 +612,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def needReinitiation(self):
         self.ui.width.setValue(0)
         self.ui.hight.setValue(0)
-        for tabIdx in range(1, self.ui.tabWidget.count()-1):
-            self.ui.tabWidget.widget(tabIdx).setEnabled(False)
+        for wdg in (self.ui.testProj, self.ui.procThis, self.ui.procAll):
+            wdg.setEnabled(False)
+        self.ui.procAll.setText("(Re)initiate first")
 
 
     def update_initiate_state(self):
@@ -885,8 +886,9 @@ class MainWindow(QtWidgets.QMainWindow):
         setMyMax(self.ui.minProj, pjs)
         setMyMax(self.ui.maxProj, pjs)
 
-        for tabIdx in range(1, self.ui.tabWidget.count()-1):
-            self.ui.tabWidget.widget(tabIdx).setEnabled(True)
+        for wdg in (self.ui.testProj, self.ui.procThis, self.ui.procAll):
+            wdg.setEnabled(True)
+        self.ui.procAll.setText("Stitch All")
         self.update_reconstruction_state()
 
 
@@ -895,6 +897,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.scrProc.isRunning():
             self.scrProc.stop()
             return
+
+        self.addToConsole()
 
         opath = self.ui.outPath.text()
         command = execPath + "imbl-init.sh "
