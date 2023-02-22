@@ -262,6 +262,7 @@ def hdf5shape(filename, dataset):
         return None, None, None
 
 
+
 class ScrollToEnd(QObject):
     def __init__(self, parent):
         super(ScrollToEnd, self).__init__(parent)
@@ -275,6 +276,7 @@ class ScrollToEnd(QObject):
         if isinstance(self.parent(), QtWidgets.QTextBrowser):
             scrollBar = self.parent().verticalScrollBar()
             scrollBar.setValue(scrollBar.maximum())
+
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -1092,6 +1094,15 @@ class MainWindow(QtWidgets.QMainWindow):
             self.enableWidgets(actBut)
             if self.common_stitch(wdir, actBut, ars) :
                 break
+            projFile = path.realpath(self.ui.prFile.text())
+            if not path.exists(projFile):
+                self.addErrToConsole(f"Can't find stitched projections in {projFile}.")
+                break
+            dgln=len(f"{self.ui.maxProj.value()-1}")
+            for ridx in 0, 1, 2, 3, 4:
+                idx = self.ui.minProj.value() + ridx * (self.ui.maxProj.value() - self.ui.minProj.value() - 1) / 4
+                idx = int(idx)
+                Script.run(f"ctas v2v {projFile}:/data:{idx} -o {wdir}/clean_{idx:0{dgln}d}.tif")
             if self.ui.recAfterStitch.isChecked() and self.on_reconstruct_clicked():
                 break
         self.ui.testSubDir.setCurrentIndex(subOnStart)
