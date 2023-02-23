@@ -3,10 +3,17 @@
 import sys, os, re, psutil, time, signal
 from os import path
 
-from PyQt5 import QtWidgets, QtCore, QtGui
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, QSettings, QProcess, QEventLoop, QObject, QTimer
-from PyQt5.QtWidgets import QFileDialog, QApplication
-from PyQt5.uic import loadUi
+
+from PySide2 import QtWidgets, QtCore
+from PySide2.QtWidgets import QApplication, QFileDialog
+from PySide2.QtCore import Signal, Slot, QFile, QSettings, QProcess, QEventLoop, QObject, QTimer
+from PySide2.QtUiTools import QUiLoader
+
+
+#from PyQt5 import QtWidgets, QtCore, QtGui
+#from PyQt5.QtCore import pyqtSlot, pyqtSignal, QSettings, QProcess, QEventLoop, QObject, QTimer
+#from PyQt5.QtWidgets import QFileDialog, QApplication
+#from PyQt5.uic import loadUi
 
 
 execPath = path.dirname(path.realpath(__file__)) + path.sep
@@ -28,15 +35,15 @@ def onBrowse(wdg, desc, forFile=False):
 class Script(QObject) :
 
     shell = os.environ['SHELL'] if 'SHELL' in os.environ else "/bin/sh"
-    bodySet = pyqtSignal()
-    finished = pyqtSignal(int)
-    started = pyqtSignal()
+    bodySet = Signal()
+    finished = Signal(int)
+    started = Signal()
     scriptPrefix = "script_"
     procPrefix = "proc_"
 
 
     def __init__(self, parent=None):
-        super(QObject, self).__init__(parent)
+        super(Script, self).__init__(parent)
         self.fileExec = QtCore.QTemporaryFile()
         if not self.fileExec.open():
             print("ERROR! Unable to open temporary file.")
@@ -57,13 +64,16 @@ class Script(QObject) :
         return self.objectName().removeprefix(self.scriptPrefix)
 
 
-    @pyqtSlot(str)
+    @Slot(str)
     def setBody(self, body):
         if not self.fileExec.isOpen() or self.isRunning():
             return
         self.fileExec.resize(0)
-        self.fileExec.write(body.strip().encode())
-        #self.fileExec.write(" $@\n".encode())
+        rbody=body.strip()
+        if not rbody:
+            return
+        rbody += "\n"
+        self.fileExec.write(rbody.encode())
         self.fileExec.flush()
         self.bodySet.emit()
 
@@ -75,7 +85,7 @@ class Script(QObject) :
         return self.fileExec.readAll().data().decode()
 
 
-    @pyqtSlot()
+    @Slot()
     def onState(self):
         state = self.proc.state()
         if state == QProcess.NotRunning:
@@ -90,7 +100,7 @@ class Script(QObject) :
         return self.proc.state() != QProcess.NotRunning
 
 
-    @pyqtSlot(list)
+    @Slot(list)
     def start(self, par=None):
         if self.isRunning():
             return False
@@ -114,7 +124,7 @@ class Script(QObject) :
             return self.isRunning()
 
 
-    @pyqtSlot(list)
+    @Slot(list)
     def exec(self, par=None):
         return self.waitStop() if self.start(par) else None
 
@@ -135,7 +145,7 @@ class Script(QObject) :
         q = QEventLoop()
         self.finished.connect(q.quit)
         if self.isRunning():
-            q.exec()
+            q.exec_()
         return self.proc.exitCode()
 
 
@@ -164,12 +174,16 @@ class Script(QObject) :
 
 class UScript(QtWidgets.QWidget) :
 
-    editingFinished = pyqtSignal()
+    editingFinished = Signal()
     uscriptPrefix = "uscript_"
 
     def __init__(self, parent=None):
-        super(QtWidgets.QWidget, self).__init__(parent)
-        self.ui = loadUi(execPath + '../share/imblproc/script.ui', self)
+        #super(QtWidgets.QWidget, self).__init__(parent)
+        #self.ui = loadUi(execPath + '../share/imblproc/script.ui', self)
+        super(UScript, self).__init__(parent)
+        self.ui = QUiLoader().load(execPath + '../share/imblproc/script.ui', self)
+        QtCore.QMetaObject.connectSlotsByName(self)
+
         self.script = Script(self)
         self.ui.body.textChanged.connect(self.script.setBody)
         self.ui.browse.clicked.connect(lambda : onBrowse(self.ui.body, "Command", True))
@@ -190,14 +204,14 @@ class UScript(QtWidgets.QWidget) :
         return self.objectName().removeprefix(self.uscriptPrefix)
 
 
-    @pyqtSlot()
+    @Slot()
     def onStartStop(self):
         if self.script.isRunning():
             self.script.stop()
         else:
             self.script.start()
 
-    @pyqtSlot()
+    @Slot()
     def updateState(self):
         isrunning = self.script.isRunning()
         self.ui.browse.setEnabled(not isrunning)
@@ -206,7 +220,7 @@ class UScript(QtWidgets.QWidget) :
         self.ui.execute.setStyleSheet( "color: rgb(255, 0, 0);" if isrunning or self.script.proc.exitCode() else "")
 
 
-    @pyqtSlot()
+    @Slot()
     def updateBody(self):
         isGood = not self.script.evaluate()
         self.ui.body.setStyleSheet( "" if isGood else "color: rgb(255, 0, 0);")
@@ -239,7 +253,7 @@ class ColumnResizer(QObject):
                 self.addWidget(wdg)
         self.columnsInfo[layout] = column
 
-    @pyqtSlot()
+    @Slot()
     def updateWidth(self):
         width = 0
         for wdg in self.widgets:
@@ -255,7 +269,7 @@ class ColumnResizer(QObject):
 
 
 def hdf5shape(filename, dataset):
-    _, outed, _ = Script.run(f"h5ls {filename}/{dataset}")
+    outed = Script.run(f"h5ls {filename}/{dataset}")[1]
     if lres := re.search('.*{([0-9]+), ([0-9]+), ([0-9]+)}.*', outed) :
         return int(lres.group(3)), int(lres.group(2)), int(lres.group(1))
     else:
@@ -279,7 +293,17 @@ class ScrollToEnd(QObject):
 
 
 
-class MainWindow(QtWidgets.QMainWindow):
+class CloseApp(QObject):
+    def __init__(self, parent):
+        super(CloseApp, self).__init__(parent)
+    def eventFilter(self, obj, event):
+        if event.type() == QtCore.QEvent.Close:
+            app.quit()
+        return False
+
+
+
+class MainWindow(QtWidgets.QWidget):
 
     configName = ".imbl-ui"
     etcConfigName = path.join(path.expanduser("~"), configName)
@@ -289,16 +313,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
         super(MainWindow, self).__init__()
-        cfgProp="saveInConfig" # objects with this property (containing int read order) will be saved in config
-        self.ui = loadUi(execPath + '../share/imblproc/imbl-ui.ui', self)
+        #self.ui = loadUi(execPath + '../share/imblproc/imbl-ui.ui', self)
+        self.ui = QUiLoader(self).load(execPath + '../share/imblproc/imbl-ui.ui', self)
+        QtCore.QMetaObject.connectSlotsByName(self)
+        self.ui.installEventFilter(CloseApp(self.ui))
 
-        self.scrProc = Script(self)
+        cfgProp="saveInConfig" # objects with this property (containing int read order) will be saved in config
+        self.scrProc = Script(self.ui)
         for place in self.ui.findChildren(QtWidgets.QLayout, QtCore.QRegExp(self.placePrefix+"\w+")):
             role = place.objectName().removeprefix(self.placePrefix)
-            scrw = UScript(self)
+            scrw = UScript(self.ui)
             scrw.setRole(role)
             scrw.setProperty(cfgProp, 2)
-            place.addWidget(scrw)
+            place.addWidget(scrw.ui)
         #self.cResizer = ColumnResizer(self)
         #self.cResizer.addWidgetsFromLayout(self.ui.tabRec.layout(), 4)
         #for script in self.ui.tabRec.findChildren(UScript):
@@ -343,25 +370,25 @@ class MainWindow(QtWidgets.QMainWindow):
                                       if wdg not in exceptFromDisabled ]
         self.wereDisabled = []
 
-        confsWithOrder = { wdg: wdg.property(cfgProp) for wdg in self.ui.findChildren(QObject)
-                                                      if wdg.property(cfgProp) is not None}
+        confsWithOrder = { obj: obj.property(cfgProp) for obj in self.ui.findChildren(QObject)
+                                                      if obj.property(cfgProp) is not None}
         self.configObjects = [ pr[0] for pr in sorted(confsWithOrder.items(), key=lambda x:x[1]) ]
         # dynamic property of the QButtonGroup is not read from ui file; have to add them manually:
         self.configObjects.extend([grp for grp in self.ui.findChildren(QtWidgets.QButtonGroup)
                                        if not grp in self.configObjects])
         for swdg in self.configObjects:
             if isinstance(swdg, QtWidgets.QLineEdit):
-                swdg.textChanged.connect(self.saveConfiguration)
+                swdg.textChanged.connect(lambda : self.saveConfiguration())
             elif isinstance(swdg, QtWidgets.QCheckBox):
-                swdg.toggled.connect(self.saveConfiguration)
+                swdg.toggled.connect(lambda : self.saveConfiguration())
             elif isinstance(swdg, QtWidgets.QAbstractSpinBox):
-                swdg.valueChanged.connect(self.saveConfiguration)
+                swdg.valueChanged.connect(lambda : self.saveConfiguration())
             elif isinstance(swdg, QtWidgets.QComboBox):
-                swdg.currentTextChanged.connect(self.saveConfiguration)
+                swdg.currentTextChanged.connect(lambda : self.saveConfiguration())
             elif isinstance(swdg, UScript):
-                swdg.editingFinished.connect(self.saveConfiguration)
+                swdg.editingFinished.connect(lambda : self.saveConfiguration())
             elif isinstance(swdg, QtWidgets.QButtonGroup):
-                swdg.buttonClicked.connect(self.saveConfiguration)
+                swdg.buttonClicked.connect(lambda : self.saveConfiguration())
 
         # connect signals which are not connected by name
         self.ui.notFnS.clicked.connect(self.needReinitiation)
@@ -380,6 +407,7 @@ class MainWindow(QtWidgets.QMainWindow):
             QApplication.clipboard().setText(path.realpath(self.ui.prFile.text())))
 
         QtCore.QTimer.singleShot(100, self.loadConfiguration)
+        self.ui.show()
 
 
     def execScrRole(self, role):
@@ -397,7 +425,7 @@ class MainWindow(QtWidgets.QMainWindow):
         return self.scrProc.exec()
 
 
-    @pyqtSlot()
+    @Slot()
     def saveConfiguration(self, fileName=etcConfigName):
 
         if self.amLoading:
@@ -432,7 +460,7 @@ class MainWindow(QtWidgets.QMainWindow):
             config.setValue(swdg.objectName(), valToSave(swdg))
 
 
-    @pyqtSlot()
+    @Slot()
     def loadConfiguration(self, fileName=etcConfigName):
 
         if not fileName:
@@ -512,7 +540,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.addToConsole(text, QtCore.Qt.red)
 
 
-    @pyqtSlot()
+    #@Slot() # self.sender() is None with this decorator
     def parseScriptOut(self):
 
         proc = self.sender()
@@ -584,7 +612,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.addErrToConsole(addToErr)
 
 
-    @pyqtSlot()
+    #@Slot() # self.sender() is None with this decorator
     def onScriptStarted(self):
         self.counter = 0
         script = self.sender()
@@ -597,7 +625,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.addToConsole(f"{script.body()}", QtCore.Qt.green)
 
 
-    @pyqtSlot(int)
+    #@Slot(int) # self.sender() is None with this decorator
     def onScriptFinished(self):
         self.ui.inProgress.setVisible(False)
         script = self.sender()
@@ -608,10 +636,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.addErrToConsole(f"WARNING! Exit code {exitCode} of script {role} indicates error.")
 
 
-    @pyqtSlot()
+    @Slot()
     def needReinitiation(self):
-        self.ui.width.setValue(0)
-        self.ui.hight.setValue(0)
+        self.ui.iwidth.setValue(0)
+        self.ui.ihight.setValue(0)
         for wdg in (self.ui.testProj, self.ui.procThis, self.ui.procAll):
             wdg.setEnabled(False)
         self.ui.procAll.setText("(Re)initiate first")
@@ -623,8 +651,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                      not self.ui.individualIO.isChecked()))
 
 
-    @pyqtSlot()
-    @pyqtSlot(bool)
+    @Slot()
     def on_individualIO_toggled(self):
         ind = self.ui.individualIO.isChecked()
         self.ui.expPath.setVisible(not ind)
@@ -640,14 +667,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.on_outPath_textChanged()
 
 
-    @pyqtSlot()
+    @Slot()
     def on_expBrowse_clicked(self):
         onBrowse(self.ui.expPath, "Experiment directory")
 
 
-    @pyqtSlot(bool)
-    @pyqtSlot(str)
-    def on_expPath_textChanged(self):
+    @Slot(str)
+    def on_expPath_textChanged(self, _=None):
 
         if self.ui.individualIO.isChecked():
             return
@@ -683,8 +709,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.expSample.setEnabled(True)
 
 
-    @pyqtSlot(str)
-    def on_expSample_currentTextChanged(self):
+    @Slot(str)
+    def on_expSample_currentTextChanged(self, _=None):
         if self.ui.individualIO.isChecked() or self.ui.expSample.styleSheet():
             return
         epath = self.ui.expPath.text()
@@ -693,15 +719,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.outPath.setText(path.join(epath, 'output', sample))
 
 
-    @pyqtSlot()
+    @Slot()
     def on_inBrowse_clicked(self):
         onBrowse(self.ui.inPath, "Sample directory")
 
 
-    @pyqtSlot()
-    @pyqtSlot(str)
-    @pyqtSlot(bool)
-    def on_inPath_textChanged(self):
+    #@Slot()
+    @Slot(str)
+    def on_inPath_textChanged(self, _=None):
 
         QtCore.QCoreApplication.processEvents()  # to update ui.inPath
         self.needReinitiation()
@@ -726,8 +751,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 break
             attempt += 1
         if not cfgName:  # one more attempt for little earlier code
-            cfgName = os.popen('ls ' + ipath + os.sep + 'acquisition.*conf*' +
-                               ' | sort -V | tail -n 1').read().strip("\n")
+            cfgName = Script.run(f"ls {ipath}/acquisition.*conf* | sort -V | tail -n 1")[1].strip("\n")
         if not cfgName:
             self.ui.noConfigLabel.show()
             return
@@ -760,15 +784,15 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.ui.excludes.isVisible() and self.ui.excludes.text():
                 for grep in self.ui.excludes.text().split():
                     grepsPps += f" | grep -v -e '{grep}' "
-            labels = os.popen('cat ' + path.join(ipath, "acquisition*log")
-                                 + ' | ' + execPath + 'imbl-log.py'
-                                 + ' | tail -n +3 | cut -d\' \' -f2 | cut -d\':\' -f 1 '
-                                 + grepsPps).read().strip("\n").replace("\n", " ")
-            logInfo = os.popen('cat ' + path.join(ipath, "acquisition*log")
-                                + ' | ' + execPath + 'imbl-log.py ' + labels
-                                + ' | grep \'# Common\' '
-                                + ' | cut -d\' \' -f 4- ' ) \
-                            .read().strip("\n").split()
+            labels = Script.run(f"cat {path.join(ipath,'acquisition*log')} "
+                                f" | {path.join(execPath,'imbl-log.py')} "
+                                 " | tail -n +3 | cut -d' ' -f2 | cut -d':' -f 1"
+                                f" {grepsPps}") \
+                            [1].strip("\n").replace("\n", " ")
+            logInfo = Script.run(f"cat {path.join(ipath, 'acquisition*log')} "
+                                 f" | {path.join(execPath,'imbl-log.py')} {labels} "
+                                  " | grep '# Common' | cut -d\' \' -f 4- " ) \
+                            [1].strip("\n").split()
             if len(logInfo) == 3 :
                 fromlog = True
 
@@ -783,15 +807,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.update_initiate_state()
 
 
-    @pyqtSlot()
+    @Slot()
     def on_outBrowse_clicked(self):
         onBrowse(self.ui.outPath, "Output directory")
 
 
-    @pyqtSlot()
-    @pyqtSlot(str)
-    def on_outPath_textChanged(self):
+    @Slot()
+    @Slot(str)
+    def on_outPath_textChanged(self, _=None):
 
+        QtCore.QCoreApplication.processEvents()  # to update ui.outPath
         self.update_initiate_state()
         self.needReinitiation()
 
@@ -850,8 +875,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.iStLbl.setVisible(self.doZst)
         self.ui.iStWdg.setVisible(self.doZst)
 
-        self.ui.width.setValue(width)
-        self.ui.hight.setValue(hight)
+        self.ui.iwidth.setValue(width)
+        self.ui.ihight.setValue(hight)
 
         def setMyMax(wdg, mymax):
             if wdg.maximum() < mymax: wdg.setMaximum(mymax)
@@ -892,7 +917,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.update_reconstruction_state()
 
 
-    @pyqtSlot()
+    @Slot()
     def on_initiate_clicked(self):
         if self.scrProc.isRunning():
             self.scrProc.stop()
@@ -917,10 +942,11 @@ class MainWindow(QtWidgets.QMainWindow):
             grepsPps = ""
             for grep in self.ui.excludes.text().split():
                 grepsPps += f" | grep -v -e '{grep}' "
-            labels = os.popen('cat ' + path.join(self.ui.inPath.text(), "acquisition*log")
-                                 + ' | ' + execPath + 'imbl-log.py'
-                                 + ' | tail -n +3 | cut -d\' \' -f2 | cut -d\':\' -f 1 '
-                                 + grepsPps).read().strip("\n").replace("\n", " ")
+            labels = Script.run(f"cat {path.join(self.ui.inPath.text(), 'acquisition*log')} "
+                                f" | {path.join(execPath,'imbl-log.py')} "
+                                 " | tail -n +3 | cut -d' ' -f2 | cut -d':' -f 1 "
+                                f" {grepsPps} " ) \
+                            [1].strip("\n").replace("\n", " ")
             command += f" -L \"{labels}\" "
         command += f" -o \"{opath}\" "
         command += f" \"{self.ui.inPath.text()}\" "
@@ -944,7 +970,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.procAll.click()
 
 
-    @pyqtSlot(bool)
+    @Slot(bool)
     def on_sameBin_toggled(self):
         if (self.ui.sameBin.isChecked()):
             self.ui.yBin.setValue(self.ui.xBin.value())
@@ -957,12 +983,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.yBin.setEnabled(not self.ui.sameBin.isChecked())
 
 
-    @pyqtSlot()
+    @Slot()
     def on_maskBrowse_clicked(self):
         onBrowse(self.ui.maskPath, "Mask image.", True)
 
 
-    @pyqtSlot(int)
+    @Slot(int)
     def onMinMaxProjectionChanged(self):
         minProj = self.ui.minProj.value()
         maxProj = self.ui.maxProj.value()
@@ -973,9 +999,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.maxProj.setStyleSheet(nstl)
 
 
-    @pyqtSlot()
-    @pyqtSlot(str)
-    def on_maskPath_textChanged(self):
+    @Slot()
+    @Slot(str)
+    def on_maskPath_textChanged(self, _=None):
         maskOK = path.exists(self.ui.maskPath.text()) or not len(self.ui.maskPath.text().strip())
         self.ui.maskPath.setStyleSheet("" if maskOK else warnStyle)
 
@@ -1051,7 +1077,7 @@ class MainWindow(QtWidgets.QMainWindow):
         return toRet
 
 
-    @pyqtSlot()
+    @Slot()
     def on_testProj_clicked(self):
         self.addToConsole()
         self.enableWidgets(self.ui.testProj)
@@ -1082,7 +1108,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.enableWidgets()
 
 
-    @pyqtSlot()
+    #@Slot() # self.sender() is None with this decorator
     def onStitch(self):
         self.addToConsole()
         actBut = self.ui.procThis if self.sender() is self.ui.procThis else self.ui.procAll
@@ -1164,25 +1190,25 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.ringOrder.setVisible(vis)
 
 
-    @pyqtSlot(int)
-    def on_distance_valueChanged(self):
+    @Slot(int)
+    def on_distance_valueChanged(self, _=None):
         phasevis = self.ui.distance.value() > 0
         self.ui.d2b.setVisible(phasevis)
         self.ui.d2bLabel.setVisible(phasevis)
         self.updateRingOrderVisibility()
 
 
-    @pyqtSlot(float)
+    @Slot(float)
     def on_d2b_valueChanged(self):
         self.updateRingOrderVisibility()
 
 
-    @pyqtSlot(int)
+    @Slot(int)
     def on_ring_valueChanged(self):
         self.updateRingOrderVisibility()
 
 
-    @pyqtSlot(str)
+    @Slot(str)
     def on_ctFilter_currentTextChanged(self):
         if self.ui.ctFilter.currentText() == "Kaiser":
             self.ui.ctFilterParam.setVisible(True)
@@ -1200,7 +1226,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.filterParamLabel.setVisible(False)
 
 
-    @pyqtSlot()
+    @Slot()
     def on_wipe_clicked(self):
         self.execScrProc("Wiping memory", f"rm -rf {self.inMemNamePrexix()}*")
         self.update_reconstruction_state()
@@ -1267,7 +1293,7 @@ class MainWindow(QtWidgets.QMainWindow):
         step = 0
         try:
             myInitFile = path.join(wdir,initFileName)
-            _, outed, _ = Script.run(f"cat {myInitFile} | grep 'step=' | cut -d'=' -f 2 ")
+            outed = Script.run(f"cat {myInitFile} | grep 'step=' | cut -d'=' -f 2 ")[1]
             step = abs(float(outed))
             if step == 0:
                 raise Exception("Step is 0.")
@@ -1310,7 +1336,7 @@ class MainWindow(QtWidgets.QMainWindow):
         return projFile, slice, y, step, wdir
 
 
-    @pyqtSlot()
+    @Slot()
     def on_testSlice_clicked(self):
 
         self.enableWidgets(self.ui.testSlice)
@@ -1392,7 +1418,7 @@ class MainWindow(QtWidgets.QMainWindow):
         return onStopMe()
 
 
-    @pyqtSlot()
+    #@Slot() # self.sender() is None with this decorator
     def on_reconstruct_clicked(self):
 
         self.addToConsole()
@@ -1454,7 +1480,7 @@ class MainWindow(QtWidgets.QMainWindow):
         return onStopMe()
 
 
-    @pyqtSlot()
+    @Slot()
     def update_termini_state(self):
         isrunning = False
         for script in self.ui.findChildren(Script):
@@ -1463,7 +1489,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.termini.setStyleSheet(warnStyle if isrunning else "")
 
 
-    @pyqtSlot()
+    @Slot()
     def on_termini_clicked(self):
         for script in self.ui.findChildren(Script):
             script.stop()
@@ -1475,9 +1501,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+C to quit
+QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
 app = QApplication(sys.argv)
+app.setQuitOnLastWindowClosed(False) # without it app quits on closing dialogues
 my_mainWindow = MainWindow()
-my_mainWindow.show()
 exitSts=app.exec_()
 toRm = ""
 for rmfn in listOfCreatedMemFiles:
