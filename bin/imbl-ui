@@ -1,6 +1,19 @@
 #!/bin/bash
+
 myloc="$(dirname "$(realpath "$0")" )"
-$myloc/../share/imblproc/imbl-ui.py &
-procpid="$!"
-wait $procpid
-echo rm -rf /dev/shm/imblproc.${procpid}_* 2> /dev/null &
+uiexec="$(realpath "$myloc/../share/imblproc/imbl-ui.py")"
+rmlist="FILES_TO_REMOVE"
+export PYTHONUNBUFFERED="x"
+export InMemIndicator="In-memory file to wipe: "
+"$uiexec" \
+| tee >( grep "$InMemIndicator" --line-buffered | sed -u "s_${InMemIndicator}__g"  > "$rmlist" ) \
+| grep -v "$InMemIndicator" --line-buffered
+
+cat "$rmlist" | sort | uniq |
+while read flToRm ; do
+    if [ -n "$flToRm" ] ; then
+        rm "${flToRm}"* 2> /dev/null &
+    fi
+done
+rm "$rmlist"
+

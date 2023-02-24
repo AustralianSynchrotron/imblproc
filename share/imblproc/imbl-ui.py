@@ -9,9 +9,10 @@ from PyQt5.QtWidgets import QFileDialog, QApplication
 from PyQt5.uic import loadUi
 
 
-execPath = path.dirname(path.realpath(__file__)) + path.sep
+myPath = path.dirname(path.realpath(__file__)) + path.sep
+execPath = path.realpath(path.join(myPath, "..", "..", "bin") )
+uiPath = myPath
 #uiPath = path.join(execPath, "..", "share", "imblproc")
-uiPath = execPath
 warnStyle = 'background-color: rgba(255, 0, 0, 128);'
 initFileName = '.initstitch'
 listOfCreatedMemFiles = []
@@ -907,7 +908,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.addToConsole()
 
         opath = self.ui.outPath.text()
-        command = execPath + "imbl-init.sh "
+        command = path.join(execPath, "imbl-init.sh")
         command += " -v "
         if self.ui.notFnS.isChecked():
             command += " -f "
@@ -1002,9 +1003,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def common_stitch(self, wdir, actButton, ars=None):
-        if self.scrProc.isRunning():
-            self.scrProc.stop()
-            return -1
 
         prms = " "
         if self.doYst or self.doZst:
@@ -1049,7 +1047,7 @@ class MainWindow(QtWidgets.QMainWindow):
         actButton.setText('Stop')
 
         self.execScrRole("stitching")
-        toRet = self.execScrProc("Stitching", execPath + "imbl-stitch.sh" + prms, wdir)
+        toRet = self.execScrProc("Stitching", path.join(execPath, "imbl-stitch.sh") + prms, wdir)
 
         actButton.setText(actText)
         actButton.setStyleSheet("")
@@ -1060,6 +1058,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def on_testProj_clicked(self):
+        if self.scrProc.isRunning():
+            self.scrProc.stop()
+            return -1
+
         self.addToConsole()
         self.enableWidgets(self.ui.testProj)
         self.collectOut = ""
@@ -1067,8 +1069,8 @@ class MainWindow(QtWidgets.QMainWindow):
         wdir = path.join(self.ui.outPath.text(),
                             self.ui.testSubDir.currentText())
         hasFailed = self.common_stitch(wdir, self.ui.testProj, ars)
-        lres = False if hasFailed else re.search('^([0-9]+) ([0-9]+) ([0-9]+) (.*)',
-                                                 self.collectOut.splitlines()[-1])
+        lres = False if hasFailed else \
+            re.search('^([0-9]+) ([0-9]+) ([0-9]+) (.*)', self.collectOut.splitlines()[-1])
         self.collectOut = None
         if not hasFailed and lres:
             z, y, x, imageFile = lres.groups()
@@ -1091,6 +1093,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def onStitch(self):
+        if self.scrProc.isRunning():
+            self.scrProc.stop()
+            return -1
+
         self.addToConsole()
         actBut = self.ui.procThis if self.sender() is self.ui.procThis else self.ui.procAll
         subOnStart = self.ui.testSubDir.currentIndex()
@@ -1105,6 +1111,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.enableWidgets(actBut)
             if self.common_stitch(wdir, actBut, ars) :
                 break
+            self.update_reconstruction_state()
             projFile = path.realpath(self.ui.prFile.text())
             if not path.exists(projFile):
                 self.addErrToConsole(f"Can't find stitched projections in {projFile}.")
@@ -1125,7 +1132,9 @@ class MainWindow(QtWidgets.QMainWindow):
         global listOfCreatedMemFiles
         cOpath = path.join(self.ui.outPath.text(), self.ui.testSubDir.currentText())
         cOpath = path.realpath(cOpath)
-        toRet = f"/dev/shm/imblproc{os.getpid()}_{cOpath.replace('/','_')}_"
+        toRet = f"/dev/shm/imblproc_{cOpath.replace('/','_')}_"
+        if 'InMemIndicator' in os.environ:
+            print(f"{os.environ['InMemIndicator']}{toRet}")
         if toRet not in listOfCreatedMemFiles:
             listOfCreatedMemFiles.append(toRet)
         return toRet
@@ -1254,9 +1263,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def common_rec(self, isTest):
-        if self.scrProc.isRunning():
-            self.scrProc.stop()
-            return None
 
         wdir = path.join(self.ui.outPath.text(), self.ui.testSubDir.currentText())
         self.scrProc.proc.setWorkingDirectory(wdir)
@@ -1319,19 +1325,26 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def on_testSlice_clicked(self):
+        if self.scrProc.isRunning():
+            self.scrProc.stop()
+            return -1
 
         self.enableWidgets(self.ui.testSlice)
         self.addToConsole()
         self.ui.testSlice.setStyleSheet(warnStyle)
         self.ui.testSlice.setText('Stop')
         phaseSubVol = None
-        def onStopMe():
+        def onStopMe(errMsg=None):
             if phaseSubVol:
                 Script.run(f"rm {phaseSubVol}")
             self.ui.testSlice.setStyleSheet("")
             self.ui.testSlice.setText('Test slice')
             self.enableWidgets()
-            return self.scrProc.proc.exitCode()
+            if errMsg:
+                self.addErrToConsole(errMsg)
+                return -1
+            else:
+                return self.scrProc.proc.exitCode()
 
         if (commres := self.common_rec(True)) is None:
             onStopMe()
@@ -1401,13 +1414,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def on_reconstruct_clicked(self):
+        if self.scrProc.isRunning():
+            self.scrProc.stop()
+            return -1
 
         self.addToConsole()
         recBut = self.ui.reconstruct
         self.enableWidgets(recBut)
         recBut.setStyleSheet(warnStyle)
         recBut.setText('Stop')
-        def onStopMe():
+        def onStopMe(errMsg=None):
             if path.exists(delMe := self.ui.prFile.text()):
                 self.execScrProc("Cleaning projections volume", f"rm -f {delMe} & " )
             if not self.ui.recInMem.isChecked():
@@ -1419,7 +1435,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.update_reconstruction_state()
             else:
                 recBut.setEnabled(False)
-            return self.scrProc.proc.exitCode()
+            if errMsg:
+                self.addErrToConsole(errMsg)
+                return -1
+            else:
+                return self.scrProc.proc.exitCode()
 
         if (commres := self.common_rec(False)) is None:
             onStopMe()
@@ -1434,8 +1454,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
         outPath = ""
         if self.ui.recInMem.isChecked():
-            outPath = self.inMemNamePrexix() + "rec.hdf:/data"
+            x, y, z = hdf5shape(projFile, "data")
+            if not (x and y and z):
+                return onStopMe(f"Failed to read sizes of projecion file {projFile}")
+            outFile = self.inMemNamePrexix() + "rec.hdf"
+            outPath = outFile + ":/data"
             self.addToConsole(f"Reconstructing into memory: {outPath}.")
+            if self.execScrProc(f"Creating file for reconstructed volume.",
+                                f"h5import /dev/random -d {x},{x},{y}  -p /data -t FP -s 32 -o {outFile}" ):
+                return onStopMe(f"Failed to create reconstructed volume in {outPath}."
+                                 "Probably not enough memory. Try to reconstruct directly into storage.")
         elif self.ui.resTIFF.isChecked():
             odir = "rec8int" if self.ui.resToInt.isChecked() else "rec"
             Script.run(f"mkdir -p {path.join(wdir,odir)} ")
