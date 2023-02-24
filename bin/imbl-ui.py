@@ -651,7 +651,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot(bool)
     @pyqtSlot(str)
-    def on_expPath_textChanged(self):
+    def on_expPath_textChanged(self, _=None):
 
         if self.ui.individualIO.isChecked():
             return
@@ -688,7 +688,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     @pyqtSlot(str)
-    def on_expSample_currentTextChanged(self):
+    def on_expSample_currentTextChanged(self, _=None):
         if self.ui.individualIO.isChecked() or self.ui.expSample.styleSheet():
             return
         epath = self.ui.expPath.text()
@@ -705,7 +705,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @pyqtSlot()
     @pyqtSlot(str)
     @pyqtSlot(bool)
-    def on_inPath_textChanged(self):
+    def on_inPath_textChanged(self, _=None):
 
         QtCore.QCoreApplication.processEvents()  # to update ui.inPath
         self.needReinitiation()
@@ -730,8 +730,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 break
             attempt += 1
         if not cfgName:  # one more attempt for little earlier code
-            cfgName = os.popen('ls ' + ipath + os.sep + 'acquisition.*conf*' +
-                               ' | sort -V | tail -n 1').read().strip("\n")
+            cfgName = Script.run(f"ls {ipath}/acquisition.*conf* | sort -V | tail -n 1")[1].strip("\n")
         if not cfgName:
             self.ui.noConfigLabel.show()
             return
@@ -764,15 +763,15 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.ui.excludes.isVisible() and self.ui.excludes.text():
                 for grep in self.ui.excludes.text().split():
                     grepsPps += f" | grep -v -e '{grep}' "
-            labels = os.popen('cat ' + path.join(ipath, "acquisition*log")
-                                 + ' | ' + execPath + 'imbl-log.py'
-                                 + ' | tail -n +3 | cut -d\' \' -f2 | cut -d\':\' -f 1 '
-                                 + grepsPps).read().strip("\n").replace("\n", " ")
-            logInfo = os.popen('cat ' + path.join(ipath, "acquisition*log")
-                                + ' | ' + execPath + 'imbl-log.py ' + labels
-                                + ' | grep \'# Common\' '
-                                + ' | cut -d\' \' -f 4- ' ) \
-                            .read().strip("\n").split()
+            labels = Script.run(f"cat {path.join(ipath,'acquisition*log')} "
+                                f" | {path.join(execPath,'imbl-log.py')} "
+                                 " | tail -n +3 | cut -d' ' -f2 | cut -d':' -f 1"
+                                f" {grepsPps}") \
+                            [1].strip("\n").replace("\n", " ")
+            logInfo = Script.run(f"cat {path.join(ipath, 'acquisition*log')} "
+                                 f" | {path.join(execPath,'imbl-log.py')} {labels} "
+                                  " | grep '# Common' | cut -d\' \' -f 4- " ) \
+                            [1].strip("\n").split()
             if len(logInfo) == 3 :
                 fromlog = True
 
@@ -794,8 +793,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     @pyqtSlot(str)
-    def on_outPath_textChanged(self):
+    def on_outPath_textChanged(self, _=None):
 
+        QtCore.QCoreApplication.processEvents()  # to update ui.outPath
         self.update_initiate_state()
         self.needReinitiation()
 
@@ -921,10 +921,11 @@ class MainWindow(QtWidgets.QMainWindow):
             grepsPps = ""
             for grep in self.ui.excludes.text().split():
                 grepsPps += f" | grep -v -e '{grep}' "
-            labels = os.popen('cat ' + path.join(self.ui.inPath.text(), "acquisition*log")
-                                 + ' | ' + execPath + 'imbl-log.py'
-                                 + ' | tail -n +3 | cut -d\' \' -f2 | cut -d\':\' -f 1 '
-                                 + grepsPps).read().strip("\n").replace("\n", " ")
+            labels = Script.run(f"cat {path.join(self.ui.inPath.text(), 'acquisition*log')} "
+                                f" | {path.join(execPath,'imbl-log.py')} "
+                                 " | tail -n +3 | cut -d' ' -f2 | cut -d':' -f 1 "
+                                f" {grepsPps} " ) \
+                            [1].strip("\n").replace("\n", " ")
             command += f" -L \"{labels}\" "
         command += f" -o \"{opath}\" "
         command += f" \"{self.ui.inPath.text()}\" "
@@ -979,7 +980,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     @pyqtSlot(str)
-    def on_maskPath_textChanged(self):
+    def on_maskPath_textChanged(self, _=None):
         maskOK = path.exists(self.ui.maskPath.text()) or not len(self.ui.maskPath.text().strip())
         self.ui.maskPath.setStyleSheet("" if maskOK else warnStyle)
 
@@ -1169,7 +1170,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     @pyqtSlot(int)
-    def on_distance_valueChanged(self):
+    def on_distance_valueChanged(self, _=None):
         phasevis = self.ui.distance.value() > 0
         self.ui.d2b.setVisible(phasevis)
         self.ui.d2bLabel.setVisible(phasevis)
@@ -1271,7 +1272,7 @@ class MainWindow(QtWidgets.QMainWindow):
         step = 0
         try:
             myInitFile = path.join(wdir,initFileName)
-            _, outed, _ = Script.run(f"cat {myInitFile} | grep 'step=' | cut -d'=' -f 2 ")
+            outed = Script.run(f"cat {myInitFile} | grep 'step=' | cut -d'=' -f 2 ")[1]
             step = abs(float(outed))
             if step == 0:
                 raise Exception("Step is 0.")
