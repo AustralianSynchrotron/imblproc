@@ -489,7 +489,7 @@
         <item row="0" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_4">
           <item>
-           <widget class="QSpinBox" name="width">
+           <widget class="QSpinBox" name="iwidth">
             <property name="readOnly">
              <bool>true</bool>
             </property>
@@ -525,7 +525,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QSpinBox" name="hight">
+           <widget class="QSpinBox" name="ihight">
             <property name="readOnly">
              <bool>true</bool>
             </property>

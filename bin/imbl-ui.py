@@ -14,6 +14,7 @@ warnStyle = 'background-color: rgba(255, 0, 0, 128);'
 initFileName = '.initstitch'
 listOfCreatedMemFiles = []
 
+
 def onBrowse(wdg, desc, forFile=False):
     dest = ""
     if forFile:
@@ -36,7 +37,7 @@ class Script(QObject) :
 
 
     def __init__(self, parent=None):
-        super(QObject, self).__init__(parent)
+        super(Script, self).__init__(parent)
         self.fileExec = QtCore.QTemporaryFile()
         if not self.fileExec.open():
             print("ERROR! Unable to open temporary file.")
@@ -62,8 +63,11 @@ class Script(QObject) :
         if not self.fileExec.isOpen() or self.isRunning():
             return
         self.fileExec.resize(0)
-        self.fileExec.write(body.strip().encode())
-        #self.fileExec.write(" $@\n".encode())
+        body=body.strip()
+        if not body:
+            return
+        body += "\n"
+        self.fileExec.write(body.encode())
         self.fileExec.flush()
         self.bodySet.emit()
 
@@ -255,7 +259,7 @@ class ColumnResizer(QObject):
 
 
 def hdf5shape(filename, dataset):
-    _, outed, _ = Script.run(f"h5ls {filename}/{dataset}")
+    outed = Script.run(f"h5ls {filename}/{dataset}")[1]
     if lres := re.search('.*{([0-9]+), ([0-9]+), ([0-9]+)}.*', outed) :
         return int(lres.group(3)), int(lres.group(2)), int(lres.group(1))
     else:
@@ -295,7 +299,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.scrProc = Script(self)
         for place in self.ui.findChildren(QtWidgets.QLayout, QtCore.QRegExp(self.placePrefix+"\w+")):
             role = place.objectName().removeprefix(self.placePrefix)
-            scrw = UScript(self)
+            scrw = UScript(self.ui)
             scrw.setRole(role)
             scrw.setProperty(cfgProp, 2)
             place.addWidget(scrw)
@@ -343,8 +347,8 @@ class MainWindow(QtWidgets.QMainWindow):
                                       if wdg not in exceptFromDisabled ]
         self.wereDisabled = []
 
-        confsWithOrder = { wdg: wdg.property(cfgProp) for wdg in self.ui.findChildren(QObject)
-                                                      if wdg.property(cfgProp) is not None}
+        confsWithOrder = { obj: obj.property(cfgProp) for obj in self.ui.findChildren(QObject)
+                                                      if obj.property(cfgProp) is not None}
         self.configObjects = [ pr[0] for pr in sorted(confsWithOrder.items(), key=lambda x:x[1]) ]
         # dynamic property of the QButtonGroup is not read from ui file; have to add them manually:
         self.configObjects.extend([grp for grp in self.ui.findChildren(QtWidgets.QButtonGroup)
@@ -610,8 +614,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def needReinitiation(self):
-        self.ui.width.setValue(0)
-        self.ui.hight.setValue(0)
+        self.ui.iwidth.setValue(0)
+        self.ui.ihight.setValue(0)
         for wdg in (self.ui.testProj, self.ui.procThis, self.ui.procAll):
             wdg.setEnabled(False)
         self.ui.procAll.setText("(Re)initiate first")
@@ -850,8 +854,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.iStLbl.setVisible(self.doZst)
         self.ui.iStWdg.setVisible(self.doZst)
 
-        self.ui.width.setValue(width)
-        self.ui.hight.setValue(hight)
+        self.ui.iwidth.setValue(width)
+        self.ui.ihight.setValue(hight)
 
         def setMyMax(wdg, mymax):
             if wdg.maximum() < mymax: wdg.setMaximum(mymax)
