@@ -1,0 +1,6 @@
+#!/bin/bash
+myloc="$(dirname "$(realpath "$0")" )"
+$myloc/../share/imblproc/imbl-ui.py &
+procpid="$!"
+wait $procpid
+echo rm -rf /dev/shm/imblproc.${procpid}_* 2> /dev/null &
