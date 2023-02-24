@@ -1,8 +1,11 @@
 #!/bin/bash
 
+# this sctipt simply invokes imbl-ui.py and cleans left over in /dev/shm/
+# if required. May need it if the UI exits sub-normally, skipping clean-up step.
+
 myloc="$(dirname "$(realpath "$0")" )"
 uiexec="$(realpath "$myloc/../share/imblproc/imbl-ui.py")"
-rmlist="FILES_TO_REMOVE"
+rmlist="FILES_IN_MEMORY"
 export PYTHONUNBUFFERED="x"
 export InMemIndicator="In-memory file to wipe: "
 "$uiexec" \

@@ -1274,8 +1274,8 @@ class MainWindow(QtWidgets.QMainWindow):
         slice= self.ui.testSliceNum.value()
         doPhase = self.ui.distance.value() > 0 and self.ui.d2b.value() > 0
         addToSl = 64 if isTest and doPhase else 0
-        if slice-addToSl < 0 or slice+addToSl >= z:
-            self.addErrToConsole(f"Slice {slice} is out of range [{addToSl}, {z-addToSl}). Aborting test.")
+        if slice-addToSl < 0 or slice+addToSl >= y:
+            self.addErrToConsole(f"Slice {slice} is out of range [{addToSl}, {y-addToSl}). Aborting test.")
             return None
         step = 0
         try:
