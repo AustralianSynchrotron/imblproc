@@ -153,17 +153,17 @@ if [ -n "$subdirs" ] ; then
   for subd in $filemask ; do
     if $beverbose ; then
       echo "Processing subdirectory $subd ... "
-      echo "    cd $(realpath $subd)"
+      echo "    cd $(realpath "$subd")"
     fi
-    cd $subd
+    cd "$subd"
     if $beverbose ; then
       echo "    $0 $@"
     fi
     $0 $@
     if $beverbose ; then
-      echo "    cd $(realpath $OLDPWD)"
+      echo "    cd $(realpath "$OLDPWD")"
     fi
-    cd $OLDPWD
+    cd "$OLDPWD"
     if $beverbose ; then
       echo "Finished processing ${subd}."
     fi
@@ -278,8 +278,7 @@ while read imgm ; do
 done <<< "$imagemask"
 
 idxsallf=".idxsall"
-paste -d' ' $( (ls .idxs*o ; ls .idxs*f) 2> /dev/null ) \
-  | head -n $(( $maxProj + 1 )) | tail -n+$(( $minProj + 1 ))  > "$idxsallf"
+paste -d' ' $( (ls .idxs*o ; ls .idxs*f) 2> /dev/null ) > "$idxsallf"
 if (( $(wc -w <<< "$filemask") > 1 )) ; then # purely for easy reading
   sed -zi 's \n \n\n g' "$idxsallf"
 fi

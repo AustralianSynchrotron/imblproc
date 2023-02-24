@@ -10,6 +10,8 @@ from PyQt5.uic import loadUi
 
 
 execPath = path.dirname(path.realpath(__file__)) + path.sep
+#uiPath = path.join(execPath, "..", "share", "imblproc")
+uiPath = execPath
 warnStyle = 'background-color: rgba(255, 0, 0, 128);'
 initFileName = '.initstitch'
 listOfCreatedMemFiles = []
@@ -173,7 +175,7 @@ class UScript(QtWidgets.QWidget) :
 
     def __init__(self, parent=None):
         super(QtWidgets.QWidget, self).__init__(parent)
-        self.ui = loadUi(execPath + '../share/imblproc/script.ui', self)
+        self.ui = loadUi(path.join(uiPath, "script.ui"), self)
         self.script = Script(self)
         self.ui.body.textChanged.connect(self.script.setBody)
         self.ui.browse.clicked.connect(lambda : onBrowse(self.ui.body, "Command", True))
@@ -294,7 +296,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         cfgProp="saveInConfig" # objects with this property (containing int read order) will be saved in config
-        self.ui = loadUi(execPath + '../share/imblproc/imbl-ui.ui', self)
+        self.ui = loadUi(path.join(uiPath, "imbl-ui.ui"), self)
 
         self.scrProc = Script(self)
         for place in self.ui.findChildren(QtWidgets.QLayout, QtCore.QRegExp(self.placePrefix+"\w+")):
@@ -1123,7 +1125,7 @@ class MainWindow(QtWidgets.QMainWindow):
         global listOfCreatedMemFiles
         cOpath = path.join(self.ui.outPath.text(), self.ui.testSubDir.currentText())
         cOpath = path.realpath(cOpath)
-        toRet = f"/dev/shm/imblproc_{cOpath.replace('/','_')}_"
+        toRet = f"/dev/shm/imblproc{os.getpid()}_{cOpath.replace('/','_')}_"
         if toRet not in listOfCreatedMemFiles:
             listOfCreatedMemFiles.append(toRet)
         return toRet
@@ -1472,9 +1474,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def on_termini_clicked(self):
         for script in self.ui.findChildren(Script):
             script.stop()
-
-
-
 
 
 
