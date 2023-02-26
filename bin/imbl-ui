@@ -10,7 +10,7 @@
 
 myloc="$(dirname "$(realpath "$0")" )"
 uiexec="$(realpath "$myloc/../share/imblproc/imbl-ui.py")"
-rmlist=".FilesInMemory.imblui_PID_$$"
+rmlist=".FilesInMemory.imblui_pid_$$"
 export PYTHONUNBUFFERED="x"
 export InMemIndicator="In-memory file to wipe: "
 "$uiexec" \
