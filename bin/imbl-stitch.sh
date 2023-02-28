@@ -326,7 +326,7 @@ if ! $volWipe || ! $volStore ; then # create file in memory
        fi
      )
   then
-    echo "WARNING! Could not create or allocate in memory interim file $tpnm for ${x}x${}x${z} volume." >&2
+    echo "WARNING! Could not create or allocate in memory interim file $tpnm for ${x}x${y}x${z} volume." >&2
     echo "         Will use file storage for interim data, what can be significantly slower." >&2
     rm -rf "$crFilePrefix"*
   else
