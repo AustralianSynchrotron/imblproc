@@ -1079,7 +1079,7 @@ class MainWindow(QtWidgets.QMainWindow):
                               f" are in {imageFile}."
                               f" Stitched volume will be {x}(w) x {y}(h) x {z}(d) pixels (at least "
                               + '{0:,}'.format(4*int(x)*int(y)*int(z)).replace(',', ' ')+" B in size).")
-            if self.ui.recAfterStitch.isChecked() and self.ui.distance.value() and self.ui.d2b.value():
+            if self.ui.distance.value() and self.ui.d2b.value():
                 # phase proc
                 imcomp = path.splitext(imageFile.strip())
                 oImageFile = imcomp[0] + "_phase" + imcomp[1]
@@ -1114,7 +1114,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.update_reconstruction_state()
             projFile = path.realpath(self.ui.prFile.text())
             if not path.exists(projFile):
-                self.addErrToConsole(f"Can't find stitched projections in {projFile}.")
+                self.addErrToConsole(f"Can't find stitched projections.")
                 break
             dgln=len(f"{self.ui.maxProj.value()-1}")
             for ridx in 0, 1, 2, 3, 4:
@@ -1297,8 +1297,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.collectOut = ""
             Script.run(f"mkdir -p \"tmp\"")
             if self.execScrProc( "Searching for rotation centre",
-                                f"ctas ax {projFile}:/data:0 {projFile}:/data:{ark180}" \
-                                f" -o tmp/SAMPLE_autoCOR.tif" if isTest else ""  ) :
+                                f"ctas ax {projFile}:/data:0 {projFile}:/data:{ark180}" + \
+                                (f" -o tmp/SAMPLE_autoCOR.tif" if isTest else "")  ) :
                 return None
             try:
                 cor = 0.0 if self.scrProc.dryRun else float(self.collectOut)
@@ -1423,11 +1423,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.enableWidgets(recBut)
         recBut.setStyleSheet(warnStyle)
         recBut.setText('Stop')
+        delMe = None
         def onStopMe(errMsg=None):
-            if path.exists(delMe := self.ui.prFile.text()):
+            if delMe and path.exists(delMe):
                 self.execScrProc("Cleaning projections volume", f"rm -f {delMe} & " )
-            if not self.ui.recInMem.isChecked():
-                self.on_wipe_clicked()
             recBut.setStyleSheet("")
             recBut.setText('Reconstruct')
             if self.sender() is recBut:
@@ -1445,6 +1444,7 @@ class MainWindow(QtWidgets.QMainWindow):
             onStopMe()
             return -1
         projFile, _, _, step, wdir = commres
+        delMe = projFile
         if self.ui.ringGroup.checkedButton() is self.ui.ringBeforePhase :
             if self.applyRing(f"{projFile}:/data:y") or self.applyPhase(f"{projFile}:/data"):
                 return onStopMe()
@@ -1485,6 +1485,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.execScrRole("finish")
         if self.scrProc.dryRun:
+            delMe = None
             self.addErrToConsole("Dry run. No reconstruction performed.")
         return onStopMe()
 
