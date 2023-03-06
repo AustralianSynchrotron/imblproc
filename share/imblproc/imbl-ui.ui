@@ -1667,6 +1667,12 @@
            </item>
            <item>
             <widget class="QDoubleSpinBox" name="min">
+             <property name="minimum">
+              <double>-10000000000000000213204190094543968723012578712679649467743338496.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>1000000000000000057857959942726969827393378689175040438172647424.000000000000000</double>
+             </property>
              <property name="saveInConfig" stdset="0">
               <number>0</number>
              </property>
@@ -1703,6 +1709,12 @@
            </item>
            <item>
             <widget class="QDoubleSpinBox" name="max">
+             <property name="minimum">
+              <double>-9999999999999999538762658202121142272.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>10000000000000000139372116959414099130712064.000000000000000</double>
+             </property>
              <property name="saveInConfig" stdset="0">
               <number>0</number>
              </property>
