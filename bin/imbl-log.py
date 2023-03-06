@@ -75,7 +75,7 @@ try:
 
     elif label:
       try :
-        stamp, cidx, cpos = strg.split()
+        stamp, cidx, cpos = strg.split()[0:3]
         if len(pos[label]) == 0  or  float(cpos) != pos[label][-1] :
           idx[label].append(int(cidx))
           pos[label].append(float(cpos))
