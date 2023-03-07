@@ -1,0 +1,7 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Name=IMBL pipeline 
+Exec=/usr/local/bin/imbl-ui
+Icon=/usr/local/share/imblproc/imbl-ui-2.png
+Type=Application
+Category=IMBL
