@@ -1666,7 +1666,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QDoubleSpinBox" name="min">
+            <widget class="QDoubleSpinBox" name="toIntMin">
              <property name="minimum">
               <double>-10000000000000000213204190094543968723012578712679649467743338496.000000000000000</double>
              </property>
@@ -1708,7 +1708,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QDoubleSpinBox" name="max">
+            <widget class="QDoubleSpinBox" name="toIntMax">
              <property name="minimum">
               <double>-9999999999999999538762658202121142272.000000000000000</double>
              </property>
