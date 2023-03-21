@@ -625,6 +625,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def update_initiate_state(self):
+        self.on_wipe_clicked()
         self.ui.initiate.setEnabled(path.isdir(self.ui.inPath.text()) and
                                     (path.isdir(self.ui.outPath.text()) or
                                      not self.ui.individualIO.isChecked()))
@@ -1218,7 +1219,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @pyqtSlot()
     def on_wipe_clicked(self):
-        self.execScrProc("Wiping memory", f"rm -rf {self.inMemNamePrexix()}*")
+        toRm = ""
+        for rmfn in set(listOfCreatedMemFiles):
+            toRm += f" {rmfn}*"
+        if toRm:
+            self.execScrProc("Wiping memory", f"rm -f {toRm}")
         self.update_reconstruction_state()
 
 
@@ -1513,7 +1518,7 @@ my_mainWindow = MainWindow()
 my_mainWindow.show()
 exitSts=app.exec_()
 toRm = ""
-for rmfn in listOfCreatedMemFiles:
+for rmfn in set(listOfCreatedMemFiles):
     toRm += f" {rmfn}*"
 if toRm:
     Script.run(f"rm -f {toRm} &")

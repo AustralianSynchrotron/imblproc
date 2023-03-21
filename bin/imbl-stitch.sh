@@ -336,7 +336,7 @@ fi
 
 
 cleanPath="${crFilePrefix}clean.hdf"
-outParam=" --output ${cleanPath}:/data"
+outParam=" --output "$(realpath ${cleanPath})":/data"
 if $beverbose ; then
   echo "Starting frame formation in $PWD."
   echo "  ctas proj $stParam $outParam < $idxsallf"
