@@ -928,7 +928,7 @@ class MainWindow(QtWidgets.QMainWindow):
             command += " -e "
         if not self.ui.ignoreLog.isChecked() and self.ui.ignoreLog.isVisible() :
             command += " -l "
-        if self.ui.inexclWidget.isVisible() :
+        if self.ui.inexclWidget.isVisible() and (self.ui.excludes.text() or self.ui.includes.text()) :
             grepsPps = ""
             if self.ui.excludes.text():
                 for grep in self.ui.excludes.text().split():
