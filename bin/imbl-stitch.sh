@@ -349,12 +349,12 @@ ctas proj $stParam $outParam < "$idxsallf"  ||
 
 
 if [ -n "$crFilePrefix" ] ; then # file is in memory
-  trgnm="$opath/clean.hdf"
+  #trgnm="$opath/clean.hdf"
   if $volWipe || $volStore; then
     if $beverbose ; then
-      echo "Copying in-memory interim file $cleanPath to $trgnm."
+      echo "Copying in-memory interim file $cleanPath to $PWD/clean.hdf."
     fi
-    cp "$cleanPath" "$trgnm"
+    cp "$cleanPath" "clean.hdf"
     if $volWipe ; then
       rm "$cleanPath"
     fi

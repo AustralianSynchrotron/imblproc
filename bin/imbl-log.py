@@ -66,9 +66,10 @@ try:
       if  args.labels  and not any( lbl in label for lbl in args.labels ) :
         label = ""
       else :
-        if label in labels :
-          eprint("Warning. Label " + label + " already exists. Will overwrite previous.")
-        else :
+        #if label in labels :
+        #  eprint("Warning. Label " + label + " already exists. Will overwrite previous.")
+        #else :
+        if not label in labels :
           labels.append(label)
         idx[label] = []
         pos[label] = []
@@ -121,7 +122,16 @@ while minPos <= cpos <= maxPos :
 steps = len(samples)
 res = {}
 for label in labels:
-  res[label] = numpy.interp(samples, pos[label], idx[label])
+  resf = numpy.interp(samples, pos[label], idx[label])
+  resi = [ int(round(x)) for x in resf ]
+  for cur in range(1, len(resi)-1):
+    if 2 == resi[cur+1] - resi[cur-1] and resi[cur] != resi[cur-1]+1 :
+      resi[cur] = resi[cur-1]+1
+    #if resi[cur] == resi[cur-1] and resi[cur]+2 == resi[cur+1]:
+    #  resi[cur] += 1
+    #elif resi[cur] == resi[cur+1] and resi[cur]-2 == resi[cur-1]:
+    #  resi[cur] -= 1
+  res[label] = resi
 
 print( "# Set: start, range, projections, step (full scan)")
 print(f"# Common: {start:.3f} {stop - start:.3f} {steps} {step:.6f}")
@@ -143,7 +153,7 @@ if args.max_angle:
 if args.table :
   for cur in range(0, upperEnd):
     for label in labels:
-      print(int(round(res[label][cur])), end = ' ')
+      print(res[label][cur], end = ' ')
     print("")
 else:
   for label in labels:

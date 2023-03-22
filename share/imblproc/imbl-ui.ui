@@ -69,9 +69,9 @@
            <item row="6" column="1" rowspan="2">
             <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,0,0">
              <item row="4" column="0">
-              <widget class="QLabel" name="exclLabel">
+              <widget class="QLabel" name="inexclLabel">
                <property name="text">
-                <string>Exclude series</string>
+                <string>Filter series</string>
                </property>
               </widget>
              </item>
@@ -237,14 +237,56 @@
                </property>
               </widget>
              </item>
-             <item row="4" column="1">
-              <widget class="QLineEdit" name="excludes">
-               <property name="whatsThis">
-                <string>Space-separated patterns to exclude from the series.</string>
-               </property>
-               <property name="saveInConfig" stdset="0">
-                <number>0</number>
-               </property>
+             <item row="4" column="1" colspan="2">
+              <widget class="QWidget" name="inexclWidget" native="true">
+               <layout class="QHBoxLayout" name="inexclWidgetLay">
+                <property name="leftMargin">
+                 <number>0</number>
+                </property>
+                <property name="topMargin">
+                 <number>0</number>
+                </property>
+                <property name="rightMargin">
+                 <number>0</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>0</number>
+                </property>
+                <item>
+                 <widget class="QLabel" name="label_57">
+                  <property name="text">
+                   <string>include</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLineEdit" name="includes">
+                  <property name="whatsThis">
+                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Space-separated patterns to only be included in processing.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  </property>
+                  <property name="saveInConfig" stdset="0">
+                   <number>0</number>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="label_51">
+                  <property name="text">
+                   <string>exclude</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLineEdit" name="excludes">
+                  <property name="whatsThis">
+                   <string>Space-separated patterns to exclude from the series.</string>
+                  </property>
+                  <property name="saveInConfig" stdset="0">
+                   <number>0</number>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
               </widget>
              </item>
             </layout>
@@ -2209,12 +2251,12 @@
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="ringGroup">
+  <buttongroup name="resGroup">
    <property name="saveInConfig" stdset="0">
     <number>1</number>
    </property>
   </buttongroup>
-  <buttongroup name="resGroup">
+  <buttongroup name="ringGroup">
    <property name="saveInConfig" stdset="0">
     <number>1</number>
    </property>
