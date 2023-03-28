@@ -1152,6 +1152,67 @@
         <item row="4" column="1" colspan="2">
          <layout class="QHBoxLayout" name="horizontalLayout_11">
           <item>
+           <widget class="QLabel" name="label_22">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Binning:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="zBin">
+            <property name="specialValueText">
+             <string>All</string>
+            </property>
+            <property name="maximum">
+             <number>999999999</number>
+            </property>
+            <property name="value">
+             <number>1</number>
+            </property>
+            <property name="saveInConfig" stdset="0">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_58">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Range:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="allProj">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>all</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+            <property name="saveInConfig" stdset="0">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QLabel" name="label_19">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -1166,6 +1227,9 @@
           </item>
           <item>
            <widget class="QSpinBox" name="minProj">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="saveInConfig" stdset="0">
              <number>0</number>
             </property>
@@ -1186,24 +1250,14 @@
           </item>
           <item>
            <widget class="QSpinBox" name="maxProj">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="specialValueText">
              <string>all</string>
             </property>
             <property name="saveInConfig" stdset="0">
              <number>0</number>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_22">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>projections</string>
             </property>
            </widget>
           </item>
@@ -1270,7 +1324,7 @@
         <item row="4" column="0">
          <widget class="QLabel" name="label_16">
           <property name="text">
-           <string>Ranges</string>
+           <string>Projections</string>
           </property>
          </widget>
         </item>
@@ -2244,19 +2298,51 @@
      <y>460</y>
     </hint>
     <hint type="destinationlabel">
-     <x>493</x>
-     <y>457</y>
+     <x>810</x>
+     <y>472</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>allProj</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>minProj</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>542</x>
+     <y>365</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>771</x>
+     <y>355</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>allProj</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>maxProj</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>528</x>
+     <y>360</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>984</x>
+     <y>365</y>
     </hint>
    </hints>
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="resGroup">
+  <buttongroup name="ringGroup">
    <property name="saveInConfig" stdset="0">
     <number>1</number>
    </property>
   </buttongroup>
-  <buttongroup name="ringGroup">
+  <buttongroup name="resGroup">
    <property name="saveInConfig" stdset="0">
     <number>1</number>
    </property>

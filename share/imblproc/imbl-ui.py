@@ -1044,12 +1044,15 @@ class MainWindow(QtWidgets.QMainWindow):
                  self.ui.fCropBottom.value(), self.ui.fCropRight.value())
         if sum(crops):
             prms += " -C %i,%i,%i,%i " % crops
-        minProj = self.ui.minProj.value()
-        maxProj = self.ui.maxProj.value()
-        pjs=int(self.ui.projections.text())
-        if maxProj == self.ui.maxProj.minimum()  or maxProj >= pjs  :
-            maxProj = pjs
-        prms += f" -m {minProj} -M {maxProj} "
+        if not self.ui.allProj.isChecked() :
+            minProj = self.ui.minProj.value()
+            maxProj = self.ui.maxProj.value()
+            pjs=int(self.ui.projections.text())
+            if maxProj == self.ui.maxProj.minimum()  or maxProj >= pjs  :
+                maxProj = pjs
+            prms += f" -m {minProj} -M {maxProj} "
+        if 1 != self.ui.zBin.value() :
+            prms += f" -z {self.ui.zBin.value()} "
         prms += " -v "
         if ars:
             prms += ars

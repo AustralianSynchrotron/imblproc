@@ -28,6 +28,7 @@ printhelp() {
   echo "  -N FLOAT          Peak removal threshold: absolute if positive, relative if negative."
   echo "  -b INT[,INT]      Binning factor(s). If second number is given, then two"
   echo "                    independent binnings in X and Y coordinates; same otherwise."
+  echo "  -z INT            Projections binning factor."
   echo "  -m INT            First projection to be processed."
   echo "  -M INT            Last projection to be processed."
   echo "  -d                Does not perform flat field correction on the images."
@@ -61,6 +62,7 @@ gmask=""
 crop="0,0,0,0"
 cropFinal="0,0,0,0"
 binn=1
+zinn=1
 rotate=0
 edge=0
 peakThr=0
@@ -77,7 +79,7 @@ volStore=true # save in storage
 volWipe=true # wipe from memory
 beverbose=false
 
-while getopts "i:g:G:f:c:C:r:b:m:M:E:n:N:dt:swhv" opt ; do
+while getopts "i:g:G:f:c:C:r:b:z:m:M:E:n:N:dt:swhv" opt ; do
   case $opt in
     i)  gmask=$OPTARG;;
     g)  origin=$OPTARG
@@ -108,6 +110,7 @@ while getopts "i:g:G:f:c:C:r:b:m:M:E:n:N:dt:swhv" opt ; do
     c)  crop=$OPTARG ;      stParam="$stParam --crop $crop" ;;
     C)  cropFinal=$OPTARG ; stParam="$stParam --crop-final $cropFinal" ;;
     b)  binn=$OPTARG ;      stParam="$stParam --binn $binn" ;;
+    z)  zinn=$OPTARG ;      stParam="$stParam --zinn $zinn" ;;
     m)  minProj=$OPTARG
         if [ ! "$minProj" -eq "$minProj" ] 2> /dev/null ; then
           echo "ERROR! -m argument \"$minProj\" is not an integer." >&2
