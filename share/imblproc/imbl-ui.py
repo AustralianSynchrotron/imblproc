@@ -1100,7 +1100,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 oImageFile = imcomp[0] + "_phase" + imcomp[1]
                 Script.run(f"cp -f {imageFile} {oImageFile} ")
                 if self.applyPhase(oImageFile):
-                    Script.run(f"rm -f {oImageFile} ")
+                    self.execScrProc("Cleaning phase image.", f"rm -f {oImageFile} " )
                 else:
                     self.addToConsole(f"Results of phase retrival are in {path.realpath(oImageFile)}.")
         self.enableWidgets()
@@ -1278,7 +1278,13 @@ class MainWindow(QtWidgets.QMainWindow):
                     f" -a {step}" + \
                     resLine + fltLine + mmLine
         self.execScrRole("ct")
-        return self.execScrProc("Reconstructing", command)
+        toRet = self.execScrProc("Reconstructing", command)
+        if toRet :
+            self.addErrToConsole(f"Cleaning after itself on failure: {ostr}*" )
+
+
+
+        return toRet
 
 
     def common_rec(self, isTest):
@@ -1354,8 +1360,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.testSlice.setText('Stop')
         phaseSubVol = None
         def onStopMe(errMsg=None):
+            nonlocal phaseSubVol
             if phaseSubVol:
-                Script.run(f"rm {phaseSubVol}")
+                self.execScrProc("Cleaning phase sub-volume", f"rm {phaseSubVol}" )
             self.ui.testSlice.setStyleSheet("")
             self.ui.testSlice.setText('Test slice')
             self.enableWidgets()
@@ -1444,6 +1451,7 @@ class MainWindow(QtWidgets.QMainWindow):
         recBut.setText('Stop')
         delMe = None
         def onStopMe(errMsg=None):
+            nonlocal delMe
             if delMe and path.exists(delMe):
                 self.execScrProc("Cleaning projections volume", f"rm -f {delMe} & " )
             recBut.setStyleSheet("")

@@ -339,7 +339,8 @@ fi
 
 
 cleanPath="${crFilePrefix}clean.hdf"
-outParam=" --output "$(realpath ${cleanPath})":/data"
+outFile="$(realpath "${cleanPath}")"
+outParam=" --output ${outFile}:/data"
 if $beverbose ; then
   echo "Starting frame formation in $PWD."
   echo "  ctas proj $stParam $outParam < $idxsallf"
@@ -347,7 +348,8 @@ fi
 ctas proj $stParam $outParam < "$idxsallf"  ||
   ( echo "There was an error executing:" >&2
     echo -e "ctas proj $stParam $outParam < $idxsallf"  >&2
-    rm "$cleanPath"
+    echo -e "Removing incomplete file(s): ${outFile%.*}"'*'  >&2
+    rm "${outFile%.*}"'*'
     exit 1 )
 
 
