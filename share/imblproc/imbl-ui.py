@@ -262,6 +262,7 @@ class ColumnResizer(QObject):
 
 
 def hdf5shape(filename, dataset):
+    Script.run(f"h5clear -s {filename}")
     outed = Script.run(f"h5ls {filename}/{dataset}")[1]
     if lres := re.search('.*{([0-9]+), ([0-9]+), ([0-9]+)}.*', outed) :
         return int(lres.group(3)), int(lres.group(2)), int(lres.group(1))
@@ -772,8 +773,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     for grep in self.ui.excludes.text().split():
                         grepsPps += f" | grep -v -e '{grep}' "
                 if self.ui.includes.text():
+                    grepsPps += f" | grep "
                     for grep in self.ui.includes.text().split():
-                        grepsPps += f" | grep -e '{grep}' "
+                        grepsPps += f" -e '{grep}' "
             labels = Script.run(f"cat {path.join(ipath,'acquisition*log')} "
                                 f" | {path.join(execPath,'imbl-log.py')} "
                                  " | tail -n +3 | cut -d' ' -f2 | cut -d':' -f 1"
@@ -934,8 +936,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 for grep in self.ui.excludes.text().split():
                     grepsPps += f" | grep -v -e '{grep}' "
             if self.ui.includes.text():
+                grepsPps += f" | grep "
                 for grep in self.ui.includes.text().split():
-                    grepsPps += f" | grep -e '{grep}' "
+                    grepsPps += f" -e '{grep}' "
             labels = Script.run(f"cat {path.join(self.ui.inPath.text(), 'acquisition*log')} "
                                 f" | {path.join(execPath,'imbl-log.py')} "
                                  " | tail -n +3 | cut -d' ' -f2 | cut -d':' -f 1 "
@@ -1163,6 +1166,7 @@ class MainWindow(QtWidgets.QMainWindow):
         projFile = path.realpath(projFile)
         x, y, z = hdf5shape(projFile, "data")
         projShape = f"{x} x {y} x {z}" if x and y and z else None
+        #print(f"memname {path.exists(memName)} ({projShape}) {memName} {projFile}")
         recFile = self.inMemNamePrexix() + "rec.hdf"
         x, y, z = hdf5shape(recFile, "data")
         recShape = f"{x} x {y} x {z}" if x and y and z else None
