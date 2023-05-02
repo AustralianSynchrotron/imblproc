@@ -1484,11 +1484,17 @@ class MainWindow(QtWidgets.QMainWindow):
             x, y, z = hdf5shape(projFile, "data")
             if not (x and y and z):
                 return onStopMe(f"Failed to read sizes of projecion file {projFile}")
+            outTest = self.inMemNamePrexix() + "prerec.tif"
             outFile = self.inMemNamePrexix() + "rec.hdf"
             outPath = outFile + ":/data"
             self.addToConsole(f"Reconstructing into memory: {outPath}.")
-            if self.execScrProc(f"Creating file for reconstructed volume.",
-                                f"h5import /dev/random -d {x},{x},{y}  -p /data -t FP -s 32 -o {outFile}" ):
+            if self.execScrProc("Creating file for reconstructed volume.",
+                    f"convert -size {x}x{x} -colorspace gray canvas:black {outTest} && "
+                    f"ctas v2v {outTest} -o {outPath}:-{y - 1} && "
+                    f"if (( {4*x*x*y} >  $( du --block-size=1 {outFile} | cut -d$'\t' -f1 ) )) ; then "
+                    f"  cp --sparse=never {outFile} {outFile}.tmp  &&  mv {outFile}.tmp {outFile} "
+                     "fi ; "
+                    f"rm -f {outTest}\n" ):
                 return onStopMe(f"Failed to create reconstructed volume in {outPath}."
                                  "Probably not enough memory. Try to reconstruct directly into storage.")
         elif self.ui.resTIFF.isChecked():
