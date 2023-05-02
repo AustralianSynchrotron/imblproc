@@ -1493,12 +1493,13 @@ class MainWindow(QtWidgets.QMainWindow):
             outPath = outFile + ":/data"
             self.addToConsole(f"Reconstructing into memory: {outPath}.")
             if self.execScrProc("Creating file for reconstructed volume.",
-                    f"convert -size {x}x{x} -colorspace gray canvas:black {outTest} && "
-                    f"ctas v2v {outTest} -o {outPath}:-{y - 1} && "
-                    f"if (( {4*x*x*y} >  $( du --block-size=1 {outFile} | cut -d$'\t' -f1 ) )) ; then "
-                    f"  cp --sparse=never {outFile} {outFile}.tmp  &&  mv {outFile}.tmp {outFile} "
-                     "fi ; "
-                    f"rm -f {outTest}\n" ):
+                    f"convert -size {x}x{x} -colorspace gray canvas:black {outTest} && \n"
+                    f"ctas v2v {outTest} -o {outPath}:-{y - 1} && \n"
+                    f"if (( {4*x*x*y} >  $( du --block-size=1 {outFile} | cut -d$'\t' -f1 ) )) ; then \n"
+                    f"  cp --sparse=never {outFile} {outFile}.tmp  && \n"
+                    f"  mv {outFile}.tmp {outFile}\n"
+                     "fi\n"
+                    f"rm -f {outTest}\n" ) :
                 return onStopMe(f"Failed to create reconstructed volume in {outPath}."
                                  "Probably not enough memory. Try to reconstruct directly into storage.")
         elif self.ui.resTIFF.isChecked():
@@ -1513,7 +1514,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.ui.resHDF.isChecked() and self.ui.resToInt.isChecked() :
             Script.run(f"mkdir -p {path.join(wdir,'rec8int')} ")
             self.execScrProc( "Converting to integer",
-                             f"ctas v2v {outPath} -v -o rec8int/rec_@.tif " \
+                             f"ctas v2v {outPath} -v -o rec8int/rec_@.tif "
                              f" -m {self.ui.toIntMin.value()} -M {self.ui.toIntMax.value()}" )
         if self.ui.recInMem.isChecked() and not self.ui.recInMemOnly.isChecked():
             resPath = path.join(path.realpath(wdir),'rec.hdf')
