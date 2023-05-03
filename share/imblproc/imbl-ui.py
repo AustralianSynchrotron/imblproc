@@ -262,7 +262,7 @@ class ColumnResizer(QObject):
 
 
 def hdf5shape(filename, dataset):
-    Script.run(f"h5clear -s {filename}")
+    Script.run(f"h5clear -s --increment {filename}")
     outed = Script.run(f"h5ls {filename}/{dataset}")[1]
     if lres := re.search('.*{([0-9]+), ([0-9]+), ([0-9]+)}.*', outed) :
         return int(lres.group(3)), int(lres.group(2)), int(lres.group(1))
