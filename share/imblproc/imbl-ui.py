@@ -628,7 +628,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def update_initiate_state(self):
-        self.on_wipe_clicked()
+        #self.on_wipe_clicked()
         self.ui.initiate.setEnabled(path.isdir(self.ui.inPath.text()) and
                                     (path.isdir(self.ui.outPath.text()) or
                                      not self.ui.individualIO.isChecked()))
