@@ -139,7 +139,7 @@ done
 
 
 if [ -z "$PROCRECURSIVE" ] ; then
-  echo "$allopts" >> ".proc.history"
+  echo "$0" "$allopts" >> ".proc.history"
 fi
 
 if [ -n "$subdirs" ] ; then

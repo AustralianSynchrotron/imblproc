@@ -290,6 +290,7 @@ class ScrollToEnd(QObject):
 class MainWindow(QtWidgets.QMainWindow):
 
     configName = ".imbl-ui"
+    historyName = ".proc.history"
     etcConfigName = path.join(path.expanduser("~"), configName)
     amLoading = False
     placePrefix="placeScript_"
@@ -1242,27 +1243,32 @@ class MainWindow(QtWidgets.QMainWindow):
         self.update_reconstruction_state()
 
 
-    def applyPhase(self, volumeDesc):
+    def applyPhase(self, volumeDesc, saveHist=False):
         if self.ui.distance.value() == 0 or self.ui.d2b.value() == 0.0:
             return 0
         self.execScrRole("phase")
-        return self.execScrProc( "Retrieving phase",
-                                f"ctas ipc {volumeDesc} -e -v " \
+        command = f"ctas ipc {volumeDesc} -e -v " \
                                 f" -z {self.ui.distance.value()}" \
                                 f" -d {self.ui.d2b.value()}" \
                                 f" -r {self.ui.pixelSize.value()}" \
-                                f" -w {12.398/self.ui.energy.value()}" )  # keV to Angstrom
+                                f" -w {12.398/self.ui.energy.value()}"   # keV to Angstrom
+        if saveHist :
+            Script.run(f"echo '{command}' >> {self.historyName}")
+        return self.execScrProc( "Retrieving phase", command)
+                                
 
 
-    def applyRing(self, iVol, oVol=None):
+    def applyRing(self, iVol, oVol=None, saveHist=False):
         if self.ui.ring.value() == 0:
             return 0
-        return self.execScrProc( "Applying ring filter",
-                                f"ctas ring -v -R {self.ui.ring.value()} {iVol} " + \
-                                (f" -o {oVol}" if oVol else "") )
+        command = f"ctas ring -v -R {self.ui.ring.value()} {iVol} " + \
+                                (f" -o {oVol}" if oVol else "")
+        if saveHist :
+            Script.run(f"echo '{command}' >> {self.historyName}")        
+        return self.execScrProc( "Applying ring filter", command )
 
 
-    def applyCT(self, step, istr, ostr):
+    def applyCT(self, step, istr, ostr, saveHist=False):
         fltLine = self.ui.ctFilter.currentText().upper().split()[0]
         if self.ui.ctFilterParam.isVisible():
             fltLine += f":{self.ui.ctFilterParam.value()}"
@@ -1279,11 +1285,11 @@ class MainWindow(QtWidgets.QMainWindow):
                     f" -a {step}" + \
                     resLine + fltLine + mmLine
         self.execScrRole("ct")
+        if saveHist :
+            Script.run(f"echo '{command}' >> {self.historyName}")
         toRet = self.execScrProc("Reconstructing", command)
         if toRet :
             self.addErrToConsole(f"Cleaning after itself on failure: {ostr}*" )
-
-
 
         return toRet
 
@@ -1445,6 +1451,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.scrProc.stop()
             return -1
 
+        self.saveConfiguration(path.join(wdir, self.configName))
         self.addToConsole()
         recBut = self.ui.reconstruct
         self.enableWidgets(recBut)
@@ -1474,10 +1481,10 @@ class MainWindow(QtWidgets.QMainWindow):
         projFile, _, _, step, wdir = commres
         delMe = projFile
         if self.ui.ringGroup.checkedButton() is self.ui.ringBeforePhase :
-            if self.applyRing(f"{projFile}:/data:y") or self.applyPhase(f"{projFile}:/data"):
+            if self.applyRing(f"{projFile}:/data:y", saveHist=True) or self.applyPhase(f"{projFile}:/data", True):
                 return onStopMe()
         else:
-            if self.applyPhase(f"{projFile}:/data") or self.applyRing(f"{projFile}:/data:y"):
+            if self.applyPhase(f"{projFile}:/data", True) or self.applyRing(f"{projFile}:/data:y", saveHist=True):
                 return onStopMe()
 
         outPath = ""
@@ -1505,7 +1512,7 @@ class MainWindow(QtWidgets.QMainWindow):
             outPath = path.join(odir,"rec_@.tif")
         else:
             outPath = "rec.hdf:/data"
-        if self.applyCT(step, f"{projFile}:/data:y", outPath):
+        if self.applyCT(step, f"{projFile}:/data:y", outPath, True):
             return onStopMe()
 
         if self.ui.resHDF.isChecked() and self.ui.resToInt.isChecked() :
