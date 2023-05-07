@@ -14,7 +14,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tabInit">
        <attribute name="title">
@@ -23,6 +23,9 @@
        <layout class="QGridLayout" name="gridLayout">
         <item row="4" column="0">
          <widget class="QPushButton" name="initiate">
+          <property name="toolTip">
+           <string>Creates output folder if it does not exist, parses configuration and, if existing and not ignored, log files, derives and stores some information required for further processing.</string>
+          </property>
           <property name="text">
            <string>Initiate</string>
           </property>
@@ -51,6 +54,9 @@
               </property>
               <item>
                <widget class="QLineEdit" name="inPath">
+                <property name="toolTip">
+                 <string>Scan folder produced by the IMBL CT acquisition. Must contain input data, scan configuration and, optionally, scan log file.</string>
+                </property>
                 <property name="saveInConfig" stdset="0">
                  <number>-2</number>
                 </property>
@@ -84,6 +90,9 @@
              </item>
              <item row="1" column="2">
               <widget class="QCheckBox" name="ignoreLog">
+               <property name="toolTip">
+                <string>Ignore angular position from the log file. If ticked, position of each projection is assumed to be exact as follows from the configuration file. Affects scan range, total projections and angular step.</string>
+               </property>
                <property name="text">
                 <string>Ignore corrections from log file</string>
                </property>
@@ -94,6 +103,9 @@
              </item>
              <item row="0" column="1">
               <widget class="QLineEdit" name="scanRange">
+               <property name="toolTip">
+                <string>CT acquisition arc. Read from acquisition configuration file and, if existing and not ignored, log file.</string>
+               </property>
                <property name="readOnly">
                 <bool>true</bool>
                </property>
@@ -101,6 +113,9 @@
              </item>
              <item row="3" column="1">
               <widget class="QSpinBox" name="zs">
+               <property name="toolTip">
+                <string>Number of sub-scans in the innear series of 2D scan.</string>
+               </property>
                <property name="readOnly">
                 <bool>true</bool>
                </property>
@@ -114,6 +129,9 @@
              </item>
              <item row="2" column="1">
               <widget class="QSpinBox" name="ys">
+               <property name="toolTip">
+                <string>Number of sub-scans in the (outer, if 2D scan) series.</string>
+               </property>
                <property name="readOnly">
                 <bool>true</bool>
                </property>
@@ -133,6 +151,9 @@
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
+               <property name="toolTip">
+                <string>If ticked processes sub-scans in the loop as individual scans, creating corresponding ouput sub-folders. Otherwise stitches them together.</string>
+               </property>
                <property name="text">
                 <string>treat Z series as independent samples</string>
                </property>
@@ -148,6 +169,9 @@
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
+               </property>
+               <property name="toolTip">
+                <string>For the scans with acquisition arc larger or equal to 360 degree, tells if projections are processed as-is (ticked) or are stitched in accordance with the flip-and-stitch approach (unticked): for each projection in [0,180+] range corresponding projection acquired 180 degree away is found, horizontally flipped and stitched with the first one.</string>
                </property>
                <property name="text">
                 <string>scan is NOT 180deg flip-and-stitch</string>
@@ -166,6 +190,9 @@
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
+                 </property>
+                 <property name="toolTip">
+                  <string>Total number of projections in the scan. Read from acquisition configuration file and, if existing and not ignored, log file.</string>
                  </property>
                  <property name="readOnly">
                   <bool>true</bool>
@@ -193,6 +220,9 @@
                    <verstretch>0</verstretch>
                   </sizepolicy>
                  </property>
+                 <property name="toolTip">
+                  <string>Average angular step in CT acquisition. Read from acquisition configuration file and, if existing and not ignored, log file.</string>
+                 </property>
                  <property name="readOnly">
                   <bool>true</bool>
                  </property>
@@ -202,6 +232,9 @@
              </item>
              <item row="2" column="0">
               <widget class="QLabel" name="ylabel">
+               <property name="toolTip">
+                <string>Number of sub-scans in the (outer, if 2D series) loop.</string>
+               </property>
                <property name="text">
                 <string>Outer series [Y]</string>
                </property>
@@ -214,6 +247,9 @@
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
+               </property>
+               <property name="toolTip">
+                <string>If ticked processes sub-scans in the loop as individual scans, creating corresponding ouput sub-folders. Otherwise stitches them together.</string>
                </property>
                <property name="text">
                 <string>treat Y series as independent samples</string>
@@ -261,8 +297,8 @@
                 </item>
                 <item>
                  <widget class="QLineEdit" name="includes">
-                  <property name="whatsThis">
-                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Space-separated patterns to only be included in processing.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  <property name="toolTip">
+                   <string>Space-separated list of patterns which only must be included in processing. Patterns are grep expressions (see grep help for details). F.e. &quot;Y0&quot; &quot;Y1[0-2]&quot; would include Y series from 0 to 12, but ignore all following.</string>
                   </property>
                   <property name="saveInConfig" stdset="0">
                    <number>0</number>
@@ -278,8 +314,8 @@
                 </item>
                 <item>
                  <widget class="QLineEdit" name="excludes">
-                  <property name="whatsThis">
-                   <string>Space-separated patterns to exclude from the series.</string>
+                  <property name="toolTip">
+                   <string>Space-separated list of patterns which are excluded from processing. Patterns are grep expressions (see grep help for details). F.e. &quot;Y09&quot; &quot;Y1[0-2]&quot; would exclude Y series  9 to 12.</string>
                   </property>
                   <property name="saveInConfig" stdset="0">
                    <number>0</number>
@@ -311,6 +347,9 @@
               </property>
               <item>
                <widget class="QLineEdit" name="outPath">
+                <property name="toolTip">
+                 <string>Output folder where all processing results are saved.</string>
+                </property>
                 <property name="saveInConfig" stdset="0">
                  <number>-1</number>
                 </property>
@@ -353,6 +392,9 @@
               </property>
               <item>
                <widget class="QLineEdit" name="expPath">
+                <property name="toolTip">
+                 <string>Path to the folder of a specific IMBL experiment. Must contain input and output sub-folders.</string>
+                </property>
                 <property name="saveInConfig" stdset="0">
                  <number>-2</number>
                 </property>
@@ -392,6 +434,9 @@
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
+               <property name="toolTip">
+                <string>If ticked and averaged flat images exist in output, does not recalculate them to save time. Otherwise those images are reproduced on each initiation.</string>
+               </property>
                <property name="text">
                 <string>Do NOT recreate averaged flat and dark field images</string>
                </property>
@@ -407,6 +452,9 @@
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
+               </property>
+               <property name="toolTip">
+                <string>If ticked, starts processing automatically straight after successfull initiation.</string>
                </property>
                <property name="text">
                 <string>Proceed to the next step</string>
@@ -458,6 +506,9 @@
               </property>
               <item>
                <widget class="QComboBox" name="expSample">
+                <property name="toolTip">
+                 <string>List of samples in the given IMBL experiment. Does not update automatically and requires manual update on creation of new scans.</string>
+                </property>
                 <property name="saveInConfig" stdset="0">
                  <number>-2</number>
                 </property>
@@ -470,6 +521,9 @@
                   <horstretch>0</horstretch>
                   <verstretch>0</verstretch>
                  </sizepolicy>
+                </property>
+                <property name="toolTip">
+                 <string>Update list of existing scans inside input folder of the experiment. Use it when new scan is created externally to add it into the list.</string>
                 </property>
                 <property name="text">
                  <string>Update</string>
@@ -486,6 +540,9 @@
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>If ticked, allows individual selection of IMBL scan and output folders. Otherwise folders are set from the experiment path and selected scan from the list of existing under experiment's input folder. </string>
              </property>
              <property name="text">
               <string>Select input and output individually</string>
@@ -532,6 +589,9 @@
          <layout class="QHBoxLayout" name="horizontalLayout_4">
           <item>
            <widget class="QSpinBox" name="iwidth">
+            <property name="toolTip">
+             <string>Width of input images.</string>
+            </property>
             <property name="readOnly">
              <bool>true</bool>
             </property>
@@ -568,6 +628,9 @@
           </item>
           <item>
            <widget class="QSpinBox" name="ihight">
+            <property name="toolTip">
+             <string>Hight of input images.</string>
+            </property>
             <property name="readOnly">
              <bool>true</bool>
             </property>
@@ -597,7 +660,7 @@
         <item row="2" column="1">
          <widget class="QSpinBox" name="edge">
           <property name="toolTip">
-           <string>Thickness in pixels of edge transition. Smoothly reduces the weight of pixels around the mask edges (0 values in mask) to produce seamless image stitching.  If no mask is provided, the mask is constructed from pixels with values &gt;= 0 or NAN.</string>
+           <string>Thickness of edge transition (in pixels). Smoothly reduces the weights of pixels around the mask edges (0 values in mask) to produce seamless image stitching.  If no mask is provided, but this parameter is non-zero, mask is constructed from the background image with pixel values equal to zero or NaN.</string>
           </property>
           <property name="maximum">
            <number>10000</number>
@@ -637,6 +700,9 @@
          <layout class="QGridLayout" name="gridLayout_4">
           <item row="0" column="1" colspan="2">
            <widget class="QSpinBox" name="sCropTop">
+            <property name="toolTip">
+             <string>Pixels cropped from the top of input images.</string>
+            </property>
             <property name="maximum">
              <number>999999999</number>
             </property>
@@ -647,6 +713,9 @@
           </item>
           <item row="2" column="1" colspan="2">
            <widget class="QSpinBox" name="sCropBottom">
+            <property name="toolTip">
+             <string>Pixels cropped from the bottom of input images.</string>
+            </property>
             <property name="maximum">
              <number>999999999</number>
             </property>
@@ -657,6 +726,9 @@
           </item>
           <item row="1" column="0" colspan="2">
            <widget class="QSpinBox" name="sCropLeft">
+            <property name="toolTip">
+             <string>Pixels cropped from the left of input images.</string>
+            </property>
             <property name="maximum">
              <number>999999999</number>
             </property>
@@ -667,6 +739,9 @@
           </item>
           <item row="1" column="2" colspan="2">
            <widget class="QSpinBox" name="sCropRight">
+            <property name="toolTip">
+             <string>Pixels cropped from the right of input images.</string>
+            </property>
             <property name="maximum">
              <number>999999999</number>
             </property>
@@ -694,6 +769,9 @@
           </item>
           <item>
            <widget class="QSpinBox" name="peakRad">
+            <property name="toolTip">
+             <string>If not zero, peak removal filter with given radius is applied to each input image (including flats).</string>
+            </property>
             <property name="maximum">
              <number>1024</number>
             </property>
@@ -718,7 +796,7 @@
           <item>
            <widget class="QDoubleSpinBox" name="peakThr">
             <property name="toolTip">
-             <string>Threshold of the peaks removed. Absolute if positive, relative if negative.</string>
+             <string>Threshold of the peaks removed: only pixels above the trheshold are treated. Threshold can be absolute if positive value is provided, or relative to the neibour average if negative. Zero threshold results in Gaussian blur of the corresponding radius.</string>
             </property>
             <property name="minimum">
              <double>-1000.000000000000000</double>
@@ -735,6 +813,9 @@
         </item>
         <item row="4" column="1">
          <widget class="QDoubleSpinBox" name="rotate">
+          <property name="toolTip">
+           <string>Rotates input images by the given angle.</string>
+          </property>
           <property name="suffix">
            <string>deg</string>
           </property>
@@ -766,6 +847,9 @@
           </item>
           <item>
            <widget class="QSpinBox" name="xBin">
+            <property name="toolTip">
+             <string>X binning factor applied to input images.</string>
+            </property>
             <property name="minimum">
              <number>1</number>
             </property>
@@ -792,6 +876,9 @@
             <property name="enabled">
              <bool>false</bool>
             </property>
+            <property name="toolTip">
+             <string>Y binning factor applied to input images.</string>
+            </property>
             <property name="minimum">
              <number>1</number>
             </property>
@@ -807,6 +894,9 @@
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
+            </property>
+            <property name="toolTip">
+             <string>Makes Y binning factor equal to X one.</string>
             </property>
             <property name="text">
              <string>same as X</string>
@@ -825,6 +915,9 @@
          <layout class="QHBoxLayout" name="horizontalLayout_12">
           <item>
            <widget class="QLineEdit" name="maskPath">
+            <property name="toolTip">
+             <string>Path to greyscale image whith values representing weights of corresponding pixels in processing algorithms where applicable (f.e. noise reduction, stitching, etc.). Image is normalized to [0,1] range, NaN's are always zero.</string>
+            </property>
             <property name="saveInConfig" stdset="0">
              <number>0</number>
             </property>
@@ -936,6 +1029,9 @@
           </item>
           <item>
            <widget class="QCheckBox" name="saveStitched">
+            <property name="toolTip">
+             <string>If ticked copy of the volume with processed projections, originally created in memory (if sufficient), is saved to the output folder. Otherwise in-memory volume is deleted after CT reconstruction is complete.</string>
+            </property>
             <property name="text">
              <string>save to storage</string>
             </property>
@@ -946,8 +1042,11 @@
           </item>
           <item>
            <widget class="QCheckBox" name="wipeStitched">
+            <property name="toolTip">
+             <string>If ticked, pipeline does not attempt to create in-memory volume for cleaned projections; instead it stores them inside output folder inside clean.hdf/data container. Can be usefull if no further CT reconstruction is performed or you know that the system has no enough memory to store the volume.</string>
+            </property>
             <property name="text">
-             <string>wipe from memory</string>
+             <string>(only)</string>
             </property>
             <property name="saveInConfig" stdset="0">
              <number>0</number>
@@ -969,6 +1068,9 @@
           </item>
           <item>
            <widget class="QCheckBox" name="recAfterStitch">
+            <property name="toolTip">
+             <string>If ticked, starts CT reconstruction automatically straight after successfull stitching.</string>
+            </property>
             <property name="text">
              <string>Proceed to the next step</string>
             </property>
@@ -994,6 +1096,9 @@
            </item>
            <item>
             <widget class="QDoubleSpinBox" name="fStX">
+             <property name="toolTip">
+              <string>Stitching of complimentary pair of images in flip-and-stitch approach: for each projection in [0,180+] range corresponding projection acquired 180 degree away is found, horizontally flipped and stitched with the first one. X-position (horizontal shift) of the second image's origin (top left corner) in the coordinate system of the first image. Same meaning as in Fiji's pairwise stitching plugin.</string>
+             </property>
              <property name="minimum">
               <double>-999999999.000000000000000</double>
              </property>
@@ -1017,6 +1122,9 @@
            </item>
            <item>
             <widget class="QDoubleSpinBox" name="fStY">
+             <property name="toolTip">
+              <string>Stitching of complimentary pair of images in flip-and-stitch approach: for each projection in [0,180+] range corresponding projection acquired 180 degree away is found, horizontally flipped and stitched with the first one. Y-position (vertical shift) of the second image's origin (top left corner) in the coordinate system of the first image. Same meaning as in Fiji's pairwise stitching plugin.</string>
+             </property>
              <property name="minimum">
               <double>-999999999.000000000000000</double>
              </property>
@@ -1046,6 +1154,9 @@
            </item>
            <item>
             <widget class="QDoubleSpinBox" name="oStX">
+             <property name="toolTip">
+              <string>Stitching of (outer, if 2D scan) series. X-position (horizontal shift) of the second image's origin (top left corner) in the coordinate system of the first image. Same meaning as in Fiji's pairwise stitching plugin.</string>
+             </property>
              <property name="minimum">
               <double>-999999999.000000000000000</double>
              </property>
@@ -1069,6 +1180,9 @@
            </item>
            <item>
             <widget class="QDoubleSpinBox" name="oStY">
+             <property name="toolTip">
+              <string>Stitching of (outer, if 2D scan) series. Y-position (vertical shift) of the second image's origin (top left corner) in the coordinate system of the first image. Same meaning as in Fiji's pairwise stitching plugin.</string>
+             </property>
              <property name="minimum">
               <double>-999999999.000000000000000</double>
              </property>
@@ -1086,14 +1200,17 @@
         <item row="9" column="1">
          <widget class="QLabel" name="testSubDirLabel">
           <property name="text">
-           <string>subdirectory</string>
+           <string>sub-sample</string>
           </property>
          </widget>
         </item>
         <item row="9" column="0">
          <widget class="QPushButton" name="procThis">
+          <property name="toolTip">
+           <string>Stitches only selected sub-sample.</string>
+          </property>
           <property name="text">
-           <string>Stitch only</string>
+           <string>Stitch one</string>
           </property>
          </widget>
         </item>
@@ -1112,6 +1229,9 @@
            </item>
            <item>
             <widget class="QDoubleSpinBox" name="iStX">
+             <property name="toolTip">
+              <string>Stitching of innear series in 2D serial acquisition. X-position (horizontal shift) of the second image's origin (top left corner) in the coordinate system of the first image. Same meaning as in Fiji's pairwise stitching plugin.</string>
+             </property>
              <property name="minimum">
               <double>-999999999.000000000000000</double>
              </property>
@@ -1135,6 +1255,9 @@
            </item>
            <item>
             <widget class="QDoubleSpinBox" name="iStY">
+             <property name="toolTip">
+              <string>Stitching of innear series in 2D serial acquisition. Y-position (vertical shift) of the second image's origin (top left corner) in the coordinate system of the first image. Same meaning as in Fiji's pairwise stitching plugin.</string>
+             </property>
              <property name="minimum">
               <double>-999999999.000000000000000</double>
              </property>
@@ -1166,6 +1289,9 @@
           </item>
           <item>
            <widget class="QSpinBox" name="zBin">
+            <property name="toolTip">
+             <string>Number of subsequent raw projections to be averaged to produce single output projection. Can be usefull to reduce size of the interim projections volume for the scans with a large number of acquisition steps (≳ width * π/2). Ignored in tests.</string>
+            </property>
             <property name="specialValueText">
              <string>All</string>
             </property>
@@ -1201,6 +1327,9 @@
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="toolTip">
+             <string>Produce all available projections.</string>
+            </property>
             <property name="text">
              <string>all</string>
             </property>
@@ -1230,6 +1359,9 @@
             <property name="enabled">
              <bool>false</bool>
             </property>
+            <property name="toolTip">
+             <string>First projection in the range to process.</string>
+            </property>
             <property name="saveInConfig" stdset="0">
              <number>0</number>
             </property>
@@ -1253,6 +1385,9 @@
             <property name="enabled">
              <bool>false</bool>
             </property>
+            <property name="toolTip">
+             <string>Last projection in the range to process.</string>
+            </property>
             <property name="specialValueText">
              <string>all</string>
             </property>
@@ -1272,6 +1407,9 @@
         </item>
         <item row="10" column="0" colspan="3">
          <widget class="QPushButton" name="procAll">
+          <property name="toolTip">
+           <string>Start/Stop stitching for the whole sample.</string>
+          </property>
           <property name="text">
            <string>Stitch all</string>
           </property>
@@ -1299,6 +1437,9 @@
         </item>
         <item row="8" column="2">
          <widget class="QSpinBox" name="testProjection">
+          <property name="toolTip">
+           <string>Projection to test.</string>
+          </property>
           <property name="maximum">
            <number>999999999</number>
           </property>
@@ -1309,6 +1450,9 @@
         </item>
         <item row="9" column="2">
          <widget class="QComboBox" name="testSubDir">
+          <property name="toolTip">
+           <string>Sub-sample to test or process with &quot;stitch one&quot;.</string>
+          </property>
           <property name="saveInConfig" stdset="0">
            <number>0</number>
           </property>
@@ -1316,6 +1460,9 @@
         </item>
         <item row="8" column="0">
          <widget class="QPushButton" name="testProj">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Runs test stitching on given projection. Results of the procedure are saved into the tmp sub-folder of the output path. Following files are created in the process (&amp;lt;P&amp;gt; stands for given projection number):&lt;/p&gt;&lt;p&gt;SAMPLE_T&amp;lt;P&amp;gt;_I&amp;lt;N&amp;gt;.&amp;lt;Y&amp;gt;.&amp;lt;Z&amp;gt;.tif - results of processing individual raw input source(s). Here &amp;lt;N&amp;gt; indicates source number, &amp;lt;Y&amp;gt; and &amp;lt;Z&amp;gt; are the order of projection in outer and innear loops (for serial scanning).&lt;/p&gt;&lt;p&gt;SAMPLE_T&amp;lt;P&amp;gt;_U&amp;lt;Y&amp;gt;.tif - results of stitching all innear sub-loop images for each outer sub-loop given by &amp;lt;Y&amp;gt;.&lt;/p&gt;&lt;p&gt;SAMPLE_T&amp;lt;P&amp;gt;_V&amp;lt;Z&amp;gt;.tif - results of stitching all outer sub-loop images for each innear sub-loop given by &amp;lt;Z&amp;gt;. &lt;/p&gt;&lt;p&gt;SAMPLE_T&amp;lt;P&amp;gt;_X.tif - results of stitching all sources.&lt;/p&gt;&lt;p&gt;SAMPLE_T&amp;lt;P&amp;gt;.tif - final result of project formation: previous &amp;quot;_X&amp;quot; image after final cropping and gap closure.&lt;/p&gt;&lt;p&gt;SAMPLE_T&amp;lt;P&amp;gt;_phase.tif - results of phase retrival on final projection, if it is performed in the reconstruction.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
           <property name="text">
            <string>Test</string>
           </property>
@@ -1339,6 +1486,9 @@
          <layout class="QGridLayout" name="gridLayout_6">
           <item row="0" column="1" colspan="2">
            <widget class="QSpinBox" name="fCropTop">
+            <property name="toolTip">
+             <string>Pixels cropped from the top of stitched projections.</string>
+            </property>
             <property name="maximum">
              <number>999999999</number>
             </property>
@@ -1349,6 +1499,9 @@
           </item>
           <item row="2" column="1" colspan="2">
            <widget class="QSpinBox" name="fCropBottom">
+            <property name="toolTip">
+             <string>Pixels cropped from the bottom of stitched projections.</string>
+            </property>
             <property name="maximum">
              <number>999999999</number>
             </property>
@@ -1359,6 +1512,9 @@
           </item>
           <item row="1" column="0" colspan="2">
            <widget class="QSpinBox" name="fCropLeft">
+            <property name="toolTip">
+             <string>Pixels cropped from the left of stitched projections.</string>
+            </property>
             <property name="maximum">
              <number>999999999</number>
             </property>
@@ -1369,6 +1525,9 @@
           </item>
           <item row="1" column="2" colspan="2">
            <widget class="QSpinBox" name="fCropRight">
+            <property name="toolTip">
+             <string>Pixels cropped from the right of stitched projections.</string>
+            </property>
             <property name="maximum">
              <number>999999999</number>
             </property>
@@ -1483,6 +1642,9 @@
              <layout class="QHBoxLayout" name="horizontalLayout_29">
               <item>
                <widget class="QDoubleSpinBox" name="d2b">
+                <property name="toolTip">
+                 <string>Ratio of imaginary (refraction) to real (absorption) components of complex refraction index. In phase retrieval this value is assuemed to be same for the whole sample. Without phase it makes no difference.</string>
+                </property>
                 <property name="specialValueText">
                  <string>no phase</string>
                 </property>
@@ -1864,6 +2026,9 @@
           <layout class="QHBoxLayout" name="horizontalLayout_25">
            <item>
             <widget class="QSpinBox" name="distance">
+             <property name="toolTip">
+              <string>Object to detector distance (mm). Required only for phase retrival and makes no difference otherwise.</string>
+             </property>
              <property name="suffix">
               <string>mm</string>
              </property>
@@ -1995,6 +2160,9 @@
           <layout class="QHBoxLayout" name="horizontalLayout_27">
            <item>
             <widget class="QDoubleSpinBox" name="energy">
+             <property name="toolTip">
+              <string>Photon energy (keV). Required only for phase retrival or output of mu (linear attenuation). With no phase only affects absolute value of the results.</string>
+             </property>
              <property name="suffix">
               <string>keV</string>
              </property>
@@ -2121,6 +2289,9 @@
           <layout class="QHBoxLayout" name="horizontalLayout_23">
            <item>
             <widget class="QDoubleSpinBox" name="pixelSize">
+             <property name="toolTip">
+              <string>Pixel size (microns). Required only for phase retrival or output of mu (linear attenuation). With no phase only affects absolute value of the results.</string>
+             </property>
              <property name="suffix">
               <string>μm</string>
              </property>
@@ -2278,12 +2449,12 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>403</x>
-     <y>352</y>
+     <x>473</x>
+     <y>401</y>
     </hint>
     <hint type="destinationlabel">
-     <x>559</x>
-     <y>330</y>
+     <x>1042</x>
+     <y>413</y>
     </hint>
    </hints>
   </connection>
@@ -2294,12 +2465,12 @@
    <slot>setVisible(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>385</x>
-     <y>460</y>
+     <x>589</x>
+     <y>522</y>
     </hint>
     <hint type="destinationlabel">
-     <x>810</x>
-     <y>472</y>
+     <x>916</x>
+     <y>522</y>
     </hint>
    </hints>
   </connection>
@@ -2310,12 +2481,12 @@
    <slot>setDisabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>542</x>
-     <y>365</y>
+     <x>684</x>
+     <y>418</y>
     </hint>
     <hint type="destinationlabel">
-     <x>771</x>
-     <y>355</y>
+     <x>964</x>
+     <y>420</y>
     </hint>
    </hints>
   </connection>
@@ -2326,23 +2497,39 @@
    <slot>setDisabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>528</x>
-     <y>360</y>
+     <x>684</x>
+     <y>418</y>
     </hint>
     <hint type="destinationlabel">
-     <x>984</x>
-     <y>365</y>
+     <x>1243</x>
+     <y>420</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>autocor</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>cor</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>286</x>
+     <y>331</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>407</x>
+     <y>330</y>
     </hint>
    </hints>
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="ringGroup">
+  <buttongroup name="resGroup">
    <property name="saveInConfig" stdset="0">
     <number>1</number>
    </property>
   </buttongroup>
-  <buttongroup name="resGroup">
+  <buttongroup name="ringGroup">
    <property name="saveInConfig" stdset="0">
     <number>1</number>
    </property>

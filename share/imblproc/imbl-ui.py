@@ -324,6 +324,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.on_individualIO_toggled()
         self.on_ctFilter_currentTextChanged()
+        self.ui.noConfigLabel.hide()
+        self.ui.oldConfigLabel.hide()
         self.ui.inProgress.setVisible(False)
         self.ui.termini.setVisible(False)
         self.ui.recInMemOnly.setVisible(False)
@@ -359,6 +361,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.configObjects.extend([grp for grp in self.ui.findChildren(QtWidgets.QButtonGroup)
                                        if not grp in self.configObjects])
         for swdg in self.configObjects:
+            if isinstance(swdg, QtWidgets.QWidget):
+                swdg.setToolTip(swdg.toolTip() + "\n\nParameter name: " + swdg.objectName())
             if isinstance(swdg, QtWidgets.QLineEdit):
                 swdg.textChanged.connect(self.saveConfiguration)
             elif isinstance(swdg, QtWidgets.QCheckBox):
@@ -454,6 +458,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if newfile:
                 fileName = newfile
         if not path.exists(fileName):
+            self.update_reconstruction_state()
             return
 
         self.amLoading = True
@@ -497,6 +502,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.on_sameBin_toggled()
 
         self.amLoading = False
+        self.update_initiate_state()
+        self.update_reconstruction_state()
 
 
     def addToConsole(self, text=None, qcolor=None):
@@ -774,9 +781,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     for grep in self.ui.excludes.text().split():
                         grepsPps += f" | grep -v -e '{grep}' "
                 if self.ui.includes.text():
-                    grepsPps += f" | grep "
                     for grep in self.ui.includes.text().split():
-                        grepsPps += f" -e '{grep}' "
+                        grepsPps += f" | grep -e '{grep}' "
             labels = Script.run(f"cat {path.join(ipath,'acquisition*log')} "
                                 f" | {path.join(execPath,'imbl-log.py')} "
                                  " | tail -n +3 | cut -d' ' -f2 | cut -d':' -f 1"
@@ -937,9 +943,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 for grep in self.ui.excludes.text().split():
                     grepsPps += f" | grep -v -e '{grep}' "
             if self.ui.includes.text():
-                grepsPps += f" | grep "
                 for grep in self.ui.includes.text().split():
-                    grepsPps += f" -e '{grep}' "
+                    grepsPps += f" | grep -e '{grep}' "
             labels = Script.run(f"cat {path.join(self.ui.inPath.text(), 'acquisition*log')} "
                                 f" | {path.join(execPath,'imbl-log.py')} "
                                  " | tail -n +3 | cut -d' ' -f2 | cut -d':' -f 1 "
@@ -1116,6 +1121,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.scrProc.stop()
             return -1
 
+        self.saveConfiguration(path.join(self.ui.outPath.text(), self.configName))
         self.addToConsole()
         actBut = self.ui.procThis if self.sender() is self.ui.procThis else self.ui.procAll
         subOnStart = self.ui.testSubDir.currentIndex()
@@ -1126,7 +1132,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.testSubDir.setCurrentIndex(curIdx)
             subdir = self.ui.testSubDir.currentText()
             wdir = path.join(self.ui.outPath.text(), subdir)
-            self.saveConfiguration(path.join(wdir, self.configName))
             self.enableWidgets(actBut)
             if self.common_stitch(wdir, actBut, ars) :
                 break
@@ -1167,7 +1172,6 @@ class MainWindow(QtWidgets.QMainWindow):
         projFile = path.realpath(projFile)
         x, y, z = hdf5shape(projFile, "data")
         projShape = f"{x} x {y} x {z}" if x and y and z else None
-        #print(f"memname {path.exists(memName)} ({projShape}) {memName} {projFile}")
         recFile = self.inMemNamePrexix() + "rec.hdf"
         x, y, z = hdf5shape(recFile, "data")
         recShape = f"{x} x {y} x {z}" if x and y and z else None
@@ -1454,7 +1458,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.scrProc.stop()
             return -1
 
-        self.saveConfiguration(path.join(wdir, self.configName))
+        self.saveConfiguration(path.join(self.ui.outPath.text(), self.configName))
         self.addToConsole()
         recBut = self.ui.reconstruct
         self.enableWidgets(recBut)
