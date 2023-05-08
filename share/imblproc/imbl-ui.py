@@ -7,6 +7,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QSettings, QProcess, QEventLoop, QObject, QTimer
 from PyQt5.QtWidgets import QFileDialog, QApplication
 from PyQt5.uic import loadUi
+from xml.sax.saxutils import escape
 
 
 myPath = path.dirname(path.realpath(__file__)) + path.sep
@@ -322,6 +323,25 @@ class MainWindow(QtWidgets.QMainWindow):
         self.collectOut = None
         self.collectErr = None
 
+        minToolTipWidth = 400
+        fm = QtGui.QFontMetrics(QtGui.QFont())
+        for swdg in self.ui.findChildren(QtWidgets.QWidget):
+            tip = swdg.toolTip().strip()
+            if not tip:
+                continue
+            addParam = "Parameter name: " + swdg.objectName() if swdg.property(cfgProp) is not None else ""
+            minWidth = max(minToolTipWidth, fm.width(addParam))
+            if len(addParam):
+                addParam = "<br><p>" + addParam + "</p>"
+            tip_width = fm.width(tip)
+            escape(tip)
+            if tip_width <= minWidth :
+                tip += "</p>"
+            else:
+                line_break_index = len(tip) * minWidth // tip_width
+                tip = tip[:line_break_index] + "</p>" + tip[line_break_index:]
+            swdg.setToolTip("<style>p { margin: 0 0 0 0 }</style><p style='white-space:pre'>" +
+                                tip + addParam )
         self.on_individualIO_toggled()
         self.on_ctFilter_currentTextChanged()
         self.ui.noConfigLabel.hide()
@@ -361,8 +381,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.configObjects.extend([grp for grp in self.ui.findChildren(QtWidgets.QButtonGroup)
                                        if not grp in self.configObjects])
         for swdg in self.configObjects:
-            if isinstance(swdg, QtWidgets.QWidget):
-                swdg.setToolTip(swdg.toolTip() + "\n\nParameter name: " + swdg.objectName())
             if isinstance(swdg, QtWidgets.QLineEdit):
                 swdg.textChanged.connect(self.saveConfiguration)
             elif isinstance(swdg, QtWidgets.QCheckBox):
