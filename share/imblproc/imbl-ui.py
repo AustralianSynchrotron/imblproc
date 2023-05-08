@@ -327,7 +327,7 @@ class MainWindow(QtWidgets.QMainWindow):
         fm = QtGui.QFontMetrics(QtGui.QFont())
         for swdg in self.ui.findChildren(QtWidgets.QWidget):
             tip = swdg.toolTip().strip()
-            if not tip:
+            if not tip or tip[:6] == '<html>' :
                 continue
             addParam = "Parameter name: " + swdg.objectName() if swdg.property(cfgProp) is not None else ""
             minWidth = max(minToolTipWidth, fm.width(addParam))
