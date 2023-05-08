@@ -1262,7 +1262,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if saveHist :
             Script.run(f"echo '{command}' >> {self.historyName}")
         return self.execScrProc( "Retrieving phase", command)
-                                
+
 
 
     def applyRing(self, iVol, oVol=None, saveHist=False):
@@ -1271,7 +1271,7 @@ class MainWindow(QtWidgets.QMainWindow):
         command = f"ctas ring -v -R {self.ui.ring.value()} {iVol} " + \
                                 (f" -o {oVol}" if oVol else "")
         if saveHist :
-            Script.run(f"echo '{command}' >> {self.historyName}")        
+            Script.run(f"echo '{command}' >> {self.historyName}")
         return self.execScrProc( "Applying ring filter", command )
 
 

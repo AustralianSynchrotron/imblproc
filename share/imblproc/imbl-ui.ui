@@ -14,7 +14,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>3</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tabInit">
        <attribute name="title">
@@ -1553,6 +1553,9 @@
           <layout class="QHBoxLayout" name="horizontalLayout_31">
            <item>
             <widget class="QComboBox" name="ctFilter">
+             <property name="toolTip">
+              <string>Fourier filter applied to the sinogram lines. Non-standard filters may reduce noise for the price of loosing resolution.</string>
+             </property>
              <property name="currentIndex">
               <number>1</number>
              </property>
@@ -1703,6 +1706,9 @@
           <layout class="QHBoxLayout" name="horizontalLayout_28">
            <item>
             <widget class="QSpinBox" name="ring">
+             <property name="toolTip">
+              <string>Half-width of the ring artefact removal algorithm. Should be typical size of the rings to be corrected.</string>
+             </property>
              <property name="specialValueText">
               <string>none</string>
              </property>
@@ -1774,6 +1780,9 @@
            </property>
            <item>
             <widget class="QRadioButton" name="ringBeforePhase">
+             <property name="toolTip">
+              <string>Apply ring filter before phase retrieval.</string>
+             </property>
              <property name="text">
               <string>before</string>
              </property>
@@ -1787,6 +1796,9 @@
            </item>
            <item>
             <widget class="QRadioButton" name="ringAfterPhase">
+             <property name="toolTip">
+              <string>Apply ring filter after phase retrieval.</string>
+             </property>
              <property name="text">
               <string>after</string>
              </property>
@@ -1813,6 +1825,9 @@
         </item>
         <item row="9" column="0" colspan="5">
          <widget class="QPushButton" name="reconstruct">
+          <property name="toolTip">
+           <string>Start/Stop CT reconstruction procedure.</string>
+          </property>
           <property name="text">
            <string>Reconstruct</string>
           </property>
@@ -1835,6 +1850,9 @@
          <layout class="QHBoxLayout" name="horizontalLayout_35">
           <item>
            <widget class="QCheckBox" name="recInMem">
+            <property name="toolTip">
+             <string>If ticked, results of CT reconstruction will be copied to memory (/dev/shm/) to allow fast access in post-processing.</string>
+            </property>
             <property name="text">
              <string>Reconstruct into memory</string>
             </property>
@@ -1845,6 +1863,9 @@
           </item>
           <item>
            <widget class="QCheckBox" name="recInMemOnly">
+            <property name="toolTip">
+             <string>If ticked, results of reconstruction will be stored only in memory (/dev/shm) and never saved into output destination.</string>
+            </property>
             <property name="text">
              <string>(only)</string>
             </property>
@@ -1855,6 +1876,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="wipe">
+            <property name="toolTip">
+             <string>Wipe any files in memory (/dev/shm) created by this instance of the processing pipeline.</string>
+            </property>
             <property name="text">
              <string>Wipe memory</string>
             </property>
@@ -1902,6 +1926,9 @@
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="toolTip">
+              <string>If ticked, low threshold is calculated from the minimum of the output volume.</string>
+             </property>
              <property name="text">
               <string>auto</string>
              </property>
@@ -1925,6 +1952,9 @@
            </item>
            <item>
             <widget class="QDoubleSpinBox" name="toIntMin">
+             <property name="toolTip">
+              <string>Low threshold on conversion to integer. All values below or equal to this number will come out az black.</string>
+             </property>
              <property name="minimum">
               <double>-10000000000000000213204190094543968723012578712679649467743338496.000000000000000</double>
              </property>
@@ -1957,6 +1987,9 @@
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="toolTip">
+              <string>If ticked, high threshold is calculated from the maximum of the output volume.</string>
+             </property>
              <property name="text">
               <string>auto</string>
              </property>
@@ -1967,6 +2000,9 @@
            </item>
            <item>
             <widget class="QDoubleSpinBox" name="toIntMax">
+             <property name="toolTip">
+              <string>High threshold on conversion to integer. All values above or equal to this number will come out as white.</string>
+             </property>
              <property name="minimum">
               <double>-9999999999999999538762658202121142272.000000000000000</double>
              </property>
@@ -1998,6 +2034,9 @@
           </item>
           <item>
            <widget class="QSpinBox" name="testSliceNum">
+            <property name="toolTip">
+             <string>Slice number used for the test. Note that phase retrieval requires this number to be at leas 64 pixels away from top and bottom of the image.</string>
+            </property>
             <property name="maximum">
              <number>999999999</number>
             </property>
@@ -2109,6 +2148,9 @@
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="toolTip">
+              <string>Output results in the form of 32-bit float point HDF5 file &lt;output&gt;/rec.hdf, with data stored inside /data container.</string>
+             </property>
              <property name="text">
               <string>HDF5</string>
              </property>
@@ -2128,6 +2170,9 @@
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="toolTip">
+              <string>Output results in the form of the stack of TIFF images stored in the &lt;output&gt;/rec sub-folder.</string>
+             </property>
              <property name="text">
               <string>TIFF</string>
              </property>
@@ -2143,6 +2188,9 @@
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>If ticked, output TIFF files are saved as 8-bit integer with the following Min/Max thresholds. Otherwise data are saved as 32-bit float point image with no information lost.</string>
              </property>
              <property name="text">
               <string>int</string>
@@ -2203,6 +2251,9 @@
              <layout class="QHBoxLayout" name="horizontalLayout_32">
               <item>
                <widget class="QDoubleSpinBox" name="ctFilterParam">
+                <property name="toolTip">
+                 <string>Optional value required in KAISER and GAUSS CT filter. Respectively, it represents ɑ and σ of the corresponding filter.</string>
+                </property>
                 <property name="saveInConfig" stdset="0">
                  <number>0</number>
                 </property>
@@ -2228,6 +2279,9 @@
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="toolTip">
+              <string>Attempt to find centre of rotation automatically.</string>
+             </property>
              <property name="text">
               <string>Auto</string>
              </property>
@@ -2238,6 +2292,9 @@
            </item>
            <item>
             <widget class="QDoubleSpinBox" name="cor">
+             <property name="toolTip">
+              <string>Deviation of the rotation axis from the center of the image.</string>
+             </property>
              <property name="decimals">
               <number>1</number>
              </property>
@@ -2273,6 +2330,9 @@
           <layout class="QHBoxLayout" name="horizontalLayout_33">
            <item>
             <widget class="QCheckBox" name="outMu">
+             <property name="toolTip">
+              <string>If ticked, output results represent linear attenuation coefficient μ (1/m). Otherwise real part of complex refraction coefficient β.</string>
+             </property>
              <property name="text">
               <string>Output mu</string>
              </property>
@@ -2324,6 +2384,9 @@
         </item>
         <item row="8" column="0">
          <widget class="QPushButton" name="testSlice">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Runs CT test on given slice. Results of the procedure are saved into the tmp sub-folder of the output path. Following files are created in the process (&amp;lt;S&amp;gt; stands for given projection number):&lt;/p&gt;&lt;p&gt;SAMPLE_autoCOR0_&amp;lt;COR&amp;gt;.tif - only if automatic rotation centre is selected. Result of superimposition of two 180-deg separated projections flipped around calculated rotation centre given be &amp;lt;COR&amp;gt; component of the filename.&lt;/p&gt;&lt;p&gt;SINO_&amp;lt;S&amp;gt;_raw.tif - raw sinogram extracted from input volume of projections,&lt;/p&gt;&lt;p&gt;SINO_&amp;lt;S&amp;gt;_ring.tif - sinogram after ring filter is applied,&lt;/p&gt;&lt;p&gt;SINO_&amp;lt;S&amp;gt;_phase.tif - sinogram after phase retiaval is applied,&lt;/p&gt;&lt;p&gt;SLICE_&amp;lt;S&amp;gt;.tif - results of CT reconstruction,&lt;/p&gt;&lt;p&gt;SLICE_&amp;lt;S&amp;gt;_8int.tif - only if conversion to integer is selected - the result of it.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
           <property name="text">
            <string>Test</string>
           </property>
@@ -2427,6 +2490,9 @@
         </item>
         <item>
          <widget class="QPushButton" name="termini">
+          <property name="toolTip">
+           <string>Terminate all running processes.</string>
+          </property>
           <property name="text">
            <string>Terminate all</string>
           </property>
