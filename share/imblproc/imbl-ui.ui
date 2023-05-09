@@ -34,6 +34,160 @@
         <item row="2" column="0">
          <widget class="QWidget" name="initInfo" native="true">
           <layout class="QGridLayout" name="gridLayout_8">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_15">
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="1">
+            <widget class="QLabel" name="oldConfigLabel">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">color: rgb(255, 0, 4);</string>
+             </property>
+             <property name="text">
+              <string>Old version. Use imbl4massive tools to process</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="1">
+            <widget class="QLabel" name="noConfigLabel">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">color: rgb(255, 0, 4);</string>
+             </property>
+             <property name="text">
+              <string>Directory does not contain configuration file</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Output</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QCheckBox" name="individualIO">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="toolTip">
+              <string>If ticked, allows individual selection of IMBL scan and output folders. Otherwise folders are set from the experiment path and selected scan from the list of existing under experiment's input folder. </string>
+             </property>
+             <property name="text">
+              <string>Select input and output individually</string>
+             </property>
+             <property name="saveInConfig" stdset="0">
+              <number>-3</number>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QWidget" name="sampleWdg" native="true">
+             <layout class="QHBoxLayout" name="horizontalLayout_10">
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QComboBox" name="expSample">
+                <property name="toolTip">
+                 <string>List of samples in the given IMBL experiment. Does not update automatically and requires manual update on creation of new scans.</string>
+                </property>
+                <property name="saveInConfig" stdset="0">
+                 <number>-2</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="expUpdate">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="toolTip">
+                 <string>Update list of existing scans inside input folder of the experiment. Use it when new scan is created externally to add it into the list.</string>
+                </property>
+                <property name="text">
+                 <string>Update</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item row="5" column="1">
+            <widget class="QWidget" name="widget_3" native="true">
+             <layout class="QHBoxLayout" name="horizontalLayout_9">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QLineEdit" name="outPath">
+                <property name="toolTip">
+                 <string>Output folder where all processing results are saved.</string>
+                </property>
+                <property name="saveInConfig" stdset="0">
+                 <number>-1</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="outBrowse">
+                <property name="text">
+                 <string>Browse</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>Input</string>
+             </property>
+            </widget>
+           </item>
            <item row="3" column="1">
             <widget class="QWidget" name="widget_2" native="true">
              <layout class="QHBoxLayout" name="horizontalLayout_8">
@@ -72,22 +226,102 @@
              </layout>
             </widget>
            </item>
-           <item row="6" column="1" rowspan="2">
+           <item row="1" column="1">
+            <widget class="QWidget" name="expWdg" native="true">
+             <layout class="QHBoxLayout" name="horizontalLayout_7">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QLineEdit" name="expPath">
+                <property name="toolTip">
+                 <string>Path to the folder of a specific IMBL experiment. Must contain input and output sub-folders.</string>
+                </property>
+                <property name="saveInConfig" stdset="0">
+                 <number>-2</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="expBrowse">
+                <property name="text">
+                 <string>Browse</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item row="11" column="1">
+            <layout class="QHBoxLayout" name="horizontalLayout_17">
+             <item>
+              <widget class="QCheckBox" name="noNewFF">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="toolTip">
+                <string>If ticked and averaged flat images exist in output, does not recalculate them to save time. Otherwise those images are reproduced on each initiation.</string>
+               </property>
+               <property name="text">
+                <string>Do NOT recreate averaged flat and dark field images</string>
+               </property>
+               <property name="saveInConfig" stdset="0">
+                <number>0</number>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="procAfterInit">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="toolTip">
+                <string>If ticked, starts processing automatically straight after successfull initiation.</string>
+               </property>
+               <property name="text">
+                <string>Proceed to the next step</string>
+               </property>
+               <property name="saveInConfig" stdset="0">
+                <number>0</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="expLbl">
+             <property name="text">
+              <string>Experiment</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="expSampleLbl">
+             <property name="text">
+              <string>Sample</string>
+             </property>
+            </widget>
+           </item>
+           <item row="8" column="1" rowspan="2">
             <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,0,0">
-             <item row="4" column="0">
-              <widget class="QLabel" name="inexclLabel">
-               <property name="text">
-                <string>Filter series</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="0">
-              <widget class="QLabel" name="zlabel">
-               <property name="text">
-                <string>Innear series [Z]</string>
-               </property>
-              </widget>
-             </item>
              <item row="1" column="2">
               <widget class="QCheckBox" name="ignoreLog">
                <property name="toolTip">
@@ -98,32 +332,6 @@
                </property>
                <property name="saveInConfig" stdset="0">
                 <number>0</number>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QLineEdit" name="scanRange">
-               <property name="toolTip">
-                <string>CT acquisition arc. Read from acquisition configuration file and, if existing and not ignored, log file.</string>
-               </property>
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="1">
-              <widget class="QSpinBox" name="zs">
-               <property name="toolTip">
-                <string>Number of sub-scans in the innear series of 2D scan.</string>
-               </property>
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="buttonSymbols">
-                <enum>QAbstractSpinBox::NoButtons</enum>
-               </property>
-               <property name="maximum">
-                <number>999</number>
                </property>
               </widget>
              </item>
@@ -140,44 +348,6 @@
                </property>
                <property name="maximum">
                 <number>999</number>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="2">
-              <widget class="QCheckBox" name="zIndependent">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="toolTip">
-                <string>If ticked processes sub-scans in the loop as individual scans, creating corresponding ouput sub-folders. Otherwise stitches them together.</string>
-               </property>
-               <property name="text">
-                <string>treat Z series as independent samples</string>
-               </property>
-               <property name="saveInConfig" stdset="0">
-                <number>0</number>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="2">
-              <widget class="QCheckBox" name="notFnS">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="toolTip">
-                <string>For the scans with acquisition arc larger or equal to 360 degree, tells if projections are processed as-is (ticked) or are stitched in accordance with the flip-and-stitch approach (unticked): for each projection in [0,180+] range corresponding projection acquired 180 degree away is found, horizontally flipped and stitched with the first one.</string>
-               </property>
-               <property name="text">
-                <string>scan is NOT 180deg flip-and-stitch</string>
-               </property>
-               <property name="saveInConfig" stdset="0">
-                <number>0</number>
                </property>
               </widget>
              </item>
@@ -230,13 +400,20 @@
                </item>
               </layout>
              </item>
-             <item row="2" column="0">
-              <widget class="QLabel" name="ylabel">
+             <item row="0" column="1">
+              <widget class="QLineEdit" name="scanRange">
                <property name="toolTip">
-                <string>Number of sub-scans in the (outer, if 2D series) loop.</string>
+                <string>CT acquisition arc. Read from acquisition configuration file and, if existing and not ignored, log file.</string>
                </property>
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_3">
                <property name="text">
-                <string>Outer series [Y]</string>
+                <string>Scan range</string>
                </property>
               </widget>
              </item>
@@ -259,10 +436,55 @@
                </property>
               </widget>
              </item>
-             <item row="0" column="0">
-              <widget class="QLabel" name="label_3">
+             <item row="3" column="1">
+              <widget class="QSpinBox" name="zs">
+               <property name="toolTip">
+                <string>Number of sub-scans in the innear series of 2D scan.</string>
+               </property>
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="buttonSymbols">
+                <enum>QAbstractSpinBox::NoButtons</enum>
+               </property>
+               <property name="maximum">
+                <number>999</number>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QLabel" name="zlabel">
                <property name="text">
-                <string>Scan range</string>
+                <string>Innear series [Z]</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="2">
+              <widget class="QCheckBox" name="zIndependent">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="toolTip">
+                <string>If ticked processes sub-scans in the loop as individual scans, creating corresponding ouput sub-folders. Otherwise stitches them together.</string>
+               </property>
+               <property name="text">
+                <string>treat Z series as independent samples</string>
+               </property>
+               <property name="saveInConfig" stdset="0">
+                <number>0</number>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="0">
+              <widget class="QLabel" name="ylabel">
+               <property name="toolTip">
+                <string>Number of sub-scans in the (outer, if 2D series) loop.</string>
+               </property>
+               <property name="text">
+                <string>Outer series [Y]</string>
                </property>
               </widget>
              </item>
@@ -273,161 +495,8 @@
                </property>
               </widget>
              </item>
-             <item row="4" column="1" colspan="2">
-              <widget class="QWidget" name="inexclWidget" native="true">
-               <layout class="QHBoxLayout" name="inexclWidgetLay">
-                <property name="leftMargin">
-                 <number>0</number>
-                </property>
-                <property name="topMargin">
-                 <number>0</number>
-                </property>
-                <property name="rightMargin">
-                 <number>0</number>
-                </property>
-                <property name="bottomMargin">
-                 <number>0</number>
-                </property>
-                <item>
-                 <widget class="QLabel" name="label_57">
-                  <property name="text">
-                   <string>include</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLineEdit" name="inInclude">
-                  <property name="toolTip">
-                   <string>Space-separated list of patterns which only must be included in processing. Patterns are grep expressions (see grep help for details). F.e. &quot;Y0&quot; &quot;Y1[0-2]&quot; would include Y series from 0 to 12, but ignore all following.</string>
-                  </property>
-                  <property name="saveInConfig" stdset="0">
-                   <number>0</number>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLabel" name="label_51">
-                  <property name="text">
-                   <string>exclude</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLineEdit" name="inExclude">
-                  <property name="toolTip">
-                   <string>Space-separated list of patterns which are excluded from processing. Patterns are grep expressions (see grep help for details). F.e. &quot;Y09&quot; &quot;Y1[0-2]&quot; would exclude Y series  9 to 12.</string>
-                  </property>
-                  <property name="saveInConfig" stdset="0">
-                   <number>0</number>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item row="8" column="1">
-            <widget class="QWidget" name="widget_3" native="true">
-             <layout class="QHBoxLayout" name="horizontalLayout_9">
-              <property name="spacing">
-               <number>0</number>
-              </property>
-              <property name="leftMargin">
-               <number>0</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
-               <number>0</number>
-              </property>
-              <item>
-               <widget class="QLineEdit" name="outPath">
-                <property name="toolTip">
-                 <string>Output folder where all processing results are saved.</string>
-                </property>
-                <property name="saveInConfig" stdset="0">
-                 <number>-1</number>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="outBrowse">
-                <property name="text">
-                 <string>Browse</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item row="8" column="0">
-            <widget class="QLabel" name="label_2">
-             <property name="text">
-              <string>Output</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QWidget" name="expWdg" native="true">
-             <layout class="QHBoxLayout" name="horizontalLayout_7">
-              <property name="spacing">
-               <number>0</number>
-              </property>
-              <property name="leftMargin">
-               <number>0</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
-               <number>0</number>
-              </property>
-              <item>
-               <widget class="QLineEdit" name="expPath">
-                <property name="toolTip">
-                 <string>Path to the folder of a specific IMBL experiment. Must contain input and output sub-folders.</string>
-                </property>
-                <property name="saveInConfig" stdset="0">
-                 <number>-2</number>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="expBrowse">
-                <property name="text">
-                 <string>Browse</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item row="3" column="0">
-            <widget class="QLabel" name="label">
-             <property name="text">
-              <string>Input</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="expSampleLbl">
-             <property name="text">
-              <string>Sample</string>
-             </property>
-            </widget>
-           </item>
-           <item row="9" column="1">
-            <layout class="QHBoxLayout" name="horizontalLayout_17">
-             <item>
-              <widget class="QCheckBox" name="noNewFF">
+             <item row="0" column="2">
+              <widget class="QCheckBox" name="notFnS">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                  <horstretch>0</horstretch>
@@ -435,29 +504,10 @@
                 </sizepolicy>
                </property>
                <property name="toolTip">
-                <string>If ticked and averaged flat images exist in output, does not recalculate them to save time. Otherwise those images are reproduced on each initiation.</string>
+                <string>For the scans with acquisition arc larger or equal to 360 degree, tells if projections are processed as-is (ticked) or are stitched in accordance with the flip-and-stitch approach (unticked): for each projection in [0,180+] range corresponding projection acquired 180 degree away is found, horizontally flipped and stitched with the first one.</string>
                </property>
                <property name="text">
-                <string>Do NOT recreate averaged flat and dark field images</string>
-               </property>
-               <property name="saveInConfig" stdset="0">
-                <number>0</number>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="procAfterInit">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="toolTip">
-                <string>If ticked, starts processing automatically straight after successfull initiation.</string>
-               </property>
-               <property name="text">
-                <string>Proceed to the next step</string>
+                <string>scan is NOT 180deg flip-and-stitch</string>
                </property>
                <property name="saveInConfig" stdset="0">
                 <number>0</number>
@@ -466,113 +516,63 @@
              </item>
             </layout>
            </item>
-           <item row="5" column="1">
-            <widget class="QLabel" name="oldConfigLabel">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">color: rgb(255, 0, 4);</string>
-             </property>
+           <item row="4" column="0">
+            <widget class="QLabel" name="inexclLabel">
              <property name="text">
-              <string>Old version. Use imbl4massive tools to process</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="expLbl">
-             <property name="text">
-              <string>Experiment</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QWidget" name="sampleWdg" native="true">
-             <layout class="QHBoxLayout" name="horizontalLayout_10">
-              <property name="leftMargin">
-               <number>0</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
-               <number>0</number>
-              </property>
-              <item>
-               <widget class="QComboBox" name="expSample">
-                <property name="toolTip">
-                 <string>List of samples in the given IMBL experiment. Does not update automatically and requires manual update on creation of new scans.</string>
-                </property>
-                <property name="saveInConfig" stdset="0">
-                 <number>-2</number>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="expUpdate">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="toolTip">
-                 <string>Update list of existing scans inside input folder of the experiment. Use it when new scan is created externally to add it into the list.</string>
-                </property>
-                <property name="text">
-                 <string>Update</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QCheckBox" name="individualIO">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="toolTip">
-              <string>If ticked, allows individual selection of IMBL scan and output folders. Otherwise folders are set from the experiment path and selected scan from the list of existing under experiment's input folder. </string>
-             </property>
-             <property name="text">
-              <string>Select input and output individually</string>
-             </property>
-             <property name="saveInConfig" stdset="0">
-              <number>-3</number>
+              <string>Filter names</string>
              </property>
             </widget>
            </item>
            <item row="4" column="1">
-            <widget class="QLabel" name="noConfigLabel">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">color: rgb(255, 0, 4);</string>
-             </property>
-             <property name="text">
-              <string>Directory does not contain configuration file</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_15">
-             <property name="text">
-              <string/>
-             </property>
+            <widget class="QWidget" name="inexclWidget" native="true">
+             <layout class="QHBoxLayout" name="inexclWidgetLay">
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QLabel" name="label_57">
+                <property name="text">
+                 <string>include</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="inInclude">
+                <property name="toolTip">
+                 <string>Space-separated list of patterns which only must be included in processing. Patterns are grep expressions (see grep help for details). F.e. &quot;Y0&quot; &quot;Y1[0-2]&quot; would include Y series from 0 to 12, but ignore all following.</string>
+                </property>
+                <property name="saveInConfig" stdset="0">
+                 <number>0</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_51">
+                <property name="text">
+                 <string>exclude</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="inExclude">
+                <property name="toolTip">
+                 <string>Space-separated list of patterns which are excluded from processing. Patterns are grep expressions (see grep help for details). F.e. &quot;Y09&quot; &quot;Y1[0-2]&quot; would exclude Y series  9 to 12.</string>
+                </property>
+                <property name="saveInConfig" stdset="0">
+                 <number>0</number>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </widget>
            </item>
           </layout>
@@ -2515,10 +2515,10 @@
   <tabstop>expUpdate</tabstop>
   <tabstop>inPath</tabstop>
   <tabstop>inBrowse</tabstop>
-  <tabstop>outPath</tabstop>
-  <tabstop>outBrowse</tabstop>
   <tabstop>inInclude</tabstop>
   <tabstop>inExclude</tabstop>
+  <tabstop>outPath</tabstop>
+  <tabstop>outBrowse</tabstop>
   <tabstop>scanRange</tabstop>
   <tabstop>notFnS</tabstop>
   <tabstop>projections</tabstop>
