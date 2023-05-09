@@ -331,27 +331,27 @@ class MainWindow(QtWidgets.QMainWindow):
         parser.add_argument('config', type=str, nargs='?',
                             help='Configuration file to load on start. Default: ~/' + self.configName,
                             default=self.etcConfigName)
-        swdg = self.ui.tabWidget
-        while isinstance(swdg := swdg.nextInFocusChain(), QtWidgets.QWidget) and \
-              swdg is not self.ui.tabWidget:
-            if swdg.property(self.cfgProp) is not None:
-                name = swdg.objectName()
-                help = swdg.toolTip() if isinstance(swdg, QtWidgets.QWidget) else ""
-                if isinstance(swdg, QtWidgets.QLineEdit):
+        awdg = self.ui.tabWidget
+        while isinstance(awdg := awdg.nextInFocusChain(), QtWidgets.QWidget) and \
+              awdg is not self.ui.tabWidget:
+            if awdg.property(self.cfgProp) is not None:
+                name = awdg.objectName()
+                help = awdg.toolTip() if isinstance(awdg, QtWidgets.QWidget) else ""
+                if isinstance(awdg, QtWidgets.QLineEdit):
                     parser.add_argument(f"--{name}" , type=str, metavar="STR", help=help)
-                elif isinstance(swdg, QtWidgets.QCheckBox):
+                elif isinstance(awdg, QtWidgets.QCheckBox):
                     parser.add_argument(f"--{name}" , type=bool, metavar="BOOL", help=help)
-                elif isinstance(swdg, QtWidgets.QSpinBox):
+                elif isinstance(awdg, QtWidgets.QSpinBox):
                     parser.add_argument(f"--{name}" , type=int, metavar="INT", help=help)
-                elif isinstance(swdg, QtWidgets.QDoubleSpinBox):
+                elif isinstance(awdg, QtWidgets.QDoubleSpinBox):
                     parser.add_argument(f"--{name}" , type=float, metavar="FLOAT", help=help)
-                elif isinstance(swdg, QtWidgets.QComboBox):
-                    listOfItems = [ swdg.itemText(i) for i in range(0,swdg.count()) ]
+                elif isinstance(awdg, QtWidgets.QComboBox):
+                    listOfItems = [ awdg.itemText(i) for i in range(0,awdg.count()) ]
                     help += f" Possible values are: {listOfItems}" if len(listOfItems) else ""
                     parser.add_argument(f"--{name}" , type=str, metavar="STR", choices=listOfItems, help = help)
-                elif isinstance(swdg, UScript):
+                elif isinstance(awdg, UScript):
                     parser.add_argument(f"--{name}" , type=str, metavar="STR",
-                                        help = f"Script is executed before {swdg.role()}.")
+                                        help = f"Script is executed before {awdg.role()}.")
         for grp in self.ui.findChildren(QtWidgets.QButtonGroup):
             if not grp.buttons():
                 continue
@@ -362,7 +362,7 @@ class MainWindow(QtWidgets.QMainWindow):
             parser.add_argument(f"--{name}" , type=str, metavar="STR", choices=listOfItems, help=help)
         args = parser.parse_args()
 
-        # rework tool tips limiting horizontal box size and adding parameter name.
+        # reformat tool tips limiting horizontal box size and adding parameter name.
         minToolTipWidth = 400
         fm = QtGui.QFontMetrics(QtGui.QFont())
         for swdg in self.ui.findChildren(QtWidgets.QWidget):
@@ -418,7 +418,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                       if wdg not in exceptFromDisabled ]
         self.wereDisabled = []
 
-        # prepare list of config patrameters
+        # prepare list of config patrameters and make them updated in auto-saved config
         confsWithOrder = { obj: obj.property(self.cfgProp) for obj in self.ui.findChildren(QObject)
                                                       if obj.property(self.cfgProp) is not None}
         self.configObjects = [ pr[0] for pr in sorted(confsWithOrder.items(), key=lambda x:x[1]) ]
@@ -458,7 +458,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prFile.clicked.connect(lambda :
             QApplication.clipboard().setText(path.realpath(self.ui.prFile.text())))
 
-        QtCore.QTimer.singleShot(100, lambda: self.loadConfiguration(args.config if args.config else self.etcConfigName))
+        QtCore.QTimer.singleShot(100, lambda: 
+            self.loadConfiguration(args.config, vars(args)))
+        #self.loadConfiguration(args.config, vars(args))
 
 
     def execScrRole(self, role):
@@ -505,14 +507,14 @@ class MainWindow(QtWidgets.QMainWindow):
             elif isinstance(wdg, UScript):
                 return wdg.ui.body.text()
             elif isinstance(swdg, QtWidgets.QButtonGroup):
-                return swdg.checkedButton().text() if swdg.checkedButton() else ""
+                return swdg.checkedButton().objectName() if swdg.checkedButton() else ""
 
         for swdg in self.configObjects:
             config.setValue(swdg.objectName(), valToSave(swdg))
 
 
     @pyqtSlot()
-    def loadConfiguration(self, fileName=etcConfigName):
+    def loadConfiguration(self, fileName=etcConfigName, vargs={}):
 
         if not fileName:
             newfile, _filter = QFileDialog.getOpenFileName(
@@ -528,41 +530,48 @@ class MainWindow(QtWidgets.QMainWindow):
         self.amLoading = True
         config = QSettings(fileName, QSettings.IniFormat)
 
-        def valToLoad(wdg, nm):
-            if isinstance(wdg, QtWidgets.QLineEdit):
-                wdg.setText(config.value(oName, type=str))
-            elif isinstance(wdg, QtWidgets.QCheckBox):
-                wdg.setChecked(config.value(oName, type=bool))
-            elif isinstance(wdg, QtWidgets.QSpinBox):
-                val = config.value(oName, type=int)
-                if wdg.maximum() < val: wdg.setMaximum(val)
-                if wdg.minimum() > val: wdg.setMinimum(val)
-                wdg.setValue(val)
-            elif isinstance(wdg, QtWidgets.QDoubleSpinBox):
-                val = config.value(oName, type=float)
-                if wdg.maximum() < val: wdg.setMaximum(val)
-                if wdg.minimum() > val: wdg.setMinimum(val)
-                wdg.setValue(val)
-            elif isinstance(wdg, QtWidgets.QComboBox):
-                txt = config.value(oName, type=str)
-                didx = wdg.findText(txt)
-                if not didx < 0:
-                    wdg.setCurrentIndex(didx)
-            elif isinstance(wdg, UScript):
-                wdg.ui.body.setText(config.value(oName, type=str))
-            elif isinstance(swdg, QtWidgets.QButtonGroup):
-                txt = config.value(oName, type=str)
-                for but in wdg.buttons():
-                    if but.text() == txt:
-                        but.setChecked(True)
+        def getVal(swdg, type):
+            nm = swdg.objectName()
+            if nm in vargs and vargs[nm] is not None:
+                if isinstance(vargs[nm], type):
+                    return vargs[nm]
+                else:
+                    errMsg = f"Parameter --{nm} of the command line produced variable of unexpected" \
+                             f" type {type(vargs[nm])}, where {type} was expected."
+                    print(errMsg, file=sys.stderr)
+                    self.addErrToConsole(errMsg)
+            elif config.contains(nm):
+                return config.value(nm, type=type)
+            return None
 
-        for swdg in self.configObjects:
-            oName = swdg.objectName()
-            if config.contains(oName):
-                valToLoad(swdg, oName)
-            if swdg is self.ui.outPath:
+        for wdg in self.configObjects:
+            if isinstance(wdg, QtWidgets.QLineEdit) and ( val := getVal(wdg,str) ) is not None :
+                wdg.setText(val)
+            elif isinstance(wdg, QtWidgets.QCheckBox) and ( val := getVal(wdg,bool) ) is not None :
+                wdg.setChecked(val)
+            elif isinstance(wdg, QtWidgets.QSpinBox) and ( val := getVal(wdg,int) ) is not None :
+                if wdg.maximum() < val: wdg.setMaximum(val)
+                if wdg.minimum() > val: wdg.setMinimum(val)
+                wdg.setValue(val)
+            elif isinstance(wdg, QtWidgets.QDoubleSpinBox) and ( val := getVal(wdg,float) ) is not None :
+                if wdg.maximum() < val: wdg.setMaximum(val)
+                if wdg.minimum() > val: wdg.setMinimum(val)
+                wdg.setValue(val)
+            elif isinstance(wdg, QtWidgets.QComboBox) and ( val := getVal(wdg,str) ) is not None :
+                didx = wdg.findText(val)
+                if didx >= 0:
+                    wdg.setCurrentIndex(didx)
+            elif isinstance(wdg, UScript) and ( val := getVal(wdg,str) ) is not None :
+                wdg.ui.body.setText(val)
+            elif isinstance(wdg, QtWidgets.QButtonGroup) and ( val := getVal(wdg,str) ) is not None :
+                for butt in wdg.buttons():
+                    if butt.objectName() == val:
+                        butt.setChecked(True)
+            else:
+                continue
+            if wdg is self.ui.outPath:
                 self.on_outPath_textChanged()
-            if swdg is self.ui.sameBin:
+            if wdg is self.ui.sameBin:
                 self.on_sameBin_toggled()
 
         self.amLoading = False
