@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
-import sys, os, re, psutil, time, signal
+import sys, os, re, psutil, time, signal, argparse
 from os import path
-
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QSettings, QProcess, QEventLoop, QObject, QTimer
 from PyQt5.QtWidgets import QFileDialog, QApplication
 from PyQt5.uic import loadUi
 from xml.sax.saxutils import escape
+from argparse import RawTextHelpFormatter
 
 
 myPath = path.dirname(path.realpath(__file__)) + path.sep
@@ -295,19 +295,20 @@ class MainWindow(QtWidgets.QMainWindow):
     etcConfigName = path.join(path.expanduser("~"), configName)
     amLoading = False
     placePrefix="placeScript_"
+    cfgProp="saveInConfig" # objects with this property (containing int read order) will be saved in config
 
 
     def __init__(self):
         super(MainWindow, self).__init__()
-        cfgProp="saveInConfig" # objects with this property (containing int read order) will be saved in config
         self.ui = loadUi(path.join(uiPath, "imbl-ui.ui"), self)
 
+        # place Script UI's
         self.scrProc = Script(self)
         for place in self.ui.findChildren(QtWidgets.QLayout, QtCore.QRegExp(self.placePrefix+"\w+")):
             role = place.objectName().removeprefix(self.placePrefix)
             scrw = UScript(self.ui)
             scrw.setRole(role)
-            scrw.setProperty(cfgProp, 2)
+            scrw.setProperty(self.cfgProp, 2)
             place.addWidget(scrw)
         #self.cResizer = ColumnResizer(self)
         #self.cResizer.addWidgetsFromLayout(self.ui.tabRec.layout(), 4)
@@ -323,13 +324,52 @@ class MainWindow(QtWidgets.QMainWindow):
         self.collectOut = None
         self.collectErr = None
 
+        # parse commandline arguments
+        parser = argparse.ArgumentParser(description='IMBL processing pipeline.',
+                                         allow_abbrev=False,
+                                         formatter_class=argparse.RawTextHelpFormatter)
+        parser.add_argument('config', type=str, nargs='?',
+                            help='Configuration file to load on start. Default: ~/' + self.configName,
+                            default=self.etcConfigName)
+        swdg = self.ui.tabWidget
+        while isinstance(swdg := swdg.nextInFocusChain(), QtWidgets.QWidget) and \
+              swdg is not self.ui.tabWidget:
+            if swdg.property(self.cfgProp) is not None:
+                name = swdg.objectName()
+                help = swdg.toolTip() if isinstance(swdg, QtWidgets.QWidget) else ""
+                if isinstance(swdg, QtWidgets.QLineEdit):
+                    parser.add_argument(f"--{name}" , type=str, metavar="STR", help=help)
+                elif isinstance(swdg, QtWidgets.QCheckBox):
+                    parser.add_argument(f"--{name}" , type=bool, metavar="BOOL", help=help)
+                elif isinstance(swdg, QtWidgets.QSpinBox):
+                    parser.add_argument(f"--{name}" , type=int, metavar="INT", help=help)
+                elif isinstance(swdg, QtWidgets.QDoubleSpinBox):
+                    parser.add_argument(f"--{name}" , type=float, metavar="FLOAT", help=help)
+                elif isinstance(swdg, QtWidgets.QComboBox):
+                    listOfItems = [ swdg.itemText(i) for i in range(0,swdg.count()) ]
+                    help += f" Possible values are: {listOfItems}" if len(listOfItems) else ""
+                    parser.add_argument(f"--{name}" , type=str, metavar="STR", choices=listOfItems, help = help)
+                elif isinstance(swdg, UScript):
+                    parser.add_argument(f"--{name}" , type=str, metavar="STR",
+                                        help = f"Script is executed before {swdg.role()}.")
+        for grp in self.ui.findChildren(QtWidgets.QButtonGroup):
+            if not grp.buttons():
+                continue
+            name = grp.objectName()
+            help = "Possible values are:\n"
+            for butt in grp.buttons() :
+                help += f"  '{butt.objectName()}' - {butt.toolTip()}\n"
+            parser.add_argument(f"--{name}" , type=str, metavar="STR", choices=listOfItems, help=help)
+        args = parser.parse_args()
+
+        # rework tool tips limiting horizontal box size and adding parameter name.
         minToolTipWidth = 400
         fm = QtGui.QFontMetrics(QtGui.QFont())
         for swdg in self.ui.findChildren(QtWidgets.QWidget):
             tip = swdg.toolTip().strip()
             if not tip or tip[:6] == '<html>' :
                 continue
-            addParam = "Parameter name: " + swdg.objectName() if swdg.property(cfgProp) is not None else ""
+            addParam = "Parameter name: " + swdg.objectName() if swdg.property(self.cfgProp) is not None else ""
             minWidth = max(minToolTipWidth, fm.width(addParam))
             if len(addParam):
                 addParam = "<br><p>" + addParam + "</p>"
@@ -342,6 +382,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 tip = tip[:line_break_index] + "</p>" + tip[line_break_index:]
             swdg.setToolTip("<style>p { margin: 0 0 0 0 }</style><p style='white-space:pre'>" +
                                 tip + addParam )
+
+        # prepare UI elements
         self.on_individualIO_toggled()
         self.on_ctFilter_currentTextChanged()
         self.ui.noConfigLabel.hide()
@@ -353,6 +395,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.autoMax.setVisible(False) # feature not implemented
         self.ui.console.installEventFilter(ScrollToEnd(self.ui.console))
 
+        # add status bar elements
         saveBtn = QtWidgets.QPushButton("Save", self.ui)
         saveBtn.setFlat(True)
         saveBtn.clicked.connect(lambda : self.saveConfiguration(""))
@@ -362,6 +405,7 @@ class MainWindow(QtWidgets.QMainWindow):
         loadBtn.clicked.connect(lambda : self.loadConfiguration(""))
         self.ui.statusBar().addPermanentWidget(loadBtn)
 
+        # prepare list of disabled elements
         self.doYst = False
         self.doZst = False
         self.doFnS = False
@@ -374,10 +418,11 @@ class MainWindow(QtWidgets.QMainWindow):
                                       if wdg not in exceptFromDisabled ]
         self.wereDisabled = []
 
-        confsWithOrder = { obj: obj.property(cfgProp) for obj in self.ui.findChildren(QObject)
-                                                      if obj.property(cfgProp) is not None}
+        # prepare list of config patrameters
+        confsWithOrder = { obj: obj.property(self.cfgProp) for obj in self.ui.findChildren(QObject)
+                                                      if obj.property(self.cfgProp) is not None}
         self.configObjects = [ pr[0] for pr in sorted(confsWithOrder.items(), key=lambda x:x[1]) ]
-        # dynamic property of the QButtonGroup is not read from ui file; have to add them manually:
+            # dynamic property of the QButtonGroup is not read from ui file; have to add them manually:
         self.configObjects.extend([grp for grp in self.ui.findChildren(QtWidgets.QButtonGroup)
                                        if not grp in self.configObjects])
         for swdg in self.configObjects:
@@ -399,10 +444,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.ignoreLog.clicked.connect(self.needReinitiation)
         self.ui.yIndependent.clicked.connect(self.needReinitiation)
         self.ui.zIndependent.clicked.connect(self.needReinitiation)
-        self.ui.includes.editingFinished.connect(self.needReinitiation)
-        self.ui.excludes.editingFinished.connect(self.needReinitiation)
-        self.ui.includes.editingFinished.connect(self.on_inPath_textChanged)
-        self.ui.excludes.editingFinished.connect(self.on_inPath_textChanged)
+        self.ui.inInclude.editingFinished.connect(self.needReinitiation)
+        self.ui.inExclude.editingFinished.connect(self.needReinitiation)
+        self.ui.inInclude.editingFinished.connect(self.on_inPath_textChanged)
+        self.ui.inExclude.editingFinished.connect(self.on_inPath_textChanged)
         self.ui.expUpdate.clicked.connect(self.on_expPath_textChanged)
         self.ui.ignoreLog.toggled.connect(self.on_inPath_textChanged)
         self.ui.minProj.valueChanged.connect(self.onMinMaxProjectionChanged)
@@ -413,7 +458,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.prFile.clicked.connect(lambda :
             QApplication.clipboard().setText(path.realpath(self.ui.prFile.text())))
 
-        QtCore.QTimer.singleShot(100, self.loadConfiguration)
+        QtCore.QTimer.singleShot(100, lambda: self.loadConfiguration(args.config if args.config else self.etcConfigName))
 
 
     def execScrRole(self, role):
@@ -476,6 +521,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if newfile:
                 fileName = newfile
         if not path.exists(fileName):
+            print(f"Error loading configuration. File '{fileName}' does not exist.", file=sys.stderr)
             self.update_reconstruction_state()
             return
 
@@ -795,11 +841,11 @@ class MainWindow(QtWidgets.QMainWindow):
         if path.exists(logName) and not self.ui.ignoreLog.isChecked() :
             grepsPps = ""
             if self.ui.inexclWidget.isVisible() :
-                if self.ui.excludes.text():
-                    for grep in self.ui.excludes.text().split():
+                if self.ui.inExclude.text():
+                    for grep in self.ui.inExclude.text().split():
                         grepsPps += f" | grep -v -e '{grep}' "
-                if self.ui.includes.text():
-                    for grep in self.ui.includes.text().split():
+                if self.ui.inInclude.text():
+                    for grep in self.ui.inInclude.text().split():
                         grepsPps += f" | grep -e '{grep}' "
             labels = Script.run(f"cat {path.join(ipath,'acquisition*log')} "
                                 f" | {path.join(execPath,'imbl-log.py')} "
@@ -955,13 +1001,13 @@ class MainWindow(QtWidgets.QMainWindow):
             command += " -e "
         if not self.ui.ignoreLog.isChecked() and self.ui.ignoreLog.isVisible() :
             command += " -l "
-        if self.ui.inexclWidget.isVisible() and (self.ui.excludes.text() or self.ui.includes.text()) :
+        if self.ui.inexclWidget.isVisible() and (self.ui.inExclude.text() or self.ui.inInclude.text()) :
             grepsPps = ""
-            if self.ui.excludes.text():
-                for grep in self.ui.excludes.text().split():
+            if self.ui.inExclude.text():
+                for grep in self.ui.inExclude.text().split():
                     grepsPps += f" | grep -v -e '{grep}' "
-            if self.ui.includes.text():
-                for grep in self.ui.includes.text().split():
+            if self.ui.inInclude.text():
+                for grep in self.ui.inInclude.text().split():
                     grepsPps += f" | grep -e '{grep}' "
             labels = Script.run(f"cat {path.join(self.ui.inPath.text(), 'acquisition*log')} "
                                 f" | {path.join(execPath,'imbl-log.py')} "
@@ -1061,8 +1107,8 @@ class MainWindow(QtWidgets.QMainWindow):
             prms += f" -r {self.ui.rotate.value()} "
         if 0.0 != self.ui.peakRad.value():
             prms += f" -n {self.ui.peakRad.value()} -N {self.ui.peakThr.value()} "
-        if 0.0 != self.ui.edge.value():
-            prms += f" -E {self.ui.edge.value()} "
+        if 0.0 != self.ui.maskEdge.value():
+            prms += f" -E {self.ui.maskEdge.value()} "
         crops = (self.ui.sCropTop.value(), self.ui.sCropLeft.value(),
                  self.ui.sCropBottom.value(), self.ui.sCropRight.value())
         if sum(crops):
@@ -1078,8 +1124,8 @@ class MainWindow(QtWidgets.QMainWindow):
             if maxProj == self.ui.maxProj.minimum()  or maxProj >= pjs  :
                 maxProj = pjs
             prms += f" -m {minProj} -M {maxProj} "
-        if 1 != self.ui.zBin.value() :
-            prms += f" -z {self.ui.zBin.value()} "
+        if 1 != self.ui.projBin.value() :
+            prms += f" -z {self.ui.projBin.value()} "
         prms += " -v "
         if ars:
             prms += ars
@@ -1163,7 +1209,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 idx = self.ui.minProj.value() + ridx * (self.ui.maxProj.value() - self.ui.minProj.value() - 1) / 4
                 idx = int(idx)
                 Script.run(f"ctas v2v {projFile}:/data:{idx} -o {wdir}/clean_{idx:0{dgln}d}.tif")
-            if self.ui.recAfterStitch.isChecked() and self.on_reconstruct_clicked():
+            if self.ui.recAfterProj.isChecked() and self.on_reconstruct_clicked():
                 break
         self.ui.testSubDir.setCurrentIndex(subOnStart)
         self.enableWidgets()
@@ -1219,7 +1265,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def updateRingOrderVisibility(self):
         vis = self.ui.distance.value() > 0 and self.ui.d2b.value() > 0 and self.ui.ring.value() > 0
         self.ui.ringOrderLabel.setVisible(vis)
-        self.ui.ringOrder.setVisible(vis)
+        self.ui.ringOrderWidget.setVisible(vis)
 
 
     @pyqtSlot(int)
@@ -1243,18 +1289,18 @@ class MainWindow(QtWidgets.QMainWindow):
     @pyqtSlot(str)
     def on_ctFilter_currentTextChanged(self):
         if self.ui.ctFilter.currentText() == "Kaiser":
-            self.ui.ctFilterParam.setVisible(True)
-            self.ui.ctFilterParam.setMinimum(0)
+            self.ui.ctFilterOpt.setVisible(True)
+            self.ui.ctFilterOpt.setMinimum(0)
             self.ui.filterParamLabel.setVisible(True)
             self.ui.filterParamLabel.setText("Alpha parameter")
 
         elif self.ui.ctFilter.currentText() == "Gauss":
-            self.ui.ctFilterParam.setVisible(True)
-            self.ui.ctFilterParam.setMinimum(0.01)
+            self.ui.ctFilterOpt.setVisible(True)
+            self.ui.ctFilterOpt.setMinimum(0.01)
             self.ui.filterParamLabel.setVisible(True)
             self.ui.filterParamLabel.setText("Sigma parameter")
         else:
-            self.ui.ctFilterParam.setVisible(False)
+            self.ui.ctFilterOpt.setVisible(False)
             self.ui.filterParamLabel.setVisible(False)
 
 
@@ -1295,8 +1341,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def applyCT(self, step, istr, ostr, saveHist=False):
         fltLine = self.ui.ctFilter.currentText().upper().split()[0]
-        if self.ui.ctFilterParam.isVisible():
-            fltLine += f":{self.ui.ctFilterParam.value()}"
+        if self.ui.ctFilterOpt.isVisible():
+            fltLine += f":{self.ui.ctFilterOpt.value()}"
         kontrLine = "FLT" if fltLine == "NONE" else "ABS"
         fltLine = "" if fltLine == "NONE" else f" -f {fltLine}"
         resLine = f" -r {self.ui.pixelSize.value()} " + \
@@ -1429,7 +1475,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                 f" -c {slice-64},0,{y-slice-64},0 ") :
                 return onStopMe()
 
-            if  self.ui.ringGroup.checkedButton() is self.ui.ringBeforePhase:
+            if  self.ui.ringOrder.checkedButton() is self.ui.ringBeforePhase:
                 if self.applyRing(f"{phaseSubVol}:/data:y") or \
                    saveSino(f"{phaseSubVol}:/data:y64", f"{testPrefix}_ring.tif", "ring-filtered"):
                     return onStopMe()
@@ -1440,7 +1486,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 return onStopMe()
             recSino = phaseSino
 
-            if  self.ui.ringGroup.checkedButton() is self.ui.ringAfterPhase:
+            if  self.ui.ringOrder.checkedButton() is self.ui.ringAfterPhase:
                 ringSino = f"{testPrefix}_ring.tif"
                 if self.applyRing(phaseSino, ringSino):
                     return onStopMe()
@@ -1505,7 +1551,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return -1
         projFile, _, _, step, wdir = commres
         delMe = projFile
-        if self.ui.ringGroup.checkedButton() is self.ui.ringBeforePhase :
+        if self.ui.ringOrder.checkedButton() is self.ui.ringBeforePhase :
             if self.applyRing(f"{projFile}:/data:y", saveHist=True) or self.applyPhase(f"{projFile}:/data", True):
                 return onStopMe()
         else:
@@ -1570,7 +1616,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def on_termini_clicked(self):
         for script in self.ui.findChildren(Script):
             script.stop()
-
 
 
 

@@ -296,7 +296,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QLineEdit" name="includes">
+                 <widget class="QLineEdit" name="inInclude">
                   <property name="toolTip">
                    <string>Space-separated list of patterns which only must be included in processing. Patterns are grep expressions (see grep help for details). F.e. &quot;Y0&quot; &quot;Y1[0-2]&quot; would include Y series from 0 to 12, but ignore all following.</string>
                   </property>
@@ -313,7 +313,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QLineEdit" name="excludes">
+                 <widget class="QLineEdit" name="inExclude">
                   <property name="toolTip">
                    <string>Space-separated list of patterns which are excluded from processing. Patterns are grep expressions (see grep help for details). F.e. &quot;Y09&quot; &quot;Y1[0-2]&quot; would exclude Y series  9 to 12.</string>
                   </property>
@@ -658,7 +658,7 @@
          </layout>
         </item>
         <item row="2" column="1">
-         <widget class="QSpinBox" name="edge">
+         <widget class="QSpinBox" name="maskEdge">
           <property name="toolTip">
            <string>Thickness of edge transition (in pixels). Smoothly reduces the weights of pixels around the mask edges (0 values in mask) to produce seamless image stitching.  If no mask is provided, but this parameter is non-zero, mask is constructed from the background image with pixel values equal to zero or NaN.</string>
           </property>
@@ -1067,7 +1067,7 @@
            </spacer>
           </item>
           <item>
-           <widget class="QCheckBox" name="recAfterStitch">
+           <widget class="QCheckBox" name="recAfterProj">
             <property name="toolTip">
              <string>If ticked, starts CT reconstruction automatically straight after successfull stitching.</string>
             </property>
@@ -1288,7 +1288,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QSpinBox" name="zBin">
+           <widget class="QSpinBox" name="projBin">
             <property name="toolTip">
              <string>Number of subsequent raw projections to be averaged to produce single output projection. Can be usefull to reduce size of the interim projections volume for the scans with a large number of acquisition steps (≳ width * π/2). Ignored in tests.</string>
             </property>
@@ -1554,7 +1554,7 @@
            <item>
             <widget class="QComboBox" name="ctFilter">
              <property name="toolTip">
-              <string>Fourier filter applied to the sinogram lines. Non-standard filters may reduce noise for the price of loosing resolution.</string>
+              <string>Fourier filter applied to the sinogram lines. Standard filter is Ramp; other filters may reduce noise for the price of loosing resolution.</string>
              </property>
              <property name="currentIndex">
               <number>1</number>
@@ -1569,7 +1569,7 @@
              </item>
              <item>
               <property name="text">
-               <string>Ramp (standard)</string>
+               <string>Ramp</string>
               </property>
              </item>
              <item>
@@ -1764,7 +1764,7 @@
          </layout>
         </item>
         <item row="2" column="4">
-         <widget class="QWidget" name="ringOrder" native="true">
+         <widget class="QWidget" name="ringOrderWidget" native="true">
           <layout class="QHBoxLayout" name="horizontalLayout_18">
            <property name="leftMargin">
             <number>0</number>
@@ -1790,7 +1790,7 @@
               <bool>true</bool>
              </property>
              <attribute name="buttonGroup">
-              <string notr="true">ringGroup</string>
+              <string notr="true">ringOrder</string>
              </attribute>
             </widget>
            </item>
@@ -1803,7 +1803,7 @@
               <string>after</string>
              </property>
              <attribute name="buttonGroup">
-              <string notr="true">ringGroup</string>
+              <string notr="true">ringOrder</string>
              </attribute>
             </widget>
            </item>
@@ -2158,7 +2158,7 @@
               <bool>true</bool>
              </property>
              <attribute name="buttonGroup">
-              <string notr="true">resGroup</string>
+              <string notr="true">resFormat</string>
              </attribute>
             </widget>
            </item>
@@ -2177,7 +2177,7 @@
               <string>TIFF</string>
              </property>
              <attribute name="buttonGroup">
-              <string notr="true">resGroup</string>
+              <string notr="true">resFormat</string>
              </attribute>
             </widget>
            </item>
@@ -2250,7 +2250,7 @@
             <widget class="QWidget" name="widget" native="true">
              <layout class="QHBoxLayout" name="horizontalLayout_32">
               <item>
-               <widget class="QDoubleSpinBox" name="ctFilterParam">
+               <widget class="QDoubleSpinBox" name="ctFilterOpt">
                 <property name="toolTip">
                  <string>Optional value required in KAISER and GAUSS CT filter. Respectively, it represents ɑ and σ of the corresponding filter.</string>
                 </property>
@@ -2506,6 +2506,97 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
+ <tabstops>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>individualIO</tabstop>
+  <tabstop>expPath</tabstop>
+  <tabstop>expBrowse</tabstop>
+  <tabstop>expSample</tabstop>
+  <tabstop>expUpdate</tabstop>
+  <tabstop>inPath</tabstop>
+  <tabstop>inBrowse</tabstop>
+  <tabstop>outPath</tabstop>
+  <tabstop>outBrowse</tabstop>
+  <tabstop>inInclude</tabstop>
+  <tabstop>inExclude</tabstop>
+  <tabstop>scanRange</tabstop>
+  <tabstop>notFnS</tabstop>
+  <tabstop>projections</tabstop>
+  <tabstop>step</tabstop>
+  <tabstop>ignoreLog</tabstop>
+  <tabstop>ys</tabstop>
+  <tabstop>yIndependent</tabstop>
+  <tabstop>zs</tabstop>
+  <tabstop>zIndependent</tabstop>
+  <tabstop>noNewFF</tabstop>
+  <tabstop>procAfterInit</tabstop>
+  <tabstop>initiate</tabstop>
+  <tabstop>iwidth</tabstop>
+  <tabstop>ihight</tabstop>
+  <tabstop>maskPath</tabstop>
+  <tabstop>maskBrowse</tabstop>
+  <tabstop>maskEdge</tabstop>
+  <tabstop>peakRad</tabstop>
+  <tabstop>peakThr</tabstop>
+  <tabstop>rotate</tabstop>
+  <tabstop>sCropTop</tabstop>
+  <tabstop>sCropBottom</tabstop>
+  <tabstop>sCropLeft</tabstop>
+  <tabstop>sCropRight</tabstop>
+  <tabstop>xBin</tabstop>
+  <tabstop>yBin</tabstop>
+  <tabstop>sameBin</tabstop>
+  <tabstop>iStX</tabstop>
+  <tabstop>iStY</tabstop>
+  <tabstop>oStX</tabstop>
+  <tabstop>oStY</tabstop>
+  <tabstop>fStX</tabstop>
+  <tabstop>fStY</tabstop>
+  <tabstop>fCropTop</tabstop>
+  <tabstop>fCropBottom</tabstop>
+  <tabstop>fCropLeft</tabstop>
+  <tabstop>fCropRight</tabstop>
+  <tabstop>projBin</tabstop>
+  <tabstop>allProj</tabstop>
+  <tabstop>minProj</tabstop>
+  <tabstop>maxProj</tabstop>
+  <tabstop>testProjection</tabstop>
+  <tabstop>testSubDir</tabstop>
+  <tabstop>saveStitched</tabstop>
+  <tabstop>wipeStitched</tabstop>
+  <tabstop>recAfterProj</tabstop>
+  <tabstop>testProj</tabstop>
+  <tabstop>procThis</tabstop>
+  <tabstop>procAll</tabstop>
+  <tabstop>pixelSize</tabstop>
+  <tabstop>energy</tabstop>
+  <tabstop>distance</tabstop>
+  <tabstop>d2b</tabstop>
+  <tabstop>ring</tabstop>
+  <tabstop>ringBeforePhase</tabstop>
+  <tabstop>ringAfterPhase</tabstop>
+  <tabstop>ctFilter</tabstop>
+  <tabstop>ctFilterOpt</tabstop>
+  <tabstop>autocor</tabstop>
+  <tabstop>cor</tabstop>
+  <tabstop>outMu</tabstop>
+  <tabstop>resHDF</tabstop>
+  <tabstop>resTIFF</tabstop>
+  <tabstop>resToInt</tabstop>
+  <tabstop>autoMin</tabstop>
+  <tabstop>toIntMin</tabstop>
+  <tabstop>autoMax</tabstop>
+  <tabstop>toIntMax</tabstop>
+  <tabstop>prFile</tabstop>
+  <tabstop>testSliceNum</tabstop>
+  <tabstop>recInMem</tabstop>
+  <tabstop>recInMemOnly</tabstop>
+  <tabstop>testSlice</tabstop>
+  <tabstop>reconstruct</tabstop>
+  <tabstop>wipe</tabstop>
+  <tabstop>console</tabstop>
+  <tabstop>termini</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>
@@ -2590,12 +2681,12 @@
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="resGroup">
+  <buttongroup name="resFormat">
    <property name="saveInConfig" stdset="0">
     <number>1</number>
    </property>
   </buttongroup>
-  <buttongroup name="ringGroup">
+  <buttongroup name="ringOrder">
    <property name="saveInConfig" stdset="0">
     <number>1</number>
    </property>
