@@ -181,6 +181,58 @@
              </layout>
             </widget>
            </item>
+           <item row="8" column="1">
+            <widget class="QWidget" name="inexclWidget" native="true">
+             <layout class="QHBoxLayout" name="inexclWidgetLay">
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QLabel" name="label_57">
+                <property name="text">
+                 <string>include</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="inInclude">
+                <property name="toolTip">
+                 <string>Space-separated list of patterns which only must be included in processing. Patterns are grep expressions (see grep help for details). F.e. &quot;Y0&quot; &quot;Y1[0-2]&quot; would include Y series from 0 to 12, but ignore all following.</string>
+                </property>
+                <property name="saveInConfig" stdset="0">
+                 <number>0</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_51">
+                <property name="text">
+                 <string>exclude</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="inExclude">
+                <property name="toolTip">
+                 <string>Space-separated list of patterns which are excluded from processing. Patterns are grep expressions (see grep help for details). F.e. &quot;Y09&quot; &quot;Y1[0-2]&quot; would exclude Y series  9 to 12.</string>
+                </property>
+                <property name="saveInConfig" stdset="0">
+                 <number>0</number>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
            <item row="3" column="0">
             <widget class="QLabel" name="label">
              <property name="text">
@@ -515,58 +567,6 @@
               </widget>
              </item>
             </layout>
-           </item>
-           <item row="8" column="1">
-            <widget class="QWidget" name="inexclWidget" native="true">
-             <layout class="QHBoxLayout" name="inexclWidgetLay">
-              <property name="leftMargin">
-               <number>0</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
-               <number>0</number>
-              </property>
-              <item>
-               <widget class="QLabel" name="label_57">
-                <property name="text">
-                 <string>include</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLineEdit" name="inInclude">
-                <property name="toolTip">
-                 <string>Space-separated list of patterns which only must be included in processing. Patterns are grep expressions (see grep help for details). F.e. &quot;Y0&quot; &quot;Y1[0-2]&quot; would include Y series from 0 to 12, but ignore all following.</string>
-                </property>
-                <property name="saveInConfig" stdset="0">
-                 <number>0</number>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLabel" name="label_51">
-                <property name="text">
-                 <string>exclude</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLineEdit" name="inExclude">
-                <property name="toolTip">
-                 <string>Space-separated list of patterns which are excluded from processing. Patterns are grep expressions (see grep help for details). F.e. &quot;Y09&quot; &quot;Y1[0-2]&quot; would exclude Y series  9 to 12.</string>
-                </property>
-                <property name="saveInConfig" stdset="0">
-                 <number>0</number>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
            </item>
            <item row="8" column="0">
             <widget class="QLabel" name="inexclLabel">

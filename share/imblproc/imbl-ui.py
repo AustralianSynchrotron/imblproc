@@ -324,65 +324,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.collectOut = None
         self.collectErr = None
 
-        # parse commandline arguments
-        parser = argparse.ArgumentParser(description='IMBL processing pipeline.',
-                                         allow_abbrev=False,
-                                         formatter_class=argparse.RawTextHelpFormatter)
-        parser.add_argument('config', type=str, nargs='?',
-                            help='Configuration file to load on start. Default: ~/' + self.configName,
-                            default=self.etcConfigName)
-        awdg = self.ui.tabWidget
-        while isinstance(awdg := awdg.nextInFocusChain(), QtWidgets.QWidget) and \
-              awdg is not self.ui.tabWidget:
-            if awdg.property(self.cfgProp) is not None:
-                name = awdg.objectName()
-                help = awdg.toolTip() if isinstance(awdg, QtWidgets.QWidget) else ""
-                if isinstance(awdg, QtWidgets.QLineEdit):
-                    parser.add_argument(f"--{name}" , type=str, metavar="STR", help=help)
-                elif isinstance(awdg, QtWidgets.QCheckBox):
-                    parser.add_argument(f"--{name}" , type=bool, metavar="BOOL", help=help)
-                elif isinstance(awdg, QtWidgets.QSpinBox):
-                    parser.add_argument(f"--{name}" , type=int, metavar="INT", help=help)
-                elif isinstance(awdg, QtWidgets.QDoubleSpinBox):
-                    parser.add_argument(f"--{name}" , type=float, metavar="FLOAT", help=help)
-                elif isinstance(awdg, QtWidgets.QComboBox):
-                    listOfItems = [ awdg.itemText(i) for i in range(0,awdg.count()) ]
-                    help += f" Possible values are: {listOfItems}" if len(listOfItems) else ""
-                    parser.add_argument(f"--{name}" , type=str, metavar="STR", choices=listOfItems, help = help)
-                elif isinstance(awdg, UScript):
-                    parser.add_argument(f"--{name}" , type=str, metavar="STR",
-                                        help = f"Script is executed before {awdg.role()}.")
-        for grp in self.ui.findChildren(QtWidgets.QButtonGroup):
-            if not grp.buttons():
-                continue
-            name = grp.objectName()
-            help = "Possible values are:\n"
-            for butt in grp.buttons() :
-                help += f"  '{butt.objectName()}' - {butt.toolTip()}\n"
-            parser.add_argument(f"--{name}" , type=str, metavar="STR", choices=listOfItems, help=help)
-        args = parser.parse_args()
-
-        # reformat tool tips limiting horizontal box size and adding parameter name.
-        minToolTipWidth = 400
-        fm = QtGui.QFontMetrics(QtGui.QFont())
-        for swdg in self.ui.findChildren(QtWidgets.QWidget):
-            tip = swdg.toolTip().strip()
-            if not tip or tip[:6] == '<html>' :
-                continue
-            addParam = "Parameter name: " + swdg.objectName() if swdg.property(self.cfgProp) is not None else ""
-            minWidth = max(minToolTipWidth, fm.width(addParam))
-            if len(addParam):
-                addParam = "<br><p>" + addParam + "</p>"
-            tip_width = fm.width(tip)
-            escape(tip)
-            if tip_width <= minWidth :
-                tip += "</p>"
-            else:
-                line_break_index = len(tip) * minWidth // tip_width
-                tip = tip[:line_break_index] + "</p>" + tip[line_break_index:]
-            swdg.setToolTip("<style>p { margin: 0 0 0 0 }</style><p style='white-space:pre'>" +
-                                tip + addParam )
-
         # prepare UI elements
         self.on_individualIO_toggled()
         self.on_ctFilter_currentTextChanged()
@@ -418,6 +359,23 @@ class MainWindow(QtWidgets.QMainWindow):
                                       if wdg not in exceptFromDisabled ]
         self.wereDisabled = []
 
+        # connect signals which are not connected by name
+        self.ui.notFnS.clicked.connect(self.needReinitiation)
+        self.ui.ignoreLog.clicked.connect(self.needReinitiation)
+        self.ui.yIndependent.clicked.connect(self.needReinitiation)
+        self.ui.zIndependent.clicked.connect(self.needReinitiation)
+        self.ui.inInclude.editingFinished.connect(self.needReinitiation)
+        self.ui.inExclude.editingFinished.connect(self.needReinitiation)
+        self.ui.inInclude.editingFinished.connect(self.on_inPath_textChanged)
+        self.ui.inExclude.editingFinished.connect(self.on_inPath_textChanged)
+        self.ui.expUpdate.clicked.connect(self.on_expPath_textChanged)
+        self.ui.ignoreLog.toggled.connect(self.on_inPath_textChanged)
+        self.ui.minProj.valueChanged.connect(self.onMinMaxProjectionChanged)
+        self.ui.maxProj.valueChanged.connect(self.onMinMaxProjectionChanged)
+        self.ui.testSubDir.currentTextChanged.connect(self.update_reconstruction_state)
+        self.ui.prFile.clicked.connect(lambda :
+            QApplication.clipboard().setText(path.realpath(self.ui.prFile.text())))
+
         # prepare list of config patrameters and make them updated in auto-saved config
         confsWithOrder = { obj: obj.property(self.cfgProp) for obj in self.ui.findChildren(QObject)
                                                       if obj.property(self.cfgProp) is not None}
@@ -439,28 +397,112 @@ class MainWindow(QtWidgets.QMainWindow):
             elif isinstance(swdg, QtWidgets.QButtonGroup):
                 swdg.buttonClicked.connect(self.saveConfiguration)
 
-        # connect signals which are not connected by name
-        self.ui.notFnS.clicked.connect(self.needReinitiation)
-        self.ui.ignoreLog.clicked.connect(self.needReinitiation)
-        self.ui.yIndependent.clicked.connect(self.needReinitiation)
-        self.ui.zIndependent.clicked.connect(self.needReinitiation)
-        self.ui.inInclude.editingFinished.connect(self.needReinitiation)
-        self.ui.inExclude.editingFinished.connect(self.needReinitiation)
-        self.ui.inInclude.editingFinished.connect(self.on_inPath_textChanged)
-        self.ui.inExclude.editingFinished.connect(self.on_inPath_textChanged)
-        self.ui.expUpdate.clicked.connect(self.on_expPath_textChanged)
-        self.ui.ignoreLog.toggled.connect(self.on_inPath_textChanged)
-        self.ui.minProj.valueChanged.connect(self.onMinMaxProjectionChanged)
-        self.ui.maxProj.valueChanged.connect(self.onMinMaxProjectionChanged)
-        self.ui.testSubDir.currentTextChanged.connect(self.update_reconstruction_state)
-        self.ui.procAll.clicked.connect(self.onStitch)
-        self.ui.procThis.clicked.connect(self.onStitch)
-        self.ui.prFile.clicked.connect(lambda :
-            QApplication.clipboard().setText(path.realpath(self.ui.prFile.text())))
+        # parse commandline arguments
+        parser = argparse.ArgumentParser(description='IMBL processing pipeline.',
+                                         allow_abbrev=False,
+                                         formatter_class=argparse.RawTextHelpFormatter)
+        parser.add_argument('config', type=str, nargs='?',
+                            help='Configuration file to load on start. Default: ~/' + self.configName,
+                            default=self.etcConfigName)
+        parser.add_argument("-I", "--init", action='store_true', help="Launches sample initiation." \
+                                                                 " Proceeds to further step(s) if set.")
+        parser.add_argument("-P", "--proj", action='store_true', help="Launches projections formation." \
+                                                                 " Proceeds to reconstruction(s) if set.")
+        parser.add_argument("--proj-one", action='store_true', help=
+                            "Launches projection formation for a single sub-sample. Proceeds to reconstruction if set." )
+        parser.add_argument("--proj-test", action='store_true', help="Launches test of stitching procedure.")
+        parser.add_argument("-R", "--rec", action='store_true', help="Launches CT and related processing.")
+        parser.add_argument("--rec-test", action='store_true', help="Launches test of CT reconstruction.")
+        pgrp = parser.add_mutually_exclusive_group()
+        pgrp.add_argument("-H", "--headless", action='store_true', help="Starts pipeline withoput UI." \
+                                         " Only makes sense with one of the above processing launchers.")
+        pgrp.add_argument("-U", "--keep-ui", action='store_true', help="Does not exit after launcher finishes.")
+        awdg = self.ui.tabWidget
+        while isinstance(awdg := awdg.nextInFocusChain(), QtWidgets.QWidget) and \
+              awdg is not self.ui.tabWidget:
+            if awdg.property(self.cfgProp) is not None:
+                name = awdg.objectName()
+                help = awdg.toolTip().replace("f ticked", "f true") \
+                    if isinstance(awdg, QtWidgets.QWidget) else ""
+                if isinstance(awdg, QtWidgets.QLineEdit):
+                    parser.add_argument(f"--{name}" , type=str, metavar="STR", help=help)
+                elif isinstance(awdg, QtWidgets.QCheckBox):
+                    parser.add_argument(f"--{name}" , type=bool, metavar="BOOL", help=help)
+                elif isinstance(awdg, QtWidgets.QSpinBox):
+                    parser.add_argument(f"--{name}" , type=int, metavar="INT", help=help)
+                elif isinstance(awdg, QtWidgets.QDoubleSpinBox):
+                    parser.add_argument(f"--{name}" , type=float, metavar="FLOAT", help=help)
+                elif isinstance(awdg, QtWidgets.QComboBox):
+                    listOfItems = [ awdg.itemText(i) for i in range(0,awdg.count()) ]
+                    help += f" Possible values are: {listOfItems}" if len(listOfItems) else ""
+                    parser.add_argument(f"--{name}" , type=str, metavar="STR", choices=listOfItems, help = help)
+                elif isinstance(awdg, UScript):
+                    parser.add_argument(f"--{name}" , type=str, metavar="STR",
+                                        help = f"Script is executed before {awdg.role()}.")
+        for grp in self.ui.findChildren(QtWidgets.QButtonGroup):
+            if not grp.buttons():
+                continue
+            name = grp.objectName()
+            help = "Possible values are:\n"
+            for butt in grp.buttons() :
+                help += f"'{butt.objectName()}' - {butt.toolTip()}\n"
+            parser.add_argument(f"--{name}" , type=str, metavar="STR", choices=listOfItems, help=help)
+        args = parser.parse_args()
 
-        QtCore.QTimer.singleShot(100, lambda: 
-            self.loadConfiguration(args.config, vars(args)))
-        #self.loadConfiguration(args.config, vars(args))
+        # reformat tool tips limiting horizontal box size and adding parameter name.
+        # must happen after CMD parsing because toolTips are used as help text there.
+        minToolTipWidth = 400
+        fm = QtGui.QFontMetrics(QtGui.QFont())
+        for swdg in self.ui.findChildren(QtWidgets.QWidget):
+            tip = swdg.toolTip().strip()
+            if not tip or tip[:6] == '<html>' :
+                continue
+            addParam = "Parameter name: " + swdg.objectName() if swdg.property(self.cfgProp) is not None else ""
+            minWidth = max(minToolTipWidth, fm.width(addParam))
+            if len(addParam):
+                addParam = "<br><p>" + addParam + "</p>"
+            tip_width = fm.width(tip)
+            escape(tip)
+            if tip_width <= minWidth :
+                tip += "</p>"
+            else:
+                line_break_index = len(tip) * minWidth // tip_width
+                tip = tip[:line_break_index] + "</p>" + tip[line_break_index:]
+            swdg.setToolTip("<style>p { margin: 0 0 0 0 }</style><p style='white-space:pre'>" +
+                                tip + addParam )
+
+        # This will run only after QApplication was executed
+        def afterStart() :
+            self.ui.setEnabled(False)
+            if not args.headless:
+                self.show()
+            self.loadConfiguration(args.config, vars(args))
+            self.ui.setEnabled(True)
+            acted = False
+            if args.init:
+                acted = True
+                self.on_initiate_clicked()
+            if args.proj_test:
+                acted = True
+                self.on_testProj_clicked()
+            if args.proj_one:
+                acted = True
+                self.on_procThis_clicked()
+            if args.proj:
+                acted = True
+                self.on_procAll_clicked()
+            if args.rec_test:
+                acted = True
+                self.on_testSlice_clicked()
+            if args.proj:
+                acted = True
+                self.on_reconstruct_clicked()
+            if args.headless and not acted:
+                QtCore.QTimer.singleShot(0, self.close)
+                raise SyntaxError("No action launch requested in the headless mode.")
+            if acted and not args.keep_ui:
+                QtCore.QTimer.singleShot(0, self.close)
+        QtCore.QTimer.singleShot(0, afterStart)
 
 
     def execScrRole(self, role):
@@ -583,9 +625,13 @@ class MainWindow(QtWidgets.QMainWindow):
         if text is None:
             text=""
         else:
-            text.strip()
+            text = text.strip()
             if not text:
                 return
+        if not self.isVisible():
+            print(text)
+            return
+
         if not qcolor:
             qcolor = self.ui.console.palette().text().color()
         self.ui.console.setTextColor(qcolor)
@@ -1189,14 +1235,23 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     @pyqtSlot()
-    def onStitch(self):
+    def on_procThis_clicked(self):
+        self.onStitch(False)
+
+
+    @pyqtSlot()
+    def on_procAll_clicked(self):
+        self.onStitch(True)
+
+
+    def onStitch(self, doAll):
         if self.scrProc.isRunning():
             self.scrProc.stop()
             return -1
 
         self.saveConfiguration(path.join(self.ui.outPath.text(), self.configName))
         self.addToConsole()
-        actBut = self.ui.procThis if self.sender() is self.ui.procThis else self.ui.procAll
+        actBut = self.ui.procAll if doAll else self.ui.procThis
         subOnStart = self.ui.testSubDir.currentIndex()
         pidxs = [subOnStart] if actBut is self.ui.procThis else range(self.ui.testSubDir.count())
         ars = ( "" if self.ui.wipeStitched.isChecked() else " -w " ) \
@@ -1631,7 +1686,6 @@ class MainWindow(QtWidgets.QMainWindow):
 signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+C to quit
 app = QApplication(sys.argv)
 my_mainWindow = MainWindow()
-my_mainWindow.show()
 exitSts=app.exec_()
 toRm = ""
 for rmfn in set(listOfCreatedMemFiles):
