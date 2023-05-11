@@ -1034,75 +1034,6 @@
           </property>
          </widget>
         </item>
-        <item row="7" column="1" colspan="2">
-         <layout class="QHBoxLayout" name="horizontalLayout_16">
-          <item>
-           <widget class="QLabel" name="label_32">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>Projections:</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="saveStitched">
-            <property name="toolTip">
-             <string>If ticked copy of the volume with processed projections, originally created in memory (if sufficient), is saved to the output folder. Otherwise in-memory volume is deleted after CT reconstruction is complete.</string>
-            </property>
-            <property name="text">
-             <string>save to storage</string>
-            </property>
-            <property name="saveInConfig" stdset="0">
-             <number>0</number>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="wipeStitched">
-            <property name="toolTip">
-             <string>If ticked, pipeline does not attempt to create in-memory volume for cleaned projections; instead it stores them inside output folder inside clean.hdf/data container. Can be usefull if no further CT reconstruction is performed or you know that the system has no enough memory to store the volume.</string>
-            </property>
-            <property name="text">
-             <string>(only)</string>
-            </property>
-            <property name="saveInConfig" stdset="0">
-             <number>0</number>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer_2">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="recAfterProj">
-            <property name="toolTip">
-             <string>If ticked, starts CT reconstruction automatically straight after successfull stitching.</string>
-            </property>
-            <property name="text">
-             <string>Proceed to the next step</string>
-            </property>
-            <property name="saveInConfig" stdset="0">
-             <number>0</number>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
         <item row="2" column="1" colspan="2">
          <widget class="QWidget" name="fStWdg" native="true">
           <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -1294,132 +1225,6 @@
           </layout>
          </widget>
         </item>
-        <item row="4" column="1" colspan="2">
-         <layout class="QHBoxLayout" name="horizontalLayout_11">
-          <item>
-           <widget class="QLabel" name="label_22">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>Binning:</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QSpinBox" name="projBin">
-            <property name="toolTip">
-             <string>Number of subsequent raw projections to be averaged to produce single output projection. Can be usefull to reduce size of the interim projections volume for the scans with a large number of acquisition steps (≳ width * π/2). Ignored in tests.</string>
-            </property>
-            <property name="specialValueText">
-             <string>All</string>
-            </property>
-            <property name="maximum">
-             <number>999999999</number>
-            </property>
-            <property name="value">
-             <number>1</number>
-            </property>
-            <property name="saveInConfig" stdset="0">
-             <number>0</number>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_58">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>Range:</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="allProj">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="toolTip">
-             <string>Produce all available projections.</string>
-            </property>
-            <property name="text">
-             <string>all</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-            <property name="saveInConfig" stdset="0">
-             <number>0</number>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_19">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>First</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QSpinBox" name="minProj">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="toolTip">
-             <string>First projection in the range to process.</string>
-            </property>
-            <property name="saveInConfig" stdset="0">
-             <number>0</number>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_21">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>Last</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QSpinBox" name="maxProj">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="toolTip">
-             <string>Last projection in the range to process.</string>
-            </property>
-            <property name="specialValueText">
-             <string>all</string>
-            </property>
-            <property name="saveInConfig" stdset="0">
-             <number>0</number>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
         <item row="1" column="0">
          <widget class="QLabel" name="oStLbl">
           <property name="text">
@@ -1504,25 +1309,81 @@
           </property>
          </widget>
         </item>
-        <item row="3" column="1" colspan="2">
-         <layout class="QGridLayout" name="gridLayout_6">
-          <item row="0" column="1" colspan="2">
-           <widget class="QSpinBox" name="fCropTop">
-            <property name="toolTip">
-             <string>Pixels cropped from the top of stitched projections.</string>
+        <item row="7" column="1" colspan="2">
+         <layout class="QHBoxLayout" name="horizontalLayout_16">
+          <item>
+           <widget class="QLabel" name="label_32">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
-            <property name="maximum">
-             <number>999999999</number>
+            <property name="text">
+             <string>Projections:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="saveStitched">
+            <property name="toolTip">
+             <string>If ticked copy of the volume with processed projections, originally created in memory (if sufficient), is saved to the output folder. Otherwise in-memory volume is deleted after CT reconstruction is complete.</string>
+            </property>
+            <property name="text">
+             <string>save to storage</string>
             </property>
             <property name="saveInConfig" stdset="0">
              <number>0</number>
             </property>
            </widget>
           </item>
-          <item row="2" column="1" colspan="2">
-           <widget class="QSpinBox" name="fCropBottom">
+          <item>
+           <widget class="QCheckBox" name="wipeStitched">
             <property name="toolTip">
-             <string>Pixels cropped from the bottom of stitched projections.</string>
+             <string>If ticked, pipeline does not attempt to create in-memory volume for cleaned projections; instead it stores them inside output folder inside clean.hdf/data container. Can be usefull if no further CT reconstruction is performed or you know that the system has no enough memory to store the volume.</string>
+            </property>
+            <property name="text">
+             <string>(only)</string>
+            </property>
+            <property name="saveInConfig" stdset="0">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="recAfterProj">
+            <property name="toolTip">
+             <string>If ticked, starts CT reconstruction automatically straight after successfull stitching.</string>
+            </property>
+            <property name="text">
+             <string>Proceed to the next step</string>
+            </property>
+            <property name="saveInConfig" stdset="0">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="3" column="1" colspan="2">
+         <layout class="QGridLayout" name="gridLayout_6">
+          <item row="0" column="1" colspan="2">
+           <widget class="QSpinBox" name="fCropTop">
+            <property name="toolTip">
+             <string>Pixels cropped from the top of stitched projections.</string>
             </property>
             <property name="maximum">
              <number>999999999</number>
@@ -1555,6 +1416,155 @@
             </property>
             <property name="saveInConfig" stdset="0">
              <number>0</number>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1" colspan="2">
+           <widget class="QSpinBox" name="fCropBottom">
+            <property name="toolTip">
+             <string>Pixels cropped from the bottom of stitched projections.</string>
+            </property>
+            <property name="maximum">
+             <number>999999999</number>
+            </property>
+            <property name="saveInConfig" stdset="0">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="4" column="1" colspan="2">
+         <layout class="QHBoxLayout" name="horizontalLayout_11">
+          <item>
+           <widget class="QLabel" name="label_22">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Binning:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="projBin">
+            <property name="toolTip">
+             <string>Number of subsequent raw projections to be averaged to produce single output projection. Can be usefull to reduce size of the interim projections volume for the scans with a large number of acquisition steps (≳ width * π/2). Ignored in tests.</string>
+            </property>
+            <property name="specialValueText">
+             <string>All</string>
+            </property>
+            <property name="maximum">
+             <number>999999999</number>
+            </property>
+            <property name="value">
+             <number>1</number>
+            </property>
+            <property name="saveInConfig" stdset="0">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_58">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Range:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="allProj">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="toolTip">
+             <string>Produce all available projections.</string>
+            </property>
+            <property name="text">
+             <string>all</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+            <property name="saveInConfig" stdset="0">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_19">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>First</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="minProj">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="toolTip">
+             <string>First projection in the range to process.</string>
+            </property>
+            <property name="saveInConfig" stdset="0">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_21">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Last</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="maxProj">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="toolTip">
+             <string>Last projection in the range to process.</string>
+            </property>
+            <property name="specialValueText">
+             <string>all</string>
+            </property>
+            <property name="saveInConfig" stdset="0">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QWidget" name="blankWidgettoCorrectUI" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
            </widget>
           </item>
@@ -2580,8 +2590,6 @@
   <tabstop>fCropRight</tabstop>
   <tabstop>projBin</tabstop>
   <tabstop>allProj</tabstop>
-  <tabstop>minProj</tabstop>
-  <tabstop>maxProj</tabstop>
   <tabstop>testProjection</tabstop>
   <tabstop>testSubDir</tabstop>
   <tabstop>saveStitched</tabstop>
@@ -2654,18 +2662,18 @@
    </hints>
   </connection>
   <connection>
-   <sender>allProj</sender>
+   <sender>autocor</sender>
    <signal>toggled(bool)</signal>
-   <receiver>minProj</receiver>
+   <receiver>cor</receiver>
    <slot>setDisabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>600</x>
-     <y>378</y>
+     <x>299</x>
+     <y>309</y>
     </hint>
     <hint type="destinationlabel">
-     <x>853</x>
-     <y>379</y>
+     <x>417</x>
+     <y>311</y>
     </hint>
    </hints>
   </connection>
@@ -2686,18 +2694,18 @@
    </hints>
   </connection>
   <connection>
-   <sender>autocor</sender>
+   <sender>allProj</sender>
    <signal>toggled(bool)</signal>
-   <receiver>cor</receiver>
+   <receiver>minProj</receiver>
    <slot>setDisabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>299</x>
-     <y>309</y>
+     <x>600</x>
+     <y>378</y>
     </hint>
     <hint type="destinationlabel">
-     <x>417</x>
-     <y>311</y>
+     <x>853</x>
+     <y>379</y>
     </hint>
    </hints>
   </connection>
