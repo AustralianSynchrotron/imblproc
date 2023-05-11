@@ -900,8 +900,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     for grep in self.ui.inExclude.text().split():
                         grepsPps += f" | grep -v -e '{grep}' "
                 if self.ui.inInclude.text():
+                    grepsPps += f" | grep "
                     for grep in self.ui.inInclude.text().split():
-                        grepsPps += f" | grep -e '{grep}' "
+                        grepsPps += f" -e '{grep}' "
             labels = Script.run(f"cat {path.join(ipath,'acquisition*log')} "
                                 f" | {path.join(execPath,'imbl-log.py')} "
                                  " | tail -n +3 | cut -d' ' -f2 | cut -d':' -f 1"
@@ -1062,8 +1063,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 for grep in self.ui.inExclude.text().split():
                     grepsPps += f" | grep -v -e '{grep}' "
             if self.ui.inInclude.text():
+                grepsPps += f" | grep "
                 for grep in self.ui.inInclude.text().split():
-                    grepsPps += f" | grep -e '{grep}' "
+                    grepsPps += f" -e '{grep}' "
             labels = Script.run(f"cat {path.join(self.ui.inPath.text(), 'acquisition*log')} "
                                 f" | {path.join(execPath,'imbl-log.py')} "
                                  " | tail -n +3 | cut -d' ' -f2 | cut -d':' -f 1 "
