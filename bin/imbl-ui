@@ -13,7 +13,7 @@ uiexec="$(realpath "$myloc/../share/imblproc/imbl-ui.py")"
 rmlist="$HOME/.imblui.FilesInMemory.pid_$$"
 export PYTHONUNBUFFERED="x"
 export InMemIndicator="In-memory file to wipe: "
-"$uiexec" \
+"$uiexec" "$@" \
     | tee >( grep "$InMemIndicator" --line-buffered | sed -u "s_${InMemIndicator}__g"  > "$rmlist" ) \
     | grep -v "$InMemIndicator" --line-buffered
 
