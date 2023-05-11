@@ -918,7 +918,7 @@
              </sizepolicy>
             </property>
             <property name="toolTip">
-             <string>If ticked, current stitching parameters are adjusted on binning changes. Otherwise they remain untouched and will need to be corrected manually.</string>
+             <string>If ticked, current stitching and rotation axis parameters are adjusted on changes of binning factor(s). Otherwise those parameters remain untouched and will need to be corrected manually.</string>
             </property>
             <property name="text">
              <string>adjust stitching geometry</string>
