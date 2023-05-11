@@ -1118,7 +1118,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.ui.xBin.value() != self.previousBinn[0] :
                 xadj = self.previousBinn[0] / self.ui.xBin.value()
                 for xwdg in [ self.ui.iStX, self.ui.oStX, self.ui.fStX,
-                              self.ui.fCropLeft, self.ui.fCropRight ] :
+                              self.ui.fCropLeft, self.ui.fCropRight, self.ui.cor ] :
                     correctVal(xwdg, xadj)
             if self.ui.yBin.value() != self.previousBinn[1] :
                 yadj =  self.previousBinn[1] / self.ui.yBin.value()
