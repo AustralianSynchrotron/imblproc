@@ -359,6 +359,13 @@ class MainWindow(QtWidgets.QMainWindow):
                                       if wdg not in exceptFromDisabled ]
         self.wereDisabled = []
 
+        # to implement stitch geometry adjustment on binning changes
+        self.previousBinn = None
+        self.ui.xBin.valueChanged.connect(self.onBinChange)
+        self.ui.yBin.valueChanged.connect(self.onBinChange)
+        self.ui.sameBin.toggled.connect(self.onBinChange)
+        self.ui.binAdjust.toggled.connect(self.onBinChange)
+
         # connect signals which are not connected by name
         self.ui.notFnS.clicked.connect(self.needReinitiation)
         self.ui.ignoreLog.clicked.connect(self.needReinitiation)
@@ -613,12 +620,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 continue
             if wdg is self.ui.outPath:
                 self.on_outPath_textChanged()
-            if wdg is self.ui.sameBin:
-                self.on_sameBin_toggled()
 
         self.amLoading = False
         self.update_initiate_state()
         self.update_reconstruction_state()
+        self.onBinChange()
 
 
     def addToConsole(self, text=None, qcolor=None):
@@ -1094,17 +1100,32 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.procAll.click()
 
 
+    @pyqtSlot(int)
     @pyqtSlot(bool)
-    def on_sameBin_toggled(self):
-        if (self.ui.sameBin.isChecked()):
-            self.ui.yBin.setValue(self.ui.xBin.value())
-            self.ui.xBin.valueChanged.connect(self.ui.yBin.setValue)
-        else:
-            try:
-                self.ui.xBin.valueChanged.disconnect(self.ui.yBin.setValue)
-            except TypeError:
-                pass
+    def onBinChange(self):
         self.ui.yBin.setEnabled(not self.ui.sameBin.isChecked())
+        if self.amLoading :
+            return
+        if self.ui.sameBin.isChecked():
+            self.ui.yBin.setValue(self.ui.xBin.value())
+        def correctVal(wdg, adj) :
+            cval = wdg.value()
+            # explicit type conversion below needed to address bug
+            # https://bugs.launchpad.net/rapid/+bug/1946407
+            nval = type(cval)(adj*cval)
+            wdg.setValue(nval)
+        if self.ui.binAdjust.isChecked() and self.previousBinn :
+            if self.ui.xBin.value() != self.previousBinn[0] :
+                xadj = self.previousBinn[0] / self.ui.xBin.value()
+                for xwdg in [ self.ui.iStX, self.ui.oStX, self.ui.fStX,
+                              self.ui.fCropLeft, self.ui.fCropRight ] :
+                    correctVal(xwdg, xadj)
+            if self.ui.yBin.value() != self.previousBinn[1] :
+                yadj =  self.previousBinn[1] / self.ui.yBin.value()
+                for ywdg in [ self.ui.iStY, self.ui.oStY, self.ui.fStY,
+                              self.ui.fCropTop, self.ui.fCropBottom ] :
+                    correctVal(ywdg, yadj)
+        self.previousBinn = [ self.ui.xBin.value(), self.ui.yBin.value() ]
 
 
     @pyqtSlot()
@@ -1196,7 +1217,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         actButton.setText(actText)
         actButton.setStyleSheet("")
-        self.on_sameBin_toggled()  # to correct state of the yBin
+        self.onBinChange()  # to correct state of the yBin
         self.update_reconstruction_state()
         return toRet
 
