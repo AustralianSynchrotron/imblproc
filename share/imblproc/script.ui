@@ -44,7 +44,7 @@
       <item>
        <widget class="QPushButton" name="browse">
         <property name="toolTip">
-         <string>Browse for the log file</string>
+         <string>Browse for the script</string>
         </property>
         <property name="text">
          <string>Browse</string>
@@ -55,6 +55,9 @@
        <widget class="QPushButton" name="execute">
         <property name="enabled">
          <bool>false</bool>
+        </property>
+        <property name="toolTip">
+         <string>Start/Stop script</string>
         </property>
         <property name="text">
          <string>Execute</string>
@@ -67,7 +70,7 @@
    <item row="0" column="0">
     <widget class="QLineEdit" name="body">
      <property name="toolTip">
-      <string>start script</string>
+      <string>Script to execute. Can be anything what is executable from system shell.</string>
      </property>
     </widget>
    </item>
