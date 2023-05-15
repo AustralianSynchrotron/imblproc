@@ -1478,11 +1478,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self.addErrToConsole(f"Failed to get step from init file \"{myInitFile}\". Aborting reconstruction.")
             return None
         ark180 = int(180.0/step) + 1
-        if ark180 >= z and self.ui.autocor.isChecked():
-            self.addErrToConsole(f"Not enough projections {z} for step {step} to form 180 deg ark. Aborting reconstruction.")
-            return None
 
         if self.ui.autocor.isChecked():
+            if ark180 >= z:
+                self.addErrToConsole(f"Cannot calculate rotation axis because there are"
+                                     f" no enough projections {z} for step {step} to form 180 deg ark"
+                                     f" ({step}*({z}-1)={step*(z-1)} < 180.0)."
+                                      " Calculate it manually to proceed with reconstruction.")
+                return None
             cor = None
             self.collectOut = ""
             Script.run(f"mkdir -p \"tmp\"")
