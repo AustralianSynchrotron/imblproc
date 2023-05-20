@@ -2366,7 +2366,7 @@
               <string>If ticked, output results represent linear attenuation coefficient μ (1/m). Otherwise real part of complex refraction coefficient β.</string>
              </property>
              <property name="text">
-              <string>Output mu</string>
+              <string>Output mu (1/m)</string>
              </property>
              <property name="saveInConfig" stdset="0">
               <number>0</number>
