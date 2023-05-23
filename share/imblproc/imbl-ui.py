@@ -334,6 +334,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.recInMemOnly.setVisible(False)
         self.ui.autoMin.setVisible(False) # feature not implemented
         self.ui.autoMax.setVisible(False) # feature not implemented
+        self.ui.cleanToMemory.setVisible(False)
         self.ui.console.installEventFilter(ScrollToEnd(self.ui.console))
 
         # add status bar elements
@@ -1315,11 +1316,30 @@ class MainWindow(QtWidgets.QMainWindow):
         return toRet
 
 
+    @pyqtSlot()
+    def on_cleanToMemory_clicked(self):
+        file_postfix = "clean.hdf"
+        memName = self.inMemNamePrexix() + file_postfix
+        diskName=path.join(self.ui.outPath.text(), self.ui.testSubDir.currentText(), file_postfix)
+        if not path.exists(diskName):
+            return
+        self.enableWidgets(self.ui.prFile)
+        if self.execScrProc("Copying projections into memory.", f"  cp '{diskName}' '{memName}' " ) :
+            self.addErrToConsole(f"Filed to copy cleaned projections file {diskName} into memory {memName}."
+                                  " Most probable cause is insufficient free memory."
+                                  " You may try to reconstruct from storage, but it is slow.")
+        else:
+            self.update_reconstruction_state()
+        self.enableWidgets()
+
+
     def update_reconstruction_state(self):
         file_postfix = "clean.hdf"
         memName = self.inMemNamePrexix() + file_postfix
         diskName=path.join(self.ui.outPath.text(), self.ui.testSubDir.currentText(), file_postfix)
-        projFile = memName if path.exists(memName) else diskName
+        inMem = path.exists(memName)
+        self.ui.cleanToMemory.setVisible(not inMem and path.exists(diskName))
+        projFile = memName if inMem else diskName
         projFile = path.realpath(projFile)
         x, y, z = hdf5shape(projFile, "data")
         projShape = f"{x} x {y} x {z}" if x and y and z else None
@@ -1642,7 +1662,16 @@ class MainWindow(QtWidgets.QMainWindow):
             onStopMe()
             return -1
         projFile, _, _, step, wdir = commres
+        if projFile == path.join(self.ui.outPath.text(), self.ui.testSubDir.currentText(), "clean.hdf") \
+           and self.ui.saveStitched.isChecked() :
+                interimFile = path.join(self.ui.outPath.text(), self.ui.testSubDir.currentText()
+                                        , "clean_deleteMeWhenDone.hdf")
+                if self.execScrProc("Creating interim projections volume."
+                                    , f"  cp '{projFile}' '{interimFile}' " ) :
+                    return onStopMe(f"Failed to create interim projections volume in {outPath}.")
+                projFile = interimFile
         delMe = projFile
+
         if self.ui.ringOrder.checkedButton() is self.ui.ringBeforePhase :
             if self.applyRing(f"{projFile}:/data:y", saveHist=True) or self.applyPhase(f"{projFile}:/data", True):
                 return onStopMe()

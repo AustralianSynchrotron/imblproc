@@ -1760,7 +1760,7 @@
          </widget>
         </item>
         <item row="6" column="1" colspan="4">
-         <layout class="QHBoxLayout" name="horizontalLayout_34" stretch="1,0">
+         <layout class="QHBoxLayout" name="horizontalLayout_34" stretch="1,0,0">
           <item>
            <widget class="QPushButton" name="prFile">
             <property name="toolTip">
@@ -1774,6 +1774,16 @@
             </property>
             <property name="flat">
              <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QToolButton" name="cleanToMemory">
+            <property name="toolTip">
+             <string>if clean projections file found in home directory, uploads it into memory to operates further from there.</string>
+            </property>
+            <property name="text">
+             <string>To memory</string>
             </property>
            </widget>
           </item>
@@ -2684,11 +2694,11 @@
    <slot>setDisabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>600</x>
-     <y>378</y>
+     <x>598</x>
+     <y>367</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1103</x>
+     <x>1097</x>
      <y>379</y>
     </hint>
    </hints>
@@ -2700,11 +2710,11 @@
    <slot>setDisabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>600</x>
-     <y>378</y>
+     <x>598</x>
+     <y>367</y>
     </hint>
     <hint type="destinationlabel">
-     <x>853</x>
+     <x>849</x>
      <y>379</y>
     </hint>
    </hints>
