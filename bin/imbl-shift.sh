@@ -123,10 +123,16 @@ if [ -z "${1}" ] ; then
   echo "No input path was given." >&2
   printhelp >&2
   exit 1
+elif ((  1 != $(tr -dc ':'  <<< "$1" | wc -c)  )) ; then
+  echo "Input ($1) must be of form 'hdfFile:hdfContainer'." >&2
+  exit 1
 fi
 if [ -z "${2}" ] ; then
   echo "No output path was given." >&2
   printhelp >&2
+  exit 1
+elif ((  1 != $(tr -dc ':'  <<< "$2" | wc -c)  )) ; then
+  echo "Input ($2) must be of form 'hdfFile:hdfContainer'." >&2
   exit 1
 fi
 
@@ -165,22 +171,26 @@ if (( $projMax < $proj180 )) ; then
   echo "Last projection $projMax is less than that at 180deg $proj180." >&2
   exit 1
 fi
+projShift=$(( $projShift % (2*$proj180) ))
 
-if [ -z "$3" ] ; then
-  if ((  1 != $(tr -dc ':'  <<< "$1" | wc -c)  )) ; then
-    echo "In case of single input file, it must be of form 'hdfFile:hdfContainer'." >&2
-    exit 1
-  fi
+samO=""
+samS=""
+outVol=""
+if [ -z "$3" ] ; then # only 2 input positional arguments
   if (( $projShift <= $proj180 )) ; then
     echo "In case of single input first shifted projection ($projShift) must be" \
          "larger than projection at 180deg ($proj180)." >&2
     exit 1
   fi
-  inO="${1}:0-$projMax"
-  inS="${1}:${projShift}-$(($projShift + $projMax))"
-  $0 $allargs "$inO" "$inS" "$2"
-  exit $?
+  samO="${1}:0-$projMax"
+  samS="${1}:${projShift}-$(($projShift + $projMax))"
+  outVol="$2"
+elif ((  1 != $(tr -dc ':'  <<< "$3" | wc -c)  )) ; then # incorrect output
+  echo "Output ($3) must be of form 'hdfFile:hdfContainer'." >&2
+  exit 1
+else # 3 positional arguments
+  samO="$1"
+  samS="$2"
+  outVol="$3"
 fi
-samO="$1"
-samS="$2"
-outVol="$3"
+
