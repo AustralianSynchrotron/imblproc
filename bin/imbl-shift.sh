@@ -62,6 +62,13 @@ chkpos () {
   fi
 }
 
+chkhdf () {
+  if ((  1 != $(tr -dc ':'  <<< "$1" | wc -c)  )) ; then
+    echo "Input ($1) must be of form 'hdfFile:hdfContainer'." >&2
+    exit 1
+  fi
+}
+
 
 
 bgO=""
@@ -123,18 +130,14 @@ if [ -z "${1}" ] ; then
   echo "No input path was given." >&2
   printhelp >&2
   exit 1
-elif ((  1 != $(tr -dc ':'  <<< "$1" | wc -c)  )) ; then
-  echo "Input ($1) must be of form 'hdfFile:hdfContainer'." >&2
-  exit 1
 fi
+chkhdf "$1"
 if [ -z "${2}" ] ; then
   echo "No output path was given." >&2
   printhelp >&2
   exit 1
-elif ((  1 != $(tr -dc ':'  <<< "$2" | wc -c)  )) ; then
-  echo "Input ($2) must be of form 'hdfFile:hdfContainer'." >&2
-  exit 1
 fi
+chkhdf "$2"
 
 if [ -z "$step" ] ; then
   echo "No option -a was given." >&2
@@ -185,10 +188,8 @@ if [ -z "$3" ] ; then # only 2 input positional arguments
   samO="${1}:0-$projMax"
   samS="${1}:${projShift}-$(($projShift + $projMax))"
   outVol="$2"
-elif ((  1 != $(tr -dc ':'  <<< "$3" | wc -c)  )) ; then # incorrect output
-  echo "Output ($3) must be of form 'hdfFile:hdfContainer'." >&2
-  exit 1
 else # 3 positional arguments
+  chkhdf "$3"
   samO="$1"
   samS="$2"
   outVol="$3"
