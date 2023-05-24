@@ -74,12 +74,14 @@ cropFinal="0,0,0,0"
 shift="0,0"
 step=""
 start=0
-end="180.0"
+end=""
 cent=0
 rotate=0
 testme=""
 beverbose=false
+allargs=""
 while getopts "b:B:d:D:m:g:s:e:r:a:c:C:R:t:hv" opt ; do
+  allargs=" $allargs -$opt $OPTARG"
   case $opt in
     b)  bgO=$OPTARG;;
     B)  bgS=$OPTARG;;
@@ -97,19 +99,19 @@ while getopts "b:B:d:D:m:g:s:e:r:a:c:C:R:t:hv" opt ; do
           fi
         fi ;;
     s)  start=$OPTARG
-        chknum "$start" "-a"
-        chkpos "$start" "-a"
+        chknum "$start" "-s"
+        chkpos "$start" "-s"
         ;;
     e)  end=$OPTARG
-        chknum "$end" "-a"
-        chkpos "$end" "-a"
+        chknum "$end" "-e"
+        chkpos "$end" "-e"
         ;;
     r)  cent=$OPTARG;;
     c)  crop=$OPTARG;;
     C)  cropFinal=$OPTARG;;
     R)  rotate=$OPTARG;;
-    t)  testme="$OPTARG" ;;
-    v)  beverbose=true ;;
+    t)  testme="$OPTARG";;
+    v)  beverbose=true;;
     h)  printhelp ; exit 1 ;;
     \?) echo "ERROR! Invalid option: -$OPTARG" >&2 ; exit 1 ;;
     :)  echo "ERROR! Option -$OPTARG requires an argument." >&2 ; exit 1 ;;
@@ -122,22 +124,10 @@ if [ -z "${1}" ] ; then
   printhelp >&2
   exit 1
 fi
-samO="$1"
-
 if [ -z "${2}" ] ; then
   echo "No output path was given." >&2
   printhelp >&2
   exit 1
-fi
-
-samS=""
-outVol=""
-if [ -z "${3}" ] ; then
-  samS="$samO"
-  outVol="$2"
-else
-  samS="$2"
-  outVol="$3"
 fi
 
 if [ -z "$step" ] ; then
@@ -145,7 +135,6 @@ if [ -z "$step" ] ; then
   printhelp >&2
   exit 1
 fi
-
 
 roundToInt() {
   printf "%.0f\n" "$1"
@@ -156,17 +145,42 @@ projShift=""
 projMax=""
 if (( $(echo "1 < $step" | bc -l) )); then
   proj180="$step"
+  chkint "$start"
   projShift="$start"
+  if [ -z "$end" ] ; then
+    end="$proj180"
+  else
+    chkint "$end"
+  fi
   projMax="$end"
 else
   proj180=$(roundToInt "$( echo "scale=2; 180.0 / $step " | bc )" )
   projShift=$(roundToInt "$( echo "scale=2; $start / $step " | bc )" )
+  if [ -z "$end" ] ; then
+    end="180.0"
+  fi
   projMax=$(roundToInt "$( echo "scale=2; $end / $step " | bc )" )
 fi
-
-
-if (( $(echo "180.0 > $end" | bc -l) )); then
-  echo "Last projection $end is less than 180deg." >&2
+if (( $projMax < $proj180 )) ; then
+  echo "Last projection $projMax is less than that at 180deg $proj180." >&2
   exit 1
 fi
 
+if [ -z "$3" ] ; then
+  if ((  1 != $(tr -dc ':'  <<< "$1" | wc -c)  )) ; then
+    echo "In case of single input file, it must be of form 'hdfFile:hdfContainer'." >&2
+    exit 1
+  fi
+  if (( $projShift <= $proj180 )) ; then
+    echo "In case of single input first shifted projection ($projShift) must be" \
+         "larger than projection at 180deg ($proj180)." >&2
+    exit 1
+  fi
+  inO="${1}:0-$projMax"
+  inS="${1}:${projShift}-$(($projShift + $projMax))"
+  $0 $allargs "$inO" "$inS" "$2"
+  exit $?
+fi
+samO="$1"
+samS="$2"
+outVol="$3"

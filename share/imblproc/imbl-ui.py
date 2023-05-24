@@ -1233,8 +1233,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.enableWidgets(self.ui.testProj)
         self.collectOut = ""
         ars = f" -t {self.ui.testProjection.value()}"
-        wdir = path.join(self.ui.outPath.text(),
-                            self.ui.testSubDir.currentText())
+        wdir = self.onStorNamePrefix()
         hasFailed = self.common_stitch(wdir, self.ui.testProj, ars)
         lres = False if hasFailed else \
             re.search('^([0-9]+) ([0-9]+) ([0-9]+) (.*)', self.collectOut.splitlines()[-1])
@@ -1282,8 +1281,7 @@ class MainWindow(QtWidgets.QMainWindow):
             + ( "" if self.ui.saveStitched.isChecked() else " -s " )
         for curIdx in pidxs:
             self.ui.testSubDir.setCurrentIndex(curIdx)
-            subdir = self.ui.testSubDir.currentText()
-            wdir = path.join(self.ui.outPath.text(), subdir)
+            wdir = self.onStorNamePrefix()
             self.enableWidgets(actBut)
             if self.common_stitch(wdir, actBut, ars) :
                 break
@@ -1304,10 +1302,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.update_reconstruction_state()
 
 
+    def onStorNamePrefix(self):
+        return path.join(self.ui.outPath.text(), self.ui.testSubDir.currentText(), '')
+
+
     def inMemNamePrexix(self):
         global listOfCreatedMemFiles
-        cOpath = path.join(self.ui.outPath.text(), self.ui.testSubDir.currentText())
-        cOpath = path.realpath(cOpath)
+        cOpath = path.realpath(self.onStorNamePrefix())
         toRet = f"/dev/shm/imblproc_{cOpath.replace('/','_')}_"
         if 'InMemIndicator' in os.environ:
             print(f"{os.environ['InMemIndicator']}{toRet}")
@@ -1320,7 +1321,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def on_cleanToMemory_clicked(self):
         file_postfix = "clean.hdf"
         memName = self.inMemNamePrexix() + file_postfix
-        diskName=path.join(self.ui.outPath.text(), self.ui.testSubDir.currentText(), file_postfix)
+        diskName = self.onStorNamePrefix() + file_postfix
         if not path.exists(diskName):
             return
         self.enableWidgets(self.ui.prFile)
@@ -1336,7 +1337,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def update_reconstruction_state(self):
         file_postfix = "clean.hdf"
         memName = self.inMemNamePrexix() + file_postfix
-        diskName=path.join(self.ui.outPath.text(), self.ui.testSubDir.currentText(), file_postfix)
+        diskName = self.onStorNamePrefix() + file_postfix
         inMem = path.exists(memName)
         self.ui.cleanToMemory.setVisible(not inMem and path.exists(diskName))
         projFile = memName if inMem else diskName
@@ -1474,7 +1475,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def common_rec(self, isTest):
 
-        wdir = path.join(self.ui.outPath.text(), self.ui.testSubDir.currentText())
+        wdir  = self.onStorNamePrefix()
         self.scrProc.proc.setWorkingDirectory(wdir)
         projFile = path.realpath(self.ui.prFile.text())
         x, y, z = hdf5shape(projFile, "data")
@@ -1662,10 +1663,9 @@ class MainWindow(QtWidgets.QMainWindow):
             onStopMe()
             return -1
         projFile, _, _, step, wdir = commres
-        if projFile == path.join(self.ui.outPath.text(), self.ui.testSubDir.currentText(), "clean.hdf") \
+        if projFile == self.onStorNamePrefix() + "clean.hdf" \
            and self.ui.saveStitched.isChecked() :
-                interimFile = path.join(self.ui.outPath.text(), self.ui.testSubDir.currentText()
-                                        , "clean_deleteMeWhenDone.hdf")
+                interimFile = self.onStorNamePrefix() + "clean_deleteMeWhenDone.hdf"
                 if self.execScrProc("Creating interim projections volume."
                                     , f"  cp '{projFile}' '{interimFile}' " ) :
                     return onStopMe(f"Failed to create interim projections volume in {outPath}.")
