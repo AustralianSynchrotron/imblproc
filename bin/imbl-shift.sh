@@ -174,7 +174,7 @@ if (( $projMax < $proj180 )) ; then
   echo "Last projection $projMax is less than that at 180deg $proj180." >&2
   exit 1
 fi
-projShift=$(( $projShift % (2*$proj180) ))
+projShift=$(( $projShift % (2*$proj180) )) # to make sure it is in [0..360) deg
 
 samO=""
 samS=""
@@ -193,5 +193,33 @@ else # 3 positional arguments
   samO="$1"
   samS="$2"
   outVol="$3"
+  if (( $projShift == 0 )) ; then
+    args="-g $shift -c $crop -C $cropFinal -r $rotate"
+    if [ -n "$bgO" ] ; then
+      args="$args -b $bgO"
+    fi
+    if [ -n "$bgS" ] ; then
+      args="$args -b $bgS"
+    fi
+    if [ -n "$dfO" ] ; then
+      args="$args -d $dfO"
+    fi
+    if [ -n "$dfS" ] ; then
+      args="$args -d $dfS"
+    fi
+    if [ -n "$gmask" ] ; then
+      args="$args -M $gmask"
+    fi
+    if [ -n "$testme" ] ; then
+      args="$args -t $testme"
+    fi
+    if $beverbose ; then
+      args="$args -v"
+      echo "Executing:"
+      echo "  ctas proj" "$args" "$samO:-$projMax" "$samS:-$projMax" -o "$outVol"
+    fi
+    ctas proj "$args" "$samO:-$projMax" "$samS:-$projMax" -o "$outVol"
+    exit $?
+  fi
 fi
 
