@@ -314,7 +314,7 @@ if ( ! $volWipe || ! $volStore ) ; then # create file in memory
   volSize=$(( 4 * $x * $y * $z ))
   hVolSize="${x}x${y}x${z} $(numfmt --to=iec-i <<< $volSize)"
   memSize=$(free -bw | sed 's:  *: :g' | cut -d' ' -f 8 | sed '2q;d')
-  if (( $volSize < $( echo " scale=0 ; $memSize * 3 / 4 " | bc )  )) ; then
+  if (( $volSize > $( echo " scale=0 ; $memSize * 4 / 5 " | bc )  )) ; then
     echo "WARNING! Not enough available memory $(numfmt --to=iec-i <<< $memSize) to allow" \
          " processing $hVolSize volume. Will use file storage for interim data, what can" \
          " be significantly slower."  >&2

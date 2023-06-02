@@ -1515,7 +1515,7 @@ class MainWindow(QtWidgets.QMainWindow):
             Script.run(f"mkdir -p \"tmp\"")
             if self.execScrProc( "Searching for rotation centre",
                                 f"ctas ax {projFile}:/data:0 {projFile}:/data:{ark180}" + \
-                                (f" -o tmp/SAMPLE_autoCOR.tif" if isTest else "")  ) :
+                                (f" -o tmp/SAMPLE_cor.tif" if isTest else "")  ) :
                 return None
             try:
                 cor = 0.0 if self.scrProc.dryRun else float(self.collectOut)
