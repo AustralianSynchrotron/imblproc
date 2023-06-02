@@ -310,30 +310,40 @@ if [ -z "$testOFl" ] ; then
 fi
 
 cleanPath="clean.hdf"
-if ! $volWipe || ! $volStore ; then # create file in memory
-  crFilePrefix="/dev/shm/imblproc_$(realpath $PWD | sed 's / _ g')_"
-  #flfix=$( basename "$testOFl" | sed 's '${tstfl}'[0-9]*  g' )
-  #flfix="${flfix%.*}"
-  #tpnm="${crFilePrefix}clean${flfix}.hdf"
-  tpnm="${crFilePrefix}${cleanPath}"
-  if $beverbose ; then
-    echo "Creating in memory interim file $tpnm for ${x}x${y}x${z} volume."
-  fi
-  if ! ctas v2v "$testOFl" -o "${tpnm}:/data:-$(( $z - 1 ))" \
-     ||
-     ! (
-       vsize=$( du --block-size=1 "$tpnm" | cut -d$'\t' -f1 )
-       esize=$(( 4 * x * y * z ))
-       if (( $vsize  <  $esize )) ; then
-         cp --sparse=never "$tpnm" "${tpnm}.tmp"  &&  mv "${tpnm}.tmp" "$tpnm"
-       fi
-     )
-  then
-    echo "WARNING! Could not create or allocate in memory interim file $tpnm for ${x}x${y}x${z} volume." >&2
-    echo "         Will use file storage for interim data, what can be significantly slower." >&2
-    rm -rf "$crFilePrefix"*
+if ( ! $volWipe || ! $volStore ) ; then # create file in memory
+  volSize=$(( 4 * $x * $y * $z ))
+  hVolSize="${x}x${y}x${z} $(numfmt --to=iec-i <<< $volSize)"
+  memSize=$(free -bw | sed 's:  *: :g' | cut -d' ' -f 8 | sed '2q;d')
+  if (( $volSize < $( echo " scale=0 ; $memSize * 3 / 4 " | bc )  )) ; then
+    echo "WARNING! Not enough available memory $(numfmt --to=iec-i <<< $memSize) to allow" \
+         " processing $hVolSize volume. Will use file storage for interim data, what can" \
+         " be significantly slower."  >&2
   else
-    cleanPath="$tpnm"
+    crFilePrefix="/dev/shm/imblproc_$(realpath $PWD | sed 's / _ g')_"
+    #flfix=$( basename "$testOFl" | sed 's '${tstfl}'[0-9]*  g' )
+    #flfix="${flfix%.*}"
+    #tpnm="${crFilePrefix}clean${flfix}.hdf"
+    tpnm="${crFilePrefix}${cleanPath}"
+    if $beverbose ; then
+      echo "Creating in memory interim file $tpnm for $hVolSize volume."
+    fi
+    if ! ctas v2v "$testOFl" -o "${tpnm}:/data:-$(( $z - 1 ))" \
+       ||
+       ! (
+         vsize=$( du --block-size=1 "$tpnm" | cut -d$'\t' -f1 )
+         esize=$(( 4 * x * y * z ))
+         if (( $vsize  <  $esize )) ; then
+           cp --sparse=never "$tpnm" "${tpnm}.tmp"  &&  mv "${tpnm}.tmp" "$tpnm"
+         fi
+       )
+    then
+      echo "WARNING! Could not create or allocate in memory interim file $tpnm for" \
+           " $hVolSize volume. Will use file storage for interim data, what can be" \
+           " significantly slower." >&2
+      rm -rf "$crFilePrefix"*
+    else
+      cleanPath="$tpnm"
+    fi
   fi
 fi
 

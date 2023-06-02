@@ -17,8 +17,7 @@ printhelp() {
   echo "  -s FLOAT          Starting angle / projection of shifted data set ."
   echo "  -e FLOAT          Angle / number of last projection to process."
   echo "  -g FLOAT:FLOAT    Spatial shift in pixels (X,Y)."
-  echo "  -r FLOAT          Deviation of rotation axis from the center of croppped original image."
-  echo "  -c T,L,B,R        Crop source images (all INT)."
+  echo "  -c FLOAT          Deviation of rotation axis from the center of original image."
   echo "  -C T,L,B,R        Crop final image (all INT)."
   echo "     T, L, B and R give cropping from the edges of the images: top, left, bottom, right."
   echo "  -R FLOAT          Rotate projections."
@@ -62,6 +61,13 @@ chkpos () {
   fi
 }
 
+chkNneg () {
+  if (( $(echo "0 > $1" | bc -l) )); then
+    wrong_num "$1" "is negative" "$2"
+  fi
+}
+
+
 chkhdf () {
   if ((  1 != $(tr -dc ':'  <<< "$1" | wc -c)  )) ; then
     echo "Input ($1) must be of form 'hdfFile:hdfContainer'." >&2
@@ -76,9 +82,12 @@ bgS=""
 dfO=""
 dfS=""
 gmask=""
-crop="0,0,0,0"
-cropFinal="0,0,0,0"
-shift="0,0"
+cropT=0
+cropL=0
+cropB=0
+cropR=0
+shiftX=""
+shiftY=""
 step=""
 start=0
 end=""
@@ -87,7 +96,7 @@ rotate=0
 testme=""
 beverbose=false
 allargs=""
-while getopts "b:B:d:D:m:g:s:e:r:a:c:C:R:t:hv" opt ; do
+while getopts "b:B:d:D:m:g:s:e:c:a:C:R:t:hv" opt ; do
   allargs=" $allargs -$opt $OPTARG"
   case $opt in
     b)  bgO=$OPTARG;;
@@ -95,7 +104,10 @@ while getopts "b:B:d:D:m:g:s:e:r:a:c:C:R:t:hv" opt ; do
     d)  dfO=$OPTARG;;
     D)  dfS=$OPTARG;;
     m)  gmask=$OPTARG;;
-    g)  shift=$OPTARG;;
+    g)  IFS=',:' read shiftX shiftY <<< "$OPTARG"
+        chkint "$shiftX" " from the string '$shift' determined by option -g"
+        chkint "$shiftY" " from the string '$shift' determined by option -g"
+        ;;
     a)  step=$OPTARG
         chknum "$step" "-a"
         chkpos "$step" "-a"
@@ -113,9 +125,19 @@ while getopts "b:B:d:D:m:g:s:e:r:a:c:C:R:t:hv" opt ; do
         chknum "$end" "-e"
         chkpos "$end" "-e"
         ;;
-    r)  cent=$OPTARG;;
-    c)  crop=$OPTARG;;
-    C)  cropFinal=$OPTARG;;
+    c)  cent=$OPTARG
+        chkint "$cent" "-c"
+        ;;
+    C)  IFS=',:' read cropT cropL cropB cropR <<< "$OPTARG"
+        chkint "$cropT" "-C"
+        chkint "$cropL" "-C"
+        chkint "$cropB" "-C"
+        chkint "$cropR" "-C"
+        chkNneg "$cropT" "-C"
+        chkNneg "$cropL" "-C"
+        chkNneg "$cropB" "-C"
+        chkNneg "$cropR" "-C"
+        ;;
     R)  rotate=$OPTARG;;
     t)  testme="$OPTARG";;
     v)  beverbose=true;;
@@ -125,6 +147,27 @@ while getopts "b:B:d:D:m:g:s:e:r:a:c:C:R:t:hv" opt ; do
   esac
 done
 shift $((OPTIND-1))
+
+args=""
+if [ -n "$bgO" ] ; then
+  args="$args -b $bgO"
+fi
+if [ -n "$bgS" ] ; then
+  args="$args -b $bgS"
+fi
+if [ -n "$dfO" ] ; then
+  args="$args -d $dfO"
+fi
+if [ -n "$dfS" ] ; then
+  args="$args -d $dfS"
+fi
+if [ -n "$gmask" ] ; then
+  args="$args -M $gmask"
+fi
+if $beverbose ; then
+  args="$args -v"
+fi
+
 
 if [ -z "${1}" ] ; then
   echo "No input path was given." >&2
@@ -140,18 +183,31 @@ fi
 chkhdf "$2"
 
 if [ -z "$step" ] ; then
-  echo "No option -a was given." >&2
+  echo "No option -a was given for step angle." >&2
   printhelp >&2
   exit 1
 fi
+
+if [ -z "$shiftX" ] || [ -z "$shiftY" ] ; then
+  echo "No option -g was given for spacial shift." >&2
+  printhelp >&2
+  exit 1
+fi
+
 
 roundToInt() {
   printf "%.0f\n" "$1"
 }
 
-proj180=""
-projShift=""
-projMax=""
+abs() {
+  echo "${1/#-}"
+}
+
+
+proj180="" # frame at 180 deg
+projS=0 # first frame in samS
+projShift="" # position of projS
+projMax="" # total frames in output
 if (( $(echo "1 < $step" | bc -l) )); then
   proj180="$step"
   chkint "$start"
@@ -185,41 +241,72 @@ if [ -z "$3" ] ; then # only 2 input positional arguments
          "larger than projection at 180deg ($proj180)." >&2
     exit 1
   fi
-  samO="${1}:0-$projMax"
-  samS="${1}:${projShift}-$(($projShift + $projMax))"
-  outVol="$2"
+  samO="${1}" # :0-$projMax
+  samS="${1}" # :${projShift}-$(($projShift + $projMax))
+  projS="$projShift"
+  outVol="$2" # :0-$projMax
 else # 3 positional arguments
   chkhdf "$3"
-  samO="$1"
-  samS="$2"
-  outVol="$3"
+  samO="${1}" # :0-$projMax
+  samS="${2}" # :0-$projMax
+  projS="0"
+  outVol="$3" # :0-$projMax
   if (( $projShift == 0 )) ; then
-    args="-g $shift -c $crop -C $cropFinal -r $rotate"
-    if [ -n "$bgO" ] ; then
-      args="$args -b $bgO"
-    fi
-    if [ -n "$bgS" ] ; then
-      args="$args -b $bgS"
-    fi
-    if [ -n "$dfO" ] ; then
-      args="$args -d $dfO"
-    fi
-    if [ -n "$dfS" ] ; then
-      args="$args -d $dfS"
-    fi
-    if [ -n "$gmask" ] ; then
-      args="$args -M $gmask"
-    fi
+    myargs="$args -g $shift -c $crop -C $cropFinal -r $rotate"
     if [ -n "$testme" ] ; then
-      args="$args -t $testme"
+      myargs="$myargs -t $testme"
     fi
     if $beverbose ; then
-      args="$args -v"
       echo "Executing:"
-      echo "  ctas proj" "$args" "$samO:-$projMax" "$samS:-$projMax" -o "$outVol"
+      echo "  ctas proj" "$myargs" "$samO:-$projMax" "$samS:-$projMax" -o "$outVol"
     fi
-    ctas proj "$args" "$samO:-$projMax" "$samS:-$projMax" -o "$outVol"
+    ctas proj "$myargs" "$samO:-$projMax" "$samS:-$projMax" -o "$outVol"
     exit $?
   fi
 fi
+
+
+#hdf5wdth() {
+#  HDF5_USE_FILE_LOCKING=FALSE \
+#  h5ls "${1/://}" | sed 's:.*{\(.*\), \(.*\), \(.*\)}.*:\3:g'
+#}
+
+maxNum() {
+  echo -e "$1" | tr -d ' ' | sort -n | head -1
+}
+
+minNum() {
+  echo -e "$1" | tr -d ' ' | sort -n | tail -1
+}
+
+norgx=$(  minNum "0 \n $shiftX \n $((2*$cent-$shiftX))" )
+norgxD=$( minNum "0 \n $shiftX" )
+norgxF=$( minNum "0 \n $((2*$cent-$shiftX))" )
+nendx=$(  maxNum "0 \n $shiftX \n $((2*$cent-$shiftX))" )
+nendxD=$( maxNum "0 \n $shiftX" )
+nendxF=$( maxNum "0 \n $((2*$cent-$shiftX))" )
+cropTB=$(abs "$shiftY")
+cropD="$(($cropTB+$cropT)),$(($norgxD-$norgx)),$(($cropTB+$cropB)),$(($nendx-$nendxD))"
+cropF="$(($cropTB+$cropT)),$(($norgxF-$norgx)),$(($cropTB+$cropB)),$(($nendx-$nendxF))"
+
+
+
+doStitch() {
+  if $beverbose ; then
+    echo "Executing:"
+    echo "  ctas proj" "$myargs" -C "$4" -o "$outVol:$1-$(($1+$3)),$projMax" \
+                       "$samO:$1-$(($1+$3))" "$samS:$2-$(($2+$3))"
+  fi
+}
+
+
+if (( projS < proj180  )) ; then
+  doStitch 0      $(($proj180 - $projS)) $(($projS-1))          $cropF  && \
+  doStitch $projS 0                      $(($projMax - $projS)) $cropD
+else
+  projE=$(($projShift+$projMax))
+  doStitch 0 $((2*$proj180 - $projS)) $(($projMax-2*$proj180-1))  $cropD
+  doStitch $(($projMax-2*$proj180)) $((2*$proj180 - $projS)) $(($projMax-2*$proj180))  $cropD
+fi
+return $?
 

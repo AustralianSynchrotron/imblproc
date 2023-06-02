@@ -311,7 +311,7 @@ for Ydir in $Ydirs ; do
 done
 
 subdCount=$( wc -w <<< $Sdirs)
-if (( $subdCount > 1 )) ; then
+if (( $subdCount > 0 )) ; then
   outInitFile "$uselabels" . "$Sdirs"
   echo "subdirs=$subdCount" >>  "$initName"
 fi
