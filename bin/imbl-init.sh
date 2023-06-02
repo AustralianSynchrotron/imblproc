@@ -310,8 +310,8 @@ for Ydir in $Ydirs ; do
   done
 done
 
-subdCount=$( wc -w <<< $Sdirs)
-if [ "." != "$Sdirs" ]  && (( $subdCount > 0 )) ; then
+subdCount=$( echo $Sdirs | tr -d '.' | wc -w )
+if (( $subdCount > 0 )) ; then
   outInitFile "$uselabels" . "$Sdirs"
   echo "subdirs=$subdCount" >>  "$initName"
 fi
