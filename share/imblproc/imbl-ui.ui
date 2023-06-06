@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1125</width>
+    <height>605</height>
+   </rect>
+  </property>
   <property name="windowTitle">
    <string>imbl pre-proccessing</string>
   </property>
@@ -117,7 +125,7 @@
               <item>
                <widget class="QComboBox" name="expSample">
                 <property name="toolTip">
-                 <string>List of samples in the given IMBL experiment. Does not update automatically and requires manual update on creation of new scans.</string>
+                 <string>Select sample from the list found in the IMBL experiment. Does not update automatically and requires manual update on creation of new scans.</string>
                 </property>
                 <property name="saveInConfig" stdset="0">
                  <number>-2</number>
@@ -2721,12 +2729,12 @@
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="resFormat">
+  <buttongroup name="ringOrder">
    <property name="saveInConfig" stdset="0">
     <number>1</number>
    </property>
   </buttongroup>
-  <buttongroup name="ringOrder">
+  <buttongroup name="resFormat">
    <property name="saveInConfig" stdset="0">
     <number>1</number>
    </property>

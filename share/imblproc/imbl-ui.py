@@ -265,7 +265,9 @@ class ColumnResizer(QObject):
 def hdf5shape(filename, dataset):
     # with locking used, following commands may work very slow if the file was not closed properly
     Script.run(f"HDF5_USE_FILE_LOCKING=FALSE h5clear -s --increment {filename}")
-    outed = Script.run(f"HDF5_USE_FILE_LOCKING=FALSE h5ls {filename}/{dataset}")[1]
+    outed = Script.run(f"export HDF5_USE_FILE_LOCKING=FALSE ; "
+                       f"h5clear -s --increment {filename} 2>&1 /dev/null ; "
+                       f"h5ls {filename}/{dataset}")[1]
     if lres := re.search('.*{([0-9]+), ([0-9]+), ([0-9]+)}.*', outed) :
         return int(lres.group(3)), int(lres.group(2)), int(lres.group(1))
     else:
@@ -636,7 +638,7 @@ class MainWindow(QtWidgets.QMainWindow):
             text = text.strip()
             if not text:
                 return
-        if not self.isVisible():
+        if not self.isVisibleTo(self.ui.centralWidget()):
             print(text)
             return
 
@@ -903,7 +905,7 @@ class MainWindow(QtWidgets.QMainWindow):
         logInfo = []
         if path.exists(logName) and not self.ui.ignoreLog.isChecked() :
             grepsPps = ""
-            if self.ui.inexclWidget.isVisible() :
+            if self.ui.inexclWidget.isVisibleTo(self.ui.centralWidget()) :
                 if self.ui.inExclude.text():
                     for grep in self.ui.inExclude.text().split():
                         grepsPps += f" | grep -v -e '{grep}' "
@@ -1063,9 +1065,10 @@ class MainWindow(QtWidgets.QMainWindow):
             command += " -z "
         if self.ui.noNewFF.isChecked():
             command += " -e "
-        if not self.ui.ignoreLog.isChecked() and self.ui.ignoreLog.isVisible() :
+        if not self.ui.ignoreLog.isChecked() and self.ui.ignoreLog.isVisibleTo(self.ui.centralWidget()) :
             command += " -l "
-        if self.ui.inexclWidget.isVisible() and (self.ui.inExclude.text() or self.ui.inInclude.text()) :
+        if self.ui.inexclWidget.isVisibleTo(self.ui.centralWidget()) \
+               and (self.ui.inExclude.text() or self.ui.inInclude.text()) :
             grepsPps = ""
             if self.ui.inExclude.text():
                 for grep in self.ui.inExclude.text().split():
@@ -1450,7 +1453,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def applyCT(self, step, istr, ostr, saveHist=False):
         fltLine = self.ui.ctFilter.currentText().upper().split()[0]
-        if self.ui.ctFilterOpt.isVisible():
+        if self.ui.ctFilterOpt.isVisibleTo(self.ui.centralWidget()):
             fltLine += f":{self.ui.ctFilterOpt.value()}"
         kontrLine = "FLT" if fltLine == "NONE" else "ABS"
         fltLine = "" if fltLine == "NONE" else f" -f {fltLine}"

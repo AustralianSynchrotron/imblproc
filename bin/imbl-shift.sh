@@ -304,9 +304,11 @@ if (( projS < proj180  )) ; then
   doStitch 0      $(($proj180 - $projS)) $(($projS-1))          $cropF  && \
   doStitch $projS 0                      $(($projMax - $projS)) $cropD
 else
-  projE=$(($projShift+$projMax))
-  doStitch 0 $((2*$proj180 - $projS)) $(($projMax-2*$proj180-1))  $cropD
-  doStitch $(($projMax-2*$proj180)) $((2*$proj180 - $projS)) $(($projMax-2*$proj180))  $cropD
+  projE=$(($projShift + $projMax))
+  tailS=$(($projE - 2*$proj180))
+
+  doStitch 0 $((2*$proj180 - $projS)) $(($tailS-1))  $cropD
+  doStitch $tailS $(($projMax-2*$proj180)) $((2*$proj180 - $projS)) $(($projMax-2*$proj180))  $cropD
 fi
 return $?
 
