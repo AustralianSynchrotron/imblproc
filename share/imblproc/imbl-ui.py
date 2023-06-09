@@ -516,7 +516,7 @@ class MainWindow(QtWidgets.QMainWindow):
         QtCore.QTimer.singleShot(0, afterStart)
 
 
-    def isVisible(self, wdg):
+    def canSee(self, wdg):
         return wdg.isVisibleTo(self.ui.centralWidget())
 
 
@@ -909,7 +909,7 @@ class MainWindow(QtWidgets.QMainWindow):
         logInfo = []
         if path.exists(logName) and not self.ui.ignoreLog.isChecked() :
             grepsPps = ""
-            if self.isVisible(self.ui.inexclWidget) :
+            if self.canSee(self.ui.inexclWidget) :
                 if self.ui.inExclude.text():
                     for grep in self.ui.inExclude.text().split():
                         grepsPps += f" | grep -v -e '{grep}' "
@@ -1069,9 +1069,9 @@ class MainWindow(QtWidgets.QMainWindow):
             command += " -z "
         if self.ui.noNewFF.isChecked():
             command += " -e "
-        if not self.ui.ignoreLog.isChecked() and self.isVisible(self.ui.ignoreLog) :
+        if not self.ui.ignoreLog.isChecked() and self.canSee(self.ui.ignoreLog) :
             command += " -l "
-        if self.isVisible(self.ui.inexclWidget) \
+        if self.canSee(self.ui.inexclWidget) \
                and (self.ui.inExclude.text() or self.ui.inInclude.text()) :
             grepsPps = ""
             if self.ui.inExclude.text():
@@ -1457,7 +1457,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def applyCT(self, step, istr, ostr, saveHist=False):
         fltLine = self.ui.ctFilter.currentText().upper().split()[0]
-        if self.isVisible(self.ui.ctFilterOpt):
+        if self.canSee(self.ui.ctFilterOpt):
             fltLine += f":{self.ui.ctFilterOpt.value()}"
         kontrLine = "FLT" if fltLine == "NONE" else "ABS"
         fltLine = "" if fltLine == "NONE" else f" -f {fltLine}"
