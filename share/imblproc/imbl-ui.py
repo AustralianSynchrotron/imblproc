@@ -1146,7 +1146,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def onMinMaxProjectionChanged(self):
         minProj = self.ui.minProj.value()
         maxProj = self.ui.maxProj.value()
-        if maxProj == self.ui.maxProj.minimum() and :
+        if maxProj == self.ui.maxProj.minimum():
             maxProj = self.ui.projections.value()
         nstl = "" if minProj <= maxProj else warnStyle
         self.ui.minProj.setStyleSheet(nstl)
