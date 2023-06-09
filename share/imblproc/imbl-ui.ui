@@ -414,18 +414,15 @@
              <item row="1" column="1">
               <layout class="QHBoxLayout" name="horizontalLayout_14">
                <item>
-                <widget class="QLineEdit" name="projections">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="toolTip">
-                  <string>Total number of projections in the scan. Read from acquisition configuration file and, if existing and not ignored, log file.</string>
-                 </property>
+                <widget class="QSpinBox" name="projections">
                  <property name="readOnly">
                   <bool>true</bool>
+                 </property>
+                 <property name="buttonSymbols">
+                  <enum>QAbstractSpinBox::NoButtons</enum>
+                 </property>
+                 <property name="maximum">
+                  <number>999999999</number>
                  </property>
                 </widget>
                </item>
@@ -2571,7 +2568,6 @@
   <tabstop>inExclude</tabstop>
   <tabstop>scanRange</tabstop>
   <tabstop>notFnS</tabstop>
-  <tabstop>projections</tabstop>
   <tabstop>step</tabstop>
   <tabstop>ignoreLog</tabstop>
   <tabstop>ys</tabstop>
@@ -2729,12 +2725,12 @@
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="ringOrder">
+  <buttongroup name="resFormat">
    <property name="saveInConfig" stdset="0">
     <number>1</number>
    </property>
   </buttongroup>
-  <buttongroup name="resFormat">
+  <buttongroup name="ringOrder">
    <property name="saveInConfig" stdset="0">
     <number>1</number>
    </property>

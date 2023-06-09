@@ -516,6 +516,10 @@ class MainWindow(QtWidgets.QMainWindow):
         QtCore.QTimer.singleShot(0, afterStart)
 
 
+    def isVisible(self, wdg):
+        return wdg.isVisibleTo(self.ui.centralWidget())
+
+
     def execScrRole(self, role):
         for script in self.ui.findChildren(Script):
             if script.role() == role:
@@ -638,7 +642,7 @@ class MainWindow(QtWidgets.QMainWindow):
             text = text.strip()
             if not text:
                 return
-        if not self.isVisibleTo(self.ui.centralWidget()):
+        if not self.isVisible():
             print(text)
             return
 
@@ -905,7 +909,7 @@ class MainWindow(QtWidgets.QMainWindow):
         logInfo = []
         if path.exists(logName) and not self.ui.ignoreLog.isChecked() :
             grepsPps = ""
-            if self.ui.inexclWidget.isVisibleTo(self.ui.centralWidget()) :
+            if self.isVisible(self.ui.inexclWidget) :
                 if self.ui.inExclude.text():
                     for grep in self.ui.inExclude.text().split():
                         grepsPps += f" | grep -v -e '{grep}' "
@@ -929,7 +933,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.scanRange.setText(str(scanrange))
         self.ui.notFnS.setVisible(scanrange >= 360)
         projections = int(logInfo[1]) if fromlog else cfg.value('scan/steps', type=int)
-        self.ui.projections.setText(str(projections))
+        self.ui.projections.setValue(projections)
         step = float(logInfo[2]) if fromlog else scanrange / projections
         self.ui.step.setText(str(step))
 
@@ -990,7 +994,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.notFnS.setChecked(not self.doFnS)
         self.ui.fStLbl.setVisible(self.doFnS)
         self.ui.fStWdg.setVisible(self.doFnS)
-        self.ui.projections.setText(str(pjs))
+        self.ui.projections.setValue(pjs)
 
         self.doYst = ys > 1 and ystitch > 1
         self.ui.yIndependent.setChecked(not self.doYst)
@@ -1065,9 +1069,9 @@ class MainWindow(QtWidgets.QMainWindow):
             command += " -z "
         if self.ui.noNewFF.isChecked():
             command += " -e "
-        if not self.ui.ignoreLog.isChecked() and self.ui.ignoreLog.isVisibleTo(self.ui.centralWidget()) :
+        if not self.ui.ignoreLog.isChecked() and self.isVisible(self.ui.ignoreLog) :
             command += " -l "
-        if self.ui.inexclWidget.isVisibleTo(self.ui.centralWidget()) \
+        if self.isVisible(self.ui.inexclWidget) \
                and (self.ui.inExclude.text() or self.ui.inInclude.text()) :
             grepsPps = ""
             if self.ui.inExclude.text():
@@ -1142,8 +1146,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def onMinMaxProjectionChanged(self):
         minProj = self.ui.minProj.value()
         maxProj = self.ui.maxProj.value()
-        if maxProj == self.ui.maxProj.minimum():
-            maxProj = int(self.ui.projections.text())
+        if maxProj == self.ui.maxProj.minimum() and :
+            maxProj = self.ui.projections.value()
         nstl = "" if minProj <= maxProj else warnStyle
         self.ui.minProj.setStyleSheet(nstl)
         self.ui.maxProj.setStyleSheet(nstl)
@@ -1203,7 +1207,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.ui.allProj.isChecked() :
             minProj = self.ui.minProj.value()
             maxProj = self.ui.maxProj.value()
-            pjs=int(self.ui.projections.text())
+            pjs = self.ui.projections.value()
             if maxProj == self.ui.maxProj.minimum()  or maxProj >= pjs  :
                 maxProj = pjs
             prms += f" -m {minProj} -M {maxProj} "
@@ -1453,7 +1457,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def applyCT(self, step, istr, ostr, saveHist=False):
         fltLine = self.ui.ctFilter.currentText().upper().split()[0]
-        if self.ui.ctFilterOpt.isVisibleTo(self.ui.centralWidget()):
+        if self.isVisible(self.ui.ctFilterOpt):
             fltLine += f":{self.ui.ctFilterOpt.value()}"
         kontrLine = "FLT" if fltLine == "NONE" else "ABS"
         fltLine = "" if fltLine == "NONE" else f" -f {fltLine}"
