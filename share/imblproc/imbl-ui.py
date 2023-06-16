@@ -1500,7 +1500,7 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             myInitFile = path.join(wdir,initFileName)
             outed = Script.run(f"cat {myInitFile} | grep 'step=' | cut -d'=' -f 2 ")[1]
-            step = abs(float(outed))
+            step = abs(float(outed)) * self.ui.projBin.value()
             if step == 0:
                 raise Exception("Step is 0.")
         except Exception:
