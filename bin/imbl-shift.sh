@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 EXEPATH="$(dirname "$(realpath "$0")" )"
@@ -14,7 +15,7 @@ printhelp() {
   echo "  -m PATH           Image containing map of gaps."
   echo "  -a FLOAT          Acquisition step if < 1.0 / projection number at 180 degree if positive int."
   echo "                    This condition also determines meaning of the next two options."
-  echo "  -s FLOAT          Starting angle / projection of shifted data set ."
+  echo "  -s FLOAT          Starting angle / projection of shifted data set."
   echo "  -e FLOAT          Angle / number of last projection to process."
   echo "  -g FLOAT:FLOAT    Spatial shift in pixels (X,Y)."
   echo "  -c FLOAT          Deviation of rotation axis from the center of original image."
@@ -105,8 +106,8 @@ while getopts "b:B:d:D:m:g:s:e:c:a:C:R:t:hv" opt ; do
     D)  dfS=$OPTARG;;
     m)  gmask=$OPTARG;;
     g)  IFS=',:' read shiftX shiftY <<< "$OPTARG"
-        chkint "$shiftX" " from the string '$shift' determined by option -g"
-        chkint "$shiftY" " from the string '$shift' determined by option -g"
+        chkint "$shiftX" " from the string '$OPTARG' determined by option -g"
+        chkint "$shiftY" " from the string '$OPTARG' determined by option -g"
         ;;
     a)  step=$OPTARG
         chknum "$step" "-a"
@@ -119,7 +120,7 @@ while getopts "b:B:d:D:m:g:s:e:c:a:C:R:t:hv" opt ; do
         fi ;;
     s)  start=$OPTARG
         chknum "$start" "-s"
-        chkpos "$start" "-s"
+        chkNneg "$start" "-s"
         ;;
     e)  end=$OPTARG
         chknum "$end" "-e"
@@ -138,7 +139,9 @@ while getopts "b:B:d:D:m:g:s:e:c:a:C:R:t:hv" opt ; do
         chkNneg "$cropB" "-C"
         chkNneg "$cropR" "-C"
         ;;
-    R)  rotate=$OPTARG;;
+    R)  rotate=$OPTARG
+        chknum "$rotate" "-R"
+        ;;
     t)  testme="$OPTARG";;
     v)  beverbose=true;;
     h)  printhelp ; exit 1 ;;
@@ -150,19 +153,25 @@ shift $((OPTIND-1))
 
 args=""
 if [ -n "$bgO" ] ; then
-  args="$args -b $bgO"
+  args="$args -B $bgO"
 fi
 if [ -n "$bgS" ] ; then
-  args="$args -b $bgS"
+  args="$args -B $bgS"
 fi
 if [ -n "$dfO" ] ; then
-  args="$args -d $dfO"
+  args="$args -D $dfO"
 fi
 if [ -n "$dfS" ] ; then
-  args="$args -d $dfS"
+  args="$args -D $dfS"
 fi
 if [ -n "$gmask" ] ; then
   args="$args -M $gmask"
+fi
+if [ -n "$testme" ] ; then
+  args="$args -t $testme"
+fi
+if [ "$rotate" !=  "0" ]  ; then
+  args="$args -r $rotate"
 fi
 if $beverbose ; then
   args="$args -v"
@@ -232,6 +241,8 @@ if (( $projMax < $proj180 )) ; then
 fi
 projShift=$(( $projShift % (2*$proj180) )) # to make sure it is in [0..360) deg
 
+
+
 samO=""
 samS=""
 outVol=""
@@ -251,18 +262,6 @@ else # 3 positional arguments
   samS="${2}" # :0-$projMax
   projS="0"
   outVol="$3" # :0-$projMax
-  if (( $projShift == 0 )) ; then
-    myargs="$args -g $shift -c $crop -C $cropFinal -r $rotate"
-    if [ -n "$testme" ] ; then
-      myargs="$myargs -t $testme"
-    fi
-    if $beverbose ; then
-      echo "Executing:"
-      echo "  ctas proj" "$myargs" "$samO:-$projMax" "$samS:-$projMax" -o "$outVol"
-    fi
-    ctas proj "$myargs" "$samO:-$projMax" "$samS:-$projMax" -o "$outVol"
-    exit $?
-  fi
 fi
 
 
@@ -272,43 +271,51 @@ fi
 #}
 
 maxNum() {
-  echo -e "$1" | tr -d ' ' | sort -n | head -1
-}
-
-minNum() {
   echo -e "$1" | tr -d ' ' | sort -n | tail -1
 }
 
-norgx=$(  minNum "0 \n $shiftX \n $((2*$cent-$shiftX))" )
+minNum() {
+  echo -e "$1" | tr -d ' ' | sort -n | head -1
+}
+
+norgx=$(  maxNum "0 \n $shiftX \n $((2*$cent-$shiftX))" )
 norgxD=$( minNum "0 \n $shiftX" )
 norgxF=$( minNum "0 \n $((2*$cent-$shiftX))" )
-nendx=$(  maxNum "0 \n $shiftX \n $((2*$cent-$shiftX))" )
+nendx=$(  minNum "0 \n $shiftX \n $((2*$cent-$shiftX))" )
 nendxD=$( maxNum "0 \n $shiftX" )
 nendxF=$( maxNum "0 \n $((2*$cent-$shiftX))" )
+
 cropTB=$(abs "$shiftY")
-cropD="$(($cropTB+$cropT)),$(($norgxD-$norgx)),$(($cropTB+$cropB)),$(($nendx-$nendxD))"
-cropF="$(($cropTB+$cropT)),$(($norgxF-$norgx)),$(($cropTB+$cropB)),$(($nendx-$nendxF))"
+cropD="$(($cropTB+$cropT)),$(($norgx-$norgxD+$cropL)),$(($cropTB+$cropB)),$(($nendxD-$nendx+$cropR))"
+cropF="$(($cropTB+$cropT)),$(($norgx-$norgxF+$cropL)),$(($cropTB+$cropB)),$(($nendxF-$nendx+$cropR))"
+spshD="$shiftX,$shiftY"
+spshF="$((2*$cent-$shiftX)),$shiftY"
+argD="-C $cropD -g $spshD"
+argF="-C $cropF -f $spshF"
 
 
-
+#echo $projS $projShift $proj180 $projMax
 doStitch() {
   if $beverbose ; then
     echo "Executing:"
-    echo "  ctas proj" "$myargs" -C "$4" -o "$outVol:$1-$(($1+$3)),$projMax" \
-                       "$samO:$1-$(($1+$3))" "$samS:$2-$(($2+$3))"
+    echo "  ctas proj" "$args" $4 -o "$outVol:$1-$(($1+$3)),$projMax" \
+                       "$samO:$1-$(($1+$3))" "$samS:$(($projS+$2))-$(($projS+$2+$3))"
   fi
+  ctas proj $args $4 -o "$outVol:$1-$(($1+$3)),$projMax" \
+            "$samO:$1-$(($1+$3))" "$samS:$(($projS+$2))-$(($projS+$2+$3))"
 }
 
 
-if (( projS < proj180  )) ; then
-  doStitch 0      $(($proj180 - $projS)) $(($projS-1))          $cropF  && \
-  doStitch $projS 0                      $(($projMax - $projS)) $cropD
+if (( $projShift == 0 )) ; then
+  doStitch 0 0 $projMax "$argD"
+elif (( $projShift < $proj180  )) ; then
+  doStitch 0          $(($proj180 - $projShift)) $(($projShift-1))          "$argF"  && \
+  doStitch $projShift 0                          $(($projMax - $projShift)) "$argD"
 else
   projE=$(($projShift + $projMax))
   tailS=$(($projE - 2*$proj180))
-
-  doStitch 0 $((2*$proj180 - $projS)) $(($tailS-1))  $cropD
-  doStitch $tailS $(($projMax-2*$proj180)) $((2*$proj180 - $projS)) $(($projMax-2*$proj180))  $cropD
+  doStitch 0      $((2*$proj180 - $projShift)) $(($tailS-1))                "$argD" && \
+  doStitch $tailS 0                            $((2*$proj180 - $projShift)) "$argF"
 fi
-return $?
+exit $?
 
