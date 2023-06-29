@@ -1300,8 +1300,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 break
             dgln=len(f"{self.ui.maxProj.value()-1}")
             for ridx in 0, 1, 2, 3, 4:
-                idx = self.ui.minProj.value() + ridx * (self.ui.maxProj.value() - self.ui.minProj.value() - 1) / 4
-                idx = int(idx)
+                idx = int( self.ui.minProj.value()
+                         + ridx * (self.ui.maxProj.value() - self.ui.minProj.value() - 1) / 4 )
                 Script.run(f"ctas v2v {projFile}:/data:{idx} -o {wdir}/clean_{idx:0{dgln}d}.tif")
             if self.ui.recAfterProj.isChecked() and self.on_reconstruct_clicked():
                 break
@@ -1492,10 +1492,11 @@ class MainWindow(QtWidgets.QMainWindow):
             return None
         slice= self.ui.testSliceNum.value()
         doPhase = self.ui.distance.value() > 0 and self.ui.d2b.value() > 0
-        addToSl = 64 if isTest and doPhase else 0
-        if slice-addToSl < 0 or slice+addToSl >= y:
-            self.addErrToConsole(f"Slice {slice} is out of range [{addToSl}, {y-addToSl}). Aborting test.")
-            return None
+        if isTest:
+            addToSl = 64 if doPhase else 0
+            if slice-addToSl < 0 or slice+addToSl >= y :
+                self.addErrToConsole(f"Slice {slice} is out of range [{addToSl}, {y-addToSl}). Aborting test.")
+                return None
         step = 0
         try:
             myInitFile = path.join(wdir,initFileName)
