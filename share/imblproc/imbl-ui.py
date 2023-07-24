@@ -1196,14 +1196,14 @@ class MainWindow(QtWidgets.QMainWindow):
             prms += f" -n {self.ui.peakRad.value()} -N {self.ui.peakThr.value()} "
         if 0.0 != self.ui.maskEdge.value():
             prms += f" -E {self.ui.maskEdge.value()} "
-        crops = (self.ui.sCropTop.value(), self.ui.sCropLeft.value(),
-                 self.ui.sCropBottom.value(), self.ui.sCropRight.value())
+        crops = (self.ui.sCropLeft.value(), self.ui.sCropRight.value(),
+                 self.ui.sCropTop.value(), self.ui.sCropBottom.value())
         if sum(crops):
-            prms += " -c %i,%i,%i,%i " % crops
-        crops = (self.ui.fCropTop.value(), self.ui.fCropLeft.value(),
-                 self.ui.fCropBottom.value(), self.ui.fCropRight.value())
+            prms += " -c %i-%i,%i-%i " % crops
+        crops = (self.ui.fCropLeft.value(), self.ui.fCropRight.value(),
+                 self.ui.fCropTop.value(), self.ui.fCropBottom.value())
         if sum(crops):
-            prms += " -C %i,%i,%i,%i " % crops
+            prms += " -C %i-%i,%i-%i " % crops
         if not self.ui.allProj.isChecked() :
             minProj = self.ui.minProj.value()
             maxProj = self.ui.maxProj.value()
@@ -1222,13 +1222,16 @@ class MainWindow(QtWidgets.QMainWindow):
         actButton.setText('Stop')
 
         self.execScrRole("stitching")
-        toRet = self.execScrProc("Stitching", path.join(execPath, "imbl-stitch.sh") + prms, wdir)
+        self.collectOut = ""
+        hasFailed = self.execScrProc("Stitching", path.join(execPath, "imbl-stitch.sh") + prms, wdir)
+        toRet = self.collectOut
+        self.collectOut = None
 
         actButton.setText(actText)
         actButton.setStyleSheet("")
         self.onBinChange()  # to correct state of the yBin
         self.update_reconstruction_state()
-        return toRet
+        return None if hasFailed else toRet
 
 
     @pyqtSlot()
@@ -1239,14 +1242,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.addToConsole()
         self.enableWidgets(self.ui.testProj)
-        self.collectOut = ""
         ars = f" -t {self.ui.testProjection.value()}"
         wdir = self.onStorNamePrefix()
-        hasFailed = self.common_stitch(wdir, self.ui.testProj, ars)
-        lres = False if hasFailed else \
-            re.search('^([0-9]+) ([0-9]+) ([0-9]+) (.*)', self.collectOut.splitlines()[-1])
-        self.collectOut = None
-        if not hasFailed and lres:
+        stRes = self.common_stitch(wdir, self.ui.testProj, ars)
+        lres = False if stRes is None else \
+            re.search('^([0-9]+) ([0-9]+) ([0-9]+) (.*)', stRes.splitlines()[-1])
+        if lres:
             z, y, x, imageFile = lres.groups()
             imageFile =  Script.run(f"cd {wdir} ; realpath {imageFile}")[1].strip()
             self.addToConsole(f"Results of stitching projection {self.ui.testProjection.value()}"
@@ -1291,7 +1292,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.testSubDir.setCurrentIndex(curIdx)
             wdir = self.onStorNamePrefix()
             self.enableWidgets(actBut)
-            if self.common_stitch(wdir, actBut, ars) :
+            if self.common_stitch(wdir, actBut, ars) is None :
                 break
             self.update_reconstruction_state()
             projFile = path.realpath(self.ui.prFile.text())
@@ -1531,18 +1532,6 @@ class MainWindow(QtWidgets.QMainWindow):
             except Exception:
                 self.addErrToConsole(f"Failed to calculate rotation centre.")
                 return None
-            #self.collectOut = ""
-            #self.scrProc.setRole("Searching for rotation centre using raw sinogram.")
-            #self.scrProc.setBody(f"ctas ax {rawSino} -o tmp/{outPrefix}_rawCOR.tif")
-            #if self.scrProc.exec():
-            #    return stopTestSlice()
-            #try:
-            #    cor = 0.0 if self.scrProc.dryRun else float(self.collectOut)
-            #    self.ui.cor.setValue(cor)
-            #except Exception:
-            #    self.addErrToConsole(f"Failed to calculate rotation centre. Aborting test.")
-            #    stopTestSlice()
-            #    return -1
             self.collectOut = None
 
         return projFile, slice, y, step, wdir
