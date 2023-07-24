@@ -145,9 +145,9 @@ makeauximg() {
     if [ "$format" != "HDF5" ] ; then
       prntlist="${ipath}/$2"'*.tif'
     fi
-    echo "  ctas v2v -o "$1" -b 1:1:0 $vparam $prntlist"
+    echo "  ctas v2v -o "$1" -b 1,1,0 $vparam $prntlist"
   fi
-  ctas v2v -o "$1" -b 1:1:0 $vparam $listi
+  ctas v2v -o "$1" -b 1,1,0 $vparam $listi
 }
 makeauximg "bg.tif" "BG"
 makeauximg "df.tif" "DF"
