@@ -1240,6 +1240,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.scrProc.stop()
             return -1
 
+        def human_size(bytes, units=[' bytes','KB','MB','GB','TB', 'PB', 'EB']):
+            return str(bytes) + units[0] if bytes < 1024 else human_size(bytes>>10, units[1:])
+
         self.addToConsole()
         self.enableWidgets(self.ui.testProj)
         ars = f" -t {self.ui.testProjection.value()}"
@@ -1251,9 +1254,9 @@ class MainWindow(QtWidgets.QMainWindow):
             z, y, x, imageFile = lres.groups()
             imageFile =  Script.run(f"cd {wdir} ; realpath {imageFile}")[1].strip()
             self.addToConsole(f"Results of stitching projection {self.ui.testProjection.value()}"
-                              f" are in {imageFile}."
-                              f" Stitched volume will be {x}(w) x {y}(h) x {z}(d) pixels (at least "
-                              + '{0:,}'.format(4*int(x)*int(y)*int(z)).replace(',', ' ')+" B in size).")
+                              f" are in {imageFile}. Stitched volume will be"
+                              f" {x}(w) x {y}(h) x {z}(d) pixels (at least "
+                              + human_size(4*int(x)*int(y)*int(z))+" in size).")
             if self.ui.distance.value() and self.ui.d2b.value():
                 # phase proc
                 imcomp = path.splitext(imageFile.strip())
