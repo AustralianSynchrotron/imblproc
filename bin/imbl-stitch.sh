@@ -299,7 +299,7 @@ if $beverbose ; then
   echo "  ctas proj $stParam $tstParam < $idxsallf"
 fi
 tstOut="$(ctas proj $stParam $tstParam < $idxsallf)"
-if [ "$?" ] ; then
+if (($?)) ; then
   echo "There was an error executing ctas proj. Exiting." >&2
   exit 1
 fi
