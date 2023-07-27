@@ -286,8 +286,10 @@ nendxD=$( maxNum "0 \n $shiftX" )
 nendxF=$( maxNum "0 \n $((2*$cent-$shiftX))" )
 
 cropTB=$(abs "$shiftY")
-cropD="$(($cropTB+$cropT)),$(($norgx-$norgxD+$cropL)),$(($cropTB+$cropB)),$(($nendxD-$nendx+$cropR))"
-cropF="$(($cropTB+$cropT)),$(($norgx-$norgxF+$cropL)),$(($cropTB+$cropB)),$(($nendxF-$nendx+$cropR))"
+#cropD="$(($cropTB+$cropT)),$(($norgx-$norgxD+$cropL)),$(($cropTB+$cropB)),$(($nendxD-$nendx+$cropR))"
+#cropF="$(($cropTB+$cropT)),$(($norgx-$norgxF+$cropL)),$(($cropTB+$cropB)),$(($nendxF-$nendx+$cropR))"
+cropD="$(($norgx-$norgxD+$cropL))-$(($nendxD-$nendx+$cropR)),$(($cropTB+$cropT))-$(($cropTB+$cropB))"
+cropF="$(($norgx-$norgxF+$cropL))-$(($nendxF-$nendx+$cropR)),$(($cropTB+$cropT))-$(($cropTB+$cropB))"
 spshD="$shiftX,$shiftY"
 spshF="$((2*$cent-$shiftX)),$shiftY"
 argD="-C $cropD -g $spshD"

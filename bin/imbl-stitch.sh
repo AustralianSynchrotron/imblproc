@@ -329,7 +329,8 @@ if ( ! $volWipe || ! $volStore ) ; then # create file in memory
     #tpnm="${crFilePrefix}clean${flfix}.hdf"
     tpnm="${crFilePrefix}${cleanPath}"
     if $beverbose ; then
-      echo "Creating in memory interim file $tpnm for $hVolSize volume."
+      echo "Creating in memory interim file $tpnm for $hVo
+      lSize volume."
     fi
     if ! ctas v2v "$testOFl" -o "${tpnm}:/data:-$(( $z - 1 ))" \
        ||
