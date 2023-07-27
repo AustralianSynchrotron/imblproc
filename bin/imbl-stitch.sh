@@ -316,10 +316,10 @@ fi
 cleanPath="clean.hdf"
 if ( ! $volWipe || ! $volStore ) ; then # create file in memory
   volSize=$(( 4 * $x * $y * $z ))
-  hVolSize="${x}x${y}x${z} $(numfmt --to=iec-i <<< $volSize)"
+  hVolSize="${x}x${y}x${z} $(numfmt --to=iec <<< $volSize)B"
   memSize=$(free -bw | sed 's:  *: :g' | cut -d' ' -f 8 | sed '2q;d')
   if (( $volSize > $( echo " scale=0 ; $memSize * 4 / 5 " | bc )  )) ; then
-    echo "WARNING! Not enough available memory $(numfmt --to=iec-i <<< $memSize) to allow" \
+    echo "WARNING! Not enough available memory $(numfmt --to=iec <<< $memSize)B to allow" \
          " processing $hVolSize volume. Will use file storage for interim data, what can" \
          " be significantly slower."  >&2
   else
@@ -329,8 +329,7 @@ if ( ! $volWipe || ! $volStore ) ; then # create file in memory
     #tpnm="${crFilePrefix}clean${flfix}.hdf"
     tpnm="${crFilePrefix}${cleanPath}"
     if $beverbose ; then
-      echo "Creating in memory interim file $tpnm for $hVo
-      lSize volume."
+      echo "Creating in memory interim file $tpnm for $hVolSize volume."
     fi
     if ! ctas v2v "$testOFl" -o "${tpnm}:/data:-$(( $z - 1 ))" \
        ||

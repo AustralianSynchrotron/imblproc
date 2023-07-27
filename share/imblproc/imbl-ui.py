@@ -264,7 +264,7 @@ class ColumnResizer(QObject):
 
 def hdf5shape(filename, dataset):
     # with locking used, following commands may work very slow if the file was not closed properly
-    Script.run(f"HDF5_USE_FILE_LOCKING=FALSE h5clear -s --increment {filename}")
+    #Script.run(f"HDF5_USE_FILE_LOCKING=FALSE h5clear -s --increment {filename}")
     outed = Script.run(f"export HDF5_USE_FILE_LOCKING=FALSE ; "
                        f"h5clear -s --increment {filename} 2>&1 /dev/null ; "
                        f"h5ls {filename}/{dataset}")[1]
@@ -272,6 +272,10 @@ def hdf5shape(filename, dataset):
         return int(lres.group(3)), int(lres.group(2)), int(lres.group(1))
     else:
         return None, None, None
+
+def humanSize(mysize):
+    return Script.run(f"numfmt --to=iec <<< {mysize}")[1].rstrip() + "B"
+
 
 
 
@@ -1240,9 +1244,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.scrProc.stop()
             return -1
 
-        def human_size(bytes, units=[' bytes','KB','MB','GB','TB', 'PB', 'EB']):
-            return str(bytes) + units[0] if bytes < 1024 else human_size(bytes>>10, units[1:])
-
         self.addToConsole()
         self.enableWidgets(self.ui.testProj)
         ars = f" -t {self.ui.testProjection.value()}"
@@ -1256,7 +1257,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.addToConsole(f"Results of stitching projection {self.ui.testProjection.value()}"
                               f" are in {imageFile}. Stitched volume will be"
                               f" {x}(w) x {y}(h) x {z}(d) pixels (at least "
-                              + human_size(4*int(x)*int(y)*int(z))+" in size).")
+                              + humanSize(4*int(x)*int(y)*int(z))+" in size).")
             if self.ui.distance.value() and self.ui.d2b.value():
                 # phase proc
                 imcomp = path.splitext(imageFile.strip())
