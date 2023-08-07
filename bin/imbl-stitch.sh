@@ -293,7 +293,7 @@ if ! mkdir -p "tmp" ; then
   exit 1
 fi
 tstfl="SAMPLE_T"
-tstParam=" --output tmp/${tstfl}@.tif --test $( [ -n "$testme" ] && echo "$testme" || echo "0" )"
+tstParam=" --output tmp/${tstfl}@.tif --test $( [ -n "$testme" ] && echo "$testme" || echo "-1" )"
 if $beverbose ; then
   echo "Running test:"
   echo "  ctas proj $stParam $tstParam < $idxsallf"
@@ -307,8 +307,8 @@ if [ "$testme" ] ; then
   echo "$tstOut"
   exit 0
 fi
-read z y x testOFl <<< "$tstOut"
-if [ -z "$testOFl" ] ; then
+read z y x <<< "$tstOut"
+if [ -z "$x" ] ; then
   echo "ERROR! Test failed." >&2
   exit 1
 fi
@@ -331,7 +331,10 @@ if ( ! $volWipe || ! $volStore ) ; then # create file in memory
     if $beverbose ; then
       echo "Creating in memory interim file $tpnm for $hVolSize volume."
     fi
-    if ! ctas v2v "$testOFl" -o "${tpnm}:/data:-$(( $z - 1 ))" \
+    tifForSize="${crFilePrefix}for_size.tif"
+    if ! convert -size ${x}x${y} -colorspace gray -depth 8 canvas: "$tifForSize" \
+       ||
+       ! ctas v2v "$tifForSize" -o "${tpnm}:/data:-$(( $z - 1 ))" \
        ||
        ! (
          vsize=$( du --block-size=1 "$tpnm" | cut -d$'\t' -f1 )
@@ -347,6 +350,9 @@ if ( ! $volWipe || ! $volStore ) ; then # create file in memory
       rm -rf "$crFilePrefix"*
     else
       cleanPath="$tpnm"
+    fi
+    if [ -e "$tifForSize" ] ; then
+      rm -rf "$tifForSize"
     fi
   fi
 fi
