@@ -1587,7 +1587,7 @@ class MainWindow(QtWidgets.QMainWindow):
             phaseSubVol = f"{path.splitext(projFile)[0]}_phase.hdf"
             if self.execScrProc( "Extracting phase subvolume",
                                 f"ctas v2v -v {projFile}:/data -o {phaseSubVol}:/data" \
-                                f" -c {slice-64},0,{y-slice-64},0 ") :
+                                f" -c ,{slice-64}:{slice+64} ") :
                 return onStopMe()
 
             if  self.ui.ringOrder.checkedButton() is self.ui.ringBeforePhase:
