@@ -14,8 +14,9 @@ printhelp() {
   echo "  -D PATH           Dark field image in shifted position."
   echo "  -m PATH           Image containing map of gaps."
   echo "  -a FLOAT          Acquisition step if < 1.0 / projection number at 180 degree if positive int."
-  echo "                    This condition also determines meaning of the next two options."
-  echo "  -s FLOAT          Starting angle / projection of shifted data set."
+  echo "                    This condition also determines meaning of the next three options."
+  echo "  -s FLOAT          Starting angle / projection of original data set."
+  echo "  -S FLOAT          Starting angle / projection of shifted data set."
   echo "  -e FLOAT          Angle / number of last projection to process."
   echo "  -g FLOAT:FLOAT    Spatial shift in pixels (X,Y)."
   echo "  -c FLOAT          Deviation of rotation axis from the center of original image."
@@ -90,14 +91,15 @@ cropR=0
 shiftX=""
 shiftY=""
 step=""
-start=0
+startO=0
+startS=0
 end=""
 cent=0
 rotate=0
 testme=""
 beverbose=false
 allargs=""
-while getopts "b:B:d:D:m:g:s:e:c:a:C:R:t:hv" opt ; do
+while getopts "b:B:d:D:m:g:S:s:e:c:a:C:R:t:hv" opt ; do
   allargs=" $allargs -$opt $OPTARG"
   case $opt in
     b)  bgO=$OPTARG;;
@@ -118,9 +120,13 @@ while getopts "b:B:d:D:m:g:s:e:c:a:C:R:t:hv" opt ; do
             wrong_num "$step" "is less than 3" "-a"
           fi
         fi ;;
-    s)  start=$OPTARG
-        chknum "$start" "-s"
-        chkNneg "$start" "-s"
+    s)  startO=$OPTARG
+        chknum "$startO" "-s"
+        chkNneg "$startO" "-s"
+        ;;
+    S)  startS=$OPTARG
+        chknum "$startS" "-s"
+        chkNneg "$startS" "-s"
         ;;
     e)  end=$OPTARG
         chknum "$end" "-e"
@@ -214,13 +220,16 @@ abs() {
 
 
 proj180="" # frame at 180 deg
+projO=0 # first frame in samO
 projS=0 # first frame in samS
 projShift="" # position of projS
 projMax="" # total frames in output
 if (( $(echo "1 < $step" | bc -l) )); then
+  chkint "$startO"
+  projO="$startO"
   proj180="$step"
-  chkint "$start"
-  projShift="$start"
+  chkint "$startS"
+  projShift="$startS"
   if [ -z "$end" ] ; then
     end="$proj180"
   else
@@ -228,8 +237,9 @@ if (( $(echo "1 < $step" | bc -l) )); then
   fi
   projMax="$end"
 else
+  projO=$(roundToInt "$( echo "scale=2; $startO / $step " | bc )" )
   proj180=$(roundToInt "$( echo "scale=2; 180.0 / $step " | bc )" )
-  projShift=$(roundToInt "$( echo "scale=2; $start / $step " | bc )" )
+  projShift=$(roundToInt "$( echo "scale=2; $startS / $step " | bc )" )
   if [ -z "$end" ] ; then
     end="180.0"
   fi
@@ -298,13 +308,14 @@ argF="-C $cropF -f $spshF"
 
 #echo $projS $projShift $proj180 $projMax
 doStitch() {
+  toExec="ctas proj $args $4 -o \"$outVol:$1-$(($1+$3)),$projMax\" " \
+                    " \"$samO\":$(($projO+$1))-$(($projO+$1+$3)) " \
+                    " \"$samS\":$(($projS+$2))-$(($projS+$2+$3)) "
   if $beverbose ; then
     echo "Executing:"
-    echo "  ctas proj" "$args" $4 -o "$outVol:$1-$(($1+$3)),$projMax" \
-                       "$samO:$1-$(($1+$3))" "$samS:$(($projS+$2))-$(($projS+$2+$3))"
+    echo "  $toExec"
   fi
-  ctas proj $args $4 -o "$outVol:$1-$(($1+$3)),$projMax" \
-            "$samO:$1-$(($1+$3))" "$samS:$(($projS+$2))-$(($projS+$2+$3))"
+  eval $toExec
 }
 
 
