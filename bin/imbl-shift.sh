@@ -8,26 +8,24 @@ printhelp() {
   echo "Usage: $0 [OPTIONS] <original> [shifted] <output>"
   echo "  Performs projection formation in accordance with shift-in-scan approach."
   echo "OPTIONS:"
-  echo "  -b PATH           Background image in original position."
-  echo "  -B PATH           Background image in shifted position."
-  echo "  -d PATH           Dark field image in original position."
-  echo "  -D PATH           Dark field image in shifted position."
-  echo "  -m PATH           Image containing map of gaps."
-  echo "  -a FLOAT          Acquisition step if < 1.0, otherwise frame number at 180 degree."
-  echo "                    This condition also determines meaning of the next four options."
-  echo "  -f INT            First angle / frame in original data set."
-  echo "  -F INT            First angle / frame in shifted data set. Makes sense for two inputs."
-  echo "  -s FLOAT          Angle / frame of the first image in the shifted data set relative"
-  echo "                    to the first image in the original data set."
-  echo "  -e FLOAT          Angle / number of last projection to process."
-  echo "  -g FLOAT:FLOAT    Spatial shift in pixels (X,Y)."
-  echo "  -c FLOAT          Deviation of rotation axis from the center of original image."
-  echo "  -C T,L,B,R        Crop final image (all INT)."
+  echo "  -b PATH      Background image in original position."
+  echo "  -B PATH      Background image in shifted position."
+  echo "  -d PATH      Dark field image in original position."
+  echo "  -D PATH      Dark field image in shifted position."
+  echo "  -m PATH      Image containing map of gaps."
+  echo "  -a INT       Number of frames constituting 180 degree ark."
+  echo "  -f INT       First frame in original data set."
+  echo "  -F INT       First frame in shifted data set."
+  echo "  -s INT       Position of the first frame in shifted data set relative to that in original."
+  echo "  -e INT       Number of last projection to process."
+  echo "  -g INT:INT   Spatial shift in pixels (X,Y)."
+  echo "  -c INT       Deviation of rotation axis from the center of original image."
+  echo "  -C T,L,B,R   Crop final image (all INT)."
   echo "     T, L, B and R give cropping from the edges of the images: top, left, bottom, right."
-  echo "  -R FLOAT          Rotate projections."
-  echo "  -t INT            Test mode: keeps intermediate images for the projection in tmp."
-  echo "  -v                Be verbose to show progress."
-  echo "  -h                Prints this help."
+  echo "  -R FLOAT     Rotate projections."
+  echo "  -t INT       Test mode: keeps intermediate images for the projection in tmp."
+  echo "  -v           Be verbose to show progress."
+  echo "  -h           Prints this help."
 }
 
 chkf () {
@@ -92,10 +90,10 @@ cropB=0
 cropR=0
 shiftX=""
 shiftY=""
-step=""
-firstO=""
+piark=""
+firstO=0
 firstS=""
-start=0
+delta=""
 end=""
 cent=0
 rotate=0
@@ -114,29 +112,27 @@ while getopts "b:B:d:D:m:g:f:F:s:e:c:a:C:R:t:hv" opt ; do
         chkint "$shiftX" " from the string '$OPTARG' determined by option -g"
         chkint "$shiftY" " from the string '$OPTARG' determined by option -g"
         ;;
-    a)  step=$OPTARG
-        chknum "$step" "-a"
-        chkpos "$step" "-a"
-        if (( $(echo "1 <= $step" | bc -l) )); then
-          chkint "$step" "-a"
-          if [ "$step" -lt "3" ] ; then
-            wrong_num "$step" "is less than 3" "-a"
-          fi
-        fi ;;
+    a)  piark=$OPTARG
+        chkint "$piark" "-a"
+        chkpos "$piark" "-a"
+        if [ "$piark" -lt "3" ] ; then
+            wrong_num "$piark" "is less than 3" "-a"
+        fi
+        ;;
     f)  firstO=$OPTARG
-        chknum "$firstO" "-f"
+        chkint "$firstO" "-f"
         chkNneg "$firstO" "-f"
         ;;
     F)  firstS=$OPTARG
-        chknum "$firstS" "-F"
+        chkint "$firstS" "-F"
         chkNneg "$firstS" "-F"
         ;;
-    s)  start=$OPTARG
-        chknum "$start" "-s"
-        chkNneg "$start" "-s"
+    s)  delta=$OPTARG
+        chkint "$delta" "-s"
+        chkNneg "$delta" "-s"
         ;;
     e)  end=$OPTARG
-        chknum "$end" "-e"
+        chkint "$end" "-e"
         chkpos "$end" "-e"
         ;;
     c)  cent=$OPTARG
@@ -190,7 +186,6 @@ if $beverbose ; then
   args="$args -v"
 fi
 
-
 if [ -z "${1}" ] ; then
   echo "No input path was given." >&2
   printhelp >&2
@@ -204,11 +199,46 @@ if [ -z "${2}" ] ; then
 fi
 chkhdf "$2"
 
-if [ -z "$step" ] ; then
+samO="${1}"
+samS=""
+outVol=""
+if [ -z "$3" ] ; then # 2 positional arguments
+  samS="${1}"
+  outVol="$2"
+  if [ -z "$firstS" ] && [ -z "$delta" ] ; then
+    echo "With a single input file either -F or -s options must be provided." >&2
+    printhelp >&2
+    exit 1
+  elif [ -z "$delta" ] ; then
+    delta=$(( $firstS - $firstO ))
+  elif [ -z "$firstS" ] ; then
+    firstS=$(( $firstO + $delta ))
+  fi
+else # 3 positional arguments
+  samS="${2}"
+  chkhdf "$3"
+  outVol="$3"
+  if [ -z "$delta" ] ; then
+    delta=0
+  fi
+  if [ -z "$firstS" ] ; then
+    firstS=0
+  fi
+fi
+
+if [ -z "$piark" ] ; then
   echo "No option -a was given for step angle." >&2
   printhelp >&2
   exit 1
 fi
+if [ -z "$end" ] ; then
+  end="$piark"
+fi
+if (( $end < $piark )) ; then
+  echo "Last projection $end is less than that at 180deg $piark." >&2
+  exit 1
+fi
+delta=$(( $delta % (2*$piark) )) # to make sure it is in [0..360) deg
 
 if [ -z "$shiftX" ] || [ -z "$shiftY" ] ; then
   echo "No option -g was given for spacial shift." >&2
@@ -224,6 +254,66 @@ roundToInt() {
 abs() {
   echo "${1/#-}"
 }
+
+maxNum() {
+  echo -e "$1" | tr -d ' ' | sort -n | tail -1
+}
+
+minNum() {
+  echo -e "$1" | tr -d ' ' | sort -n | head -1
+}
+
+norgx=$(  maxNum "0 \n $shiftX \n $((2*$cent-$shiftX))" )
+norgxD=$( minNum "0 \n $shiftX" )
+norgxF=$( minNum "0 \n $((2*$cent-$shiftX))" )
+nendx=$(  minNum "0 \n $shiftX \n $((2*$cent-$shiftX))" )
+nendxD=$( maxNum "0 \n $shiftX" )
+nendxF=$( maxNum "0 \n $((2*$cent-$shiftX))" )
+
+cropTB=$(abs "$shiftY")
+cropD="$(($norgx-$norgxD+$cropL))-$(($nendxD-$nendx+$cropR)),$(($cropTB+$cropT))-$(($cropTB+$cropB))"
+cropF="$(($norgx-$norgxF+$cropL))-$(($nendxF-$nendx+$cropR)),$(($cropTB+$cropT))-$(($cropTB+$cropB))"
+spshD="$shiftX,$shiftY"
+spshF="$((2*$cent-$shiftX)),$shiftY"
+argD="-C $cropD -g $spshD"
+argF="-C $cropF -f $spshF"
+
+
+doStitch() {
+  stO=$(($firstO+$1))
+  stS=$(($firstS+$2))
+  toExec="ctas proj $args $4 -o $outVol:$1-$(($1+$3)),$end\
+          $samO:$stO-$(($stO+$3))\
+          $samS:$stS-$(($stS+$3))"
+  if $beverbose ; then
+    echo "Executing:"
+    echo "  $toExec"
+  fi
+  eval $toExec
+}
+
+if (( $delta == 0 )) ; then
+  doStitch 0 0 $end "$argD"
+elif (( $delta < $piark  )) ; then
+  doStitch 0          $(($piark - $delta)) $(($delta-1))          "$argF"  && \
+  doStitch $delta 0                          $(($end - $delta)) "$argD"
+else
+  projE=$(($delta + $end))
+  tailS=$(($projE - 2*$piark))
+  doStitch 0      $((2*$piark - $delta)) $(($tailS-1))                "$argD" && \
+  doStitch $tailS 0                            $((2*$piark - $delta)) "$argF"
+fi
+exit $?
+
+
+
+
+
+
+
+
+
+
 
 
 proj180="" # frame at 180 deg
@@ -242,6 +332,8 @@ if (( $(echo "$step > 1" | bc -l) )); then
     chkint "$end"
   fi
   projMax="$end"
+  projFirstO=$firstO
+  projFirstS=$firstS
 else
   proj180=$(roundToInt "$( echo "scale=2; 180.0 / $step " | bc )" )
   projShift=$(roundToInt "$( echo "scale=2; $start / $step " | bc )" )
@@ -256,30 +348,33 @@ if (( $projMax < $proj180 )) ; then
   echo "Last projection $projMax is less than that at 180deg $proj180." >&2
   exit 1
 fi
-projShift=$(( $projShift % (2*$proj180) )) # to make sure it is in [0..360) deg
 
 
 
 samO=""
 samS=""
 outVol=""
+projDelta=0
 if [ -z "$3" ] ; then # only 2 input positional arguments
-  if (( $projShift <= $proj180 )) ; then
-    echo "In case of single input first shifted projection ($projShift) must be" \
-         "larger than projection at 180deg ($proj180)." >&2
-    exit 1
-  fi
-  samO="${1}" # :0-$projMax
-  samS="${1}" # :${projShift}-$(($projShift + $projMax))
-  projS="$projShift"
-  outVol="$2" # :0-$projMax
+  #if (( $projShift <= $proj180 )) ; then
+  #  echo "In case of single input first shifted projection ($projShift) must be" \
+  #       "larger than projection at 180deg ($proj180)." >&2
+  #  exit 1
+  #fi
+  samO="${1}"
+  samS="${1}"
+  outVol="$2"
+  #projShift=$(( ( $projFirstS - $projFirstO ) % ( 2 * $proj180 ) ))
+  #projS="$projShift"
 else # 3 positional arguments
+  samO="${1}"
+  samS="${2}"
   chkhdf "$3"
-  samO="${1}" # :0-$projMax
-  samS="${2}" # :0-$projMax
-  projS="0"
-  outVol="$3" # :0-$projMax
+  outVol="$3"
+  #projShift=$(( $projShift % ( 2 * $proj180 ) ))
+  #projS="0"
 fi
+projShift=$(( $projShift % (2*$proj180) )) # to make sure it is in [0..360) deg
 
 
 #hdf5wdth() {
@@ -311,17 +406,18 @@ argD="-C $cropD -g $spshD"
 argF="-C $cropF -f $spshF"
 
 
-#echo $projS $projShift $proj180 $projMax
+echo $projShift $projFirstO $projFirstS
 doStitch() {
   stO=$(($projFirstO+$1))
   stS=$(($projFirstS+$2+$projS))
   toExec="ctas proj $args $4 -o $outVol:$1-$(($1+$3)),$projMax\
-                    $samO:$stO-$(($stO+$3)) $samS:$stS-$(($stS+$3))"
+          $samO:$stO-$(($stO+$3))\
+          $samS:$stS-$(($stS+$3))"
   if $beverbose ; then
     echo "Executing:"
     echo "  $toExec"
   fi
-  eval $toExec
+  #eval $toExec
 }
 
 
