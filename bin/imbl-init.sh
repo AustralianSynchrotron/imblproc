@@ -280,14 +280,6 @@ Sdirs=""
 for Ydir in $Ydirs ; do
   for Zdir in $Zdirs ; do
 
-    Sdir="$Ydir/$Zdir"
-
-    if ! mkdir -p "$Sdir" ; then
-      echo "Could not create output output directory \"$PWD/$Sdir\"." >&2
-      exit 1
-    fi
-
-    Sdirs="$Sdirs $(realpath $Sdir --relative-to='.')"
     Slist=""
     for Ycur in $Ylist ; do
       if [ -z "$Zlist" ] ; then
@@ -305,7 +297,16 @@ for Ydir in $Ydirs ; do
         NSlist="$NSlist $comp"
       fi
     done
-    outInitFile "$NSlist" "$Sdir"
+
+    if [ -n "$NSlist" ] ; then
+      Sdir="$Ydir/$Zdir"
+      if ! mkdir -p "$Sdir" ; then
+        echo "Could not create output output directory \"$PWD/$Sdir\"." >&2
+        exit 1
+      fi
+      Sdirs="$Sdirs $(realpath $Sdir --relative-to='.')"
+      outInitFile "$NSlist" "$Sdir"
+    fi
 
   done
 done
