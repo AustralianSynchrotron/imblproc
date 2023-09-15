@@ -2222,6 +2222,12 @@
            </item>
            <item>
             <widget class="QComboBox" name="resDataFormat">
+             <property name="toolTip">
+              <string>Data format for saved results.</string>
+             </property>
+             <property name="saveInConfig" stdset="0">
+              <number>0</number>
+             </property>
              <item>
               <property name="text">
                <string>float point</string>

@@ -388,6 +388,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.minProj.valueChanged.connect(self.onMinMaxProjectionChanged)
         self.ui.maxProj.valueChanged.connect(self.onMinMaxProjectionChanged)
         self.ui.testSubDir.currentTextChanged.connect(self.update_reconstruction_state)
+        self.ui.resDataFormat.currentTextChanged.connect( lambda :
+            self.ui.mmWdg.setEnabled(self.ui.resDataFormat.currentIndex()) )
         self.ui.prFile.clicked.connect(lambda :
             QApplication.clipboard().setText(path.realpath(self.ui.prFile.text())))
 
