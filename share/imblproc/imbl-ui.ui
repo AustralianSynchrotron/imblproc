@@ -2221,22 +2221,52 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="resToInt">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="toolTip">
-              <string>If ticked, output TIFF files are saved as 8-bit integer with the following Min/Max thresholds. Otherwise data are saved as 32-bit float point image with no information lost.</string>
-             </property>
-             <property name="text">
-              <string>int</string>
-             </property>
-             <property name="saveInConfig" stdset="0">
-              <number>0</number>
-             </property>
+            <widget class="QComboBox" name="resDataFormat">
+             <item>
+              <property name="text">
+               <string>float point</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>8-bit unsigned int</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>16-bit unsigned int</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>32-bit unsigned int</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>64-bit unsigned int</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>8-bit signed int</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>16-bit signed int</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>32-bit signed int</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>64-bit signed int</string>
+              </property>
+             </item>
             </widget>
            </item>
           </layout>
@@ -2618,7 +2648,6 @@
   <tabstop>outMu</tabstop>
   <tabstop>resHDF</tabstop>
   <tabstop>resTIFF</tabstop>
-  <tabstop>resToInt</tabstop>
   <tabstop>autoMin</tabstop>
   <tabstop>toIntMin</tabstop>
   <tabstop>autoMax</tabstop>
@@ -2635,22 +2664,6 @@
  </tabstops>
  <resources/>
  <connections>
-  <connection>
-   <sender>resToInt</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>mmWdg</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>417</x>
-     <y>364</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1104</x>
-     <y>375</y>
-    </hint>
-   </hints>
-  </connection>
   <connection>
    <sender>recInMem</sender>
    <signal>toggled(bool)</signal>

@@ -1468,8 +1468,17 @@ class MainWindow(QtWidgets.QMainWindow):
         fltLine = "" if fltLine == "NONE" else f" -f {fltLine}"
         resLine = f" -r {self.ui.pixelSize.value()} " + \
             "" if self.ui.outMu.isChecked() else f" -w {12.398/self.ui.energy.value()}"
-        mmLine = f" -m {self.ui.toIntMin.value()} -M {self.ui.toIntMax.value()} " \
-            if self.ui.resTIFF.isChecked() and self.ui.resToInt.isChecked() else ""
+        mmLine=""
+        dataFormat = self.ui.resDataFormat.currentText()
+        if not "float" in dataFormat :
+            if lres := re.search('([0-9]+)-bit.*', dataFormat) :
+                mmLine = " -i " + ( "" if "unsigned" in dataFormat else "-" ) + lres.group(1) + \
+                        f" -m {self.ui.toIntMin.value()} -M {self.ui.toIntMax.value()} "
+            else:
+                print( f"BUG! Unexpected text \"{dataFormat}\" at index" \
+                       f" {self.ui.resDataFormat.currentIndex()} of combobox" + \
+                       ' "' + {self.ui.resDataFormat.objectName()} + '".'
+                     , file=sys.stderr)
         command =   f"ctas ct -v {istr} " \
                     f" -o {ostr}" \
                     f" -k {kontrLine} " \
@@ -1482,7 +1491,6 @@ class MainWindow(QtWidgets.QMainWindow):
         toRet = self.execScrProc("Reconstructing", command)
         if toRet :
             self.addErrToConsole(f"Cleaning after itself on failure: {ostr}*" )
-
         return toRet
 
 
@@ -1613,18 +1621,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 return onStopMe()
             recSino = ringSino
 
-        outPath = f"tmp/SLICE_{slice:0{dgln}d}"
-        if self.ui.resTIFF.isChecked() and self.ui.resToInt.isChecked():
-            outPath += "_8int"
-        outPath += ".tif"
+        outPath = f"tmp/SLICE_{slice:0{dgln}d}.tif"
         if self.applyCT(step, recSino, outPath):
             return onStopMe()
-
-        if self.ui.resHDF.isChecked() and self.ui.resToInt.isChecked():
-            self.execScrProc( "Converting to integer",
-                             f"ctas v2v {outPath} -v -o {outPath}_8int.tif  " \
-                             f" -m {self.ui.toIntMin.value()} -M {self.ui.toIntMax.value()}" )
-            self.scrProc.exec()
 
         if self.scrProc.dryRun:
             self.addErrToConsole("Dry run. No reconstruction performed.")
@@ -1701,7 +1700,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 return onStopMe(f"Failed to create reconstructed volume in {outPath}."
                                  "Probably not enough memory. Try to reconstruct directly into storage.")
         elif self.ui.resTIFF.isChecked():
-            odir = "rec8int" if self.ui.resToInt.isChecked() else "rec"
+            odir = "rec"
             Script.run(f"mkdir -p {path.join(wdir,odir)} ")
             outPath = path.join(odir,"rec_@.tif")
         else:
@@ -1709,11 +1708,6 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.applyCT(step, f"{projFile}:/data:y", outPath, True):
             return onStopMe()
 
-        if self.ui.resHDF.isChecked() and self.ui.resToInt.isChecked() :
-            Script.run(f"mkdir -p {path.join(wdir,'rec8int')} ")
-            self.execScrProc( "Converting to integer",
-                             f"ctas v2v {outPath} -v -o rec8int/rec_@.tif "
-                             f" -m {self.ui.toIntMin.value()} -M {self.ui.toIntMax.value()}" )
         if self.ui.recInMem.isChecked() and not self.ui.recInMemOnly.isChecked():
             resPath = path.join(path.realpath(wdir),'rec.hdf')
             self.execScrProc(f"Copying reconstruction to the storage into {resPath}",

@@ -295,13 +295,13 @@ doStitch() {
 if (( $delta == 0 )) ; then
   doStitch 0 0 $end "$argD"
 elif (( $delta < $piark  )) ; then
-  doStitch 0          $(($piark - $delta)) $(($delta-1))          "$argF"  && \
-  doStitch $delta 0                          $(($end - $delta)) "$argD"
+  doStitch 0      $(($piark - $delta)) $(($delta-1))      "$argF"  && \
+  doStitch $delta 0                    $(($end - $delta)) "$argD"
 else
   projE=$(($delta + $end))
   tailS=$(($projE - 2*$piark))
-  doStitch 0      $((2*$piark - $delta)) $(($tailS-1))                "$argD" && \
-  doStitch $tailS 0                            $((2*$piark - $delta)) "$argF"
+  doStitch 0      $((2*$piark - $delta)) $(($tailS-1))          "$argD" && \
+  doStitch $tailS 0                      $((2*$piark - $delta)) "$argF"
 fi
 
 exit $?
