@@ -1110,6 +1110,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.initInfo.setEnabled(True)
         self.ui.initiate.setStyleSheet('')
         self.ui.initiate.setText('Initiate')
+        self.saveConfiguration(path.join(self.ui.outPath.text(), self.configName))
+
         self.on_outPath_textChanged()
         if self.ui.procAfterInit.isChecked():
             self.ui.procAll.click()
@@ -1739,6 +1741,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+C to quit
+os.environ['HDF5_USE_FILE_LOCKING'] = "FALSE"
 app = QApplication(sys.argv)
 my_mainWindow = MainWindow()
 exitSts=app.exec_()

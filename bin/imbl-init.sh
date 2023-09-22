@@ -275,12 +275,11 @@ strip_ () {
   sed -e 's:_ *$::g' -e 's:^ *_: :g' <<< $1
 }
 
-
 Sdirs=""
 for Ydir in $Ydirs ; do
   for Zdir in $Zdirs ; do
-
     Sdir="$Ydir/$Zdir"
+
     Sdirs="$Sdirs $(realpath $Sdir --relative-to='.')"
     Slist=""
     for Ycur in $Ylist ; do
@@ -315,7 +314,8 @@ subdCount=$( echo $Sdirs | tr -d '.' | wc -w )
 if (( $subdCount > 0 )) ; then
   outInitFile "$uselabels" . "$Sdirs"
   echo "subdirs=$subdCount" >>  "$initName"
+elif ! (( $Zsteps + $Ysteps )) ; then # single scan
+  outInitFile "" . ""
 fi
-
 
 
