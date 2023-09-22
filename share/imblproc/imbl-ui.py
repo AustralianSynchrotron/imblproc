@@ -636,6 +636,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.on_outPath_textChanged()
 
         self.amLoading = False
+        self.on_outPath_textChanged()
         self.update_initiate_state()
         self.update_reconstruction_state()
         self.onBinChange()
