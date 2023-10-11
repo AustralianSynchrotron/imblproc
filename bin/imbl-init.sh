@@ -280,6 +280,7 @@ for Ydir in $Ydirs ; do
   for Zdir in $Zdirs ; do
     Sdir="$Ydir/$Zdir"
 
+
     Slist=""
     for Ycur in $Ylist ; do
       if [ -z "$Zlist" ] ; then
@@ -305,7 +306,7 @@ for Ydir in $Ydirs ; do
       fi
       outInitFile "$NSlist" "$Sdir"
     fi
-    Sdirs="$Sdirs $(realpath $Sdir --relative-to='.' 2&> /dev/null )"
+    Sdirs="$Sdirs $(realpath $Sdir --relative-to='.' 2> /dev/null )"
 
   done
 done
