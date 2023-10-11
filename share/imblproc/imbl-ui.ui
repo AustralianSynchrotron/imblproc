@@ -1958,25 +1958,6 @@
           </property>
           <layout class="QHBoxLayout" name="_2">
            <item>
-            <widget class="QCheckBox" name="autoMin">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="toolTip">
-              <string>If ticked, low threshold is calculated from the minimum of the output volume.</string>
-             </property>
-             <property name="text">
-              <string>auto</string>
-             </property>
-             <property name="saveInConfig" stdset="0">
-              <number>0</number>
-             </property>
-            </widget>
-           </item>
-           <item>
             <widget class="QLabel" name="label_54">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -2015,25 +1996,6 @@
              </property>
              <property name="text">
               <string>Max</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="autoMax">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="toolTip">
-              <string>If ticked, high threshold is calculated from the maximum of the output volume.</string>
-             </property>
-             <property name="text">
-              <string>auto</string>
-             </property>
-             <property name="saveInConfig" stdset="0">
-              <number>0</number>
              </property>
             </widget>
            </item>
@@ -2654,9 +2616,7 @@
   <tabstop>outMu</tabstop>
   <tabstop>resHDF</tabstop>
   <tabstop>resTIFF</tabstop>
-  <tabstop>autoMin</tabstop>
   <tabstop>toIntMin</tabstop>
-  <tabstop>autoMax</tabstop>
   <tabstop>toIntMax</tabstop>
   <tabstop>prFile</tabstop>
   <tabstop>testSliceNum</tabstop>
