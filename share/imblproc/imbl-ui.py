@@ -339,8 +339,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.inProgress.setVisible(False)
         self.ui.termini.setVisible(False)
         self.ui.recInMemOnly.setVisible(False)
-        self.ui.autoMin.setVisible(False) # feature not implemented
-        self.ui.autoMax.setVisible(False) # feature not implemented
         self.ui.cleanToMemory.setVisible(False)
         self.ui.console.installEventFilter(ScrollToEnd(self.ui.console))
 
