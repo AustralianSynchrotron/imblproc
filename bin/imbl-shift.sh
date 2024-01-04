@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 EXEPATH="$(dirname "$(realpath "$0")" )"
@@ -294,7 +293,7 @@ doStitch() {
 
 if (( $delta == 0 )) ; then
   doStitch 0 0 $end "$argD"
-elif (( $delta < $piark  )) ; then
+elif (( $delta <= $piark  )) ; then
   doStitch 0      $(($piark - $delta)) $(($delta-1))      "$argF"  && \
   doStitch $delta 0                    $(($end - $delta)) "$argD"
 else
