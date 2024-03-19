@@ -960,7 +960,7 @@
             <property name="checked">
              <bool>true</bool>
             </property>
-            <property name="SaveInConfig" stdset="0">
+            <property name="saveInConfig" stdset="0">
              <number>0</number>
             </property>
            </widget>

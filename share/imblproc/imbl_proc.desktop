@@ -2,6 +2,6 @@
 [Desktop Entry]
 Name=IMBL pipeline 
 Exec=/usr/local/bin/imbl-ui
-Icon=/usr/local/share/imblproc/imbl-ui-2.png
+Icon=/usr/local/share/imblproc/imbl-ui.png
 Type=Application
 Category=IMBL
