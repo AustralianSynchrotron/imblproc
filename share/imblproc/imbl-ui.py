@@ -1195,6 +1195,8 @@ class MainWindow(QtWidgets.QMainWindow):
             prms += f" -f {self.ui.fStX.value()},{self.ui.fStY.value()} "
         if len(self.ui.maskPath.text().strip()) :
             prms += f" -i \"{self.ui.maskPath.text().strip()}\" "
+            if not self.ui.fillGaps.isChecked() :
+                prms += " -F "
         if 1 != self.ui.xBin.value() * self.ui.yBin.value():
             prms += f" -b {self.ui.xBin.value()},{self.ui.yBin.value()} "
         if 0.0 != self.ui.rotate.value():

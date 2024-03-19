@@ -26,6 +26,7 @@ printhelp() {
   echo "  -E INT            Thickness in pixels of edge transition."
   echo "  -n INT            Peak removal radius."
   echo "  -N FLOAT          Peak removal threshold: absolute if positive, relative if negative."
+  echo "  -F                Do NOT fill gaps in the mask. By default it does."
   echo "  -b INT[,INT]      Binning factor(s). If second number is given, then two"
   echo "                    independent binnings in X and Y coordinates; same otherwise."
   echo "  -z INT            Projections binning factor."
@@ -67,6 +68,7 @@ rotate=0
 edge=0
 peakThr=0
 peakRad=0
+fill=true
 origin="0,0"
 originSecond="0,0"
 originFlip="0,0"
@@ -79,9 +81,10 @@ volStore=true # save in storage
 volWipe=true # wipe from memory
 beverbose=false
 
-while getopts "i:g:G:f:c:C:r:b:z:m:M:E:n:N:dt:swhv" opt ; do
+while getopts "i:Fg:G:f:c:C:r:b:z:m:M:E:n:N:dt:swhv" opt ; do
   case $opt in
     i)  gmask=$OPTARG;;
+    F)  fill=false;;
     g)  origin=$OPTARG
         if (( $nofSt < 2 )) ; then
           echo "ERROR! Accordingly to the init file there is nothing to stitch." >&2
@@ -222,7 +225,12 @@ fi
 imgms="$gmask"
 if [ $imgms ] && [ -e "$imgms" ] ; then
   stParam="$stParam --mask $gmask"
+  if $fill ; then
+    stParam="$stParam --fill AM"
+  fi
 fi
+
+
 
 if [ -n "$1" ] ; then
   stParam="$stParam --select $1"

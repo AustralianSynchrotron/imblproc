@@ -14,7 +14,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tabInit">
        <attribute name="title">
@@ -946,6 +946,22 @@
            <widget class="QPushButton" name="maskBrowse">
             <property name="text">
              <string>Browse</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="fillGaps">
+            <property name="toolTip">
+             <string>If gaps (0 pixels) are present in the mask, gap-fill algorithm is applied where they are left after stitching.</string>
+            </property>
+            <property name="text">
+             <string>Fill gaps</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+            <property name="SaveInConfig" stdset="0">
+             <number>0</number>
             </property>
            </widget>
           </item>
@@ -2696,12 +2712,12 @@
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="resFormat">
+  <buttongroup name="ringOrder">
    <property name="saveInConfig" stdset="0">
     <number>1</number>
    </property>
   </buttongroup>
-  <buttongroup name="ringOrder">
+  <buttongroup name="resFormat">
    <property name="saveInConfig" stdset="0">
     <number>1</number>
    </property>
