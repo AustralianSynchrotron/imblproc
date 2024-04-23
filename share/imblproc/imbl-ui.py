@@ -1061,6 +1061,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.scrProc.stop()
             return
 
+        self.ui.initInfo.setEnabled(False)
+        self.ui.initiate.setStyleSheet(warnStyle)
+        self.ui.initiate.setText('Stop')
         self.addToConsole()
 
         opath = self.ui.outPath.text()
@@ -1096,10 +1099,6 @@ class MainWindow(QtWidgets.QMainWindow):
         command += f" \"{self.ui.inPath.text()}\" "
 
         self.needReinitiation()
-        self.ui.initInfo.setEnabled(False)
-        self.ui.initiate.setStyleSheet(warnStyle)
-        self.ui.initiate.setText('Stop')
-
         if not self.ui.individualIO.isChecked() and \
            not path.isdir(opath):
             os.makedirs(opath, exist_ok=True)
