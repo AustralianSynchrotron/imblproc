@@ -18,11 +18,11 @@ printhelp() {
   echo "  -s INT       Position of the first frame in shifted data set relative to that in original."
   echo "  -e INT       Number of last projection to process."
   echo "  -g INT:INT   Spatial shift in pixels (X,Y)."
-  echo "  -c INT       Deviation of rotation axis from the center of original image."
-  echo "  -C T,L,B,R   Crop final image (all INT)."
-  echo "     T, L, B and R give cropping from the edges of the images: top, left, bottom, right."
+  echo "  -c FLOAT     Deviation of rotation axis from the center of original image."
+  echo "  -C T,L,B,R   Crop final image (all INT). T, L, B and R give cropping from the edges of the"
+  echo "               images: top, left, bottom, right."
   echo "  -R FLOAT     Rotate projections."
-  echo "  -t INT       Test mode: keeps intermediate images for the projection in tmp."
+  echo "  -t INT       Test mode: keeps intermediate images for the given projection."
   echo "  -v           Be verbose to show progress."
   echo "  -h           Prints this help."
 }
@@ -37,9 +37,9 @@ chkf () {
 wrong_num() {
   opttxt=""
   if [ -n "$3" ] ; then
-    opttxt=" given by option $3"
+    opttxt="given by option $3"
   fi
-  echo "String \"$1\"$opttxt $2." >&2
+  echo "String \"$1\" $opttxt $2." >&2
   printhelp >&2
   exit 1
 }
@@ -108,47 +108,47 @@ while getopts "b:B:d:D:m:g:f:F:s:e:c:a:C:R:t:hv" opt ; do
     D)  dfS=$OPTARG;;
     m)  gmask=$OPTARG;;
     g)  IFS=',:' read shiftX shiftY <<< "$OPTARG"
-        chkint "$shiftX" " from the string '$OPTARG' determined by option -g"
-        chkint "$shiftY" " from the string '$OPTARG' determined by option -g"
+        chkint "$shiftX" " from the string '$OPTARG' determined by option -$opt"
+        chkint "$shiftY" " from the string '$OPTARG' determined by option -$opt"
         ;;
     a)  piark=$OPTARG
-        chkint "$piark" "-a"
-        chkpos "$piark" "-a"
+        chkint "$piark" "-$opt"
+        chkpos "$piark" "-$opt"
         if [ "$piark" -lt "3" ] ; then
-            wrong_num "$piark" "is less than 3" "-a"
+            wrong_num "$piark" "is less than 3" "-$opt"
         fi
         ;;
     f)  firstO=$OPTARG
-        chkint "$firstO" "-f"
-        chkNneg "$firstO" "-f"
+        chkint "$firstO" "-$opt"
+        chkNneg "$firstO" "-$opt"
         ;;
     F)  firstS=$OPTARG
-        chkint "$firstS" "-F"
-        chkNneg "$firstS" "-F"
+        chkint "$firstS" "-$opt"
+        chkNneg "$firstS" "-$opt"
         ;;
     s)  delta=$OPTARG
-        chkint "$delta" "-s"
-        chkNneg "$delta" "-s"
+        chkint "$delta" "-$opt"
+        chkNneg "$delta" "-$opt"
         ;;
     e)  end=$OPTARG
-        chkint "$end" "-e"
-        chkpos "$end" "-e"
+        chkint "$end" "-$opt"
+        chkpos "$end" "-$opt"
         ;;
     c)  cent=$OPTARG
-        chkint "$cent" "-c"
+        chknum "$cent" "-$opt"
         ;;
     C)  IFS=',:' read cropT cropL cropB cropR <<< "$OPTARG"
-        chkint "$cropT" "-C"
-        chkint "$cropL" "-C"
-        chkint "$cropB" "-C"
-        chkint "$cropR" "-C"
-        chkNneg "$cropT" "-C"
-        chkNneg "$cropL" "-C"
-        chkNneg "$cropB" "-C"
-        chkNneg "$cropR" "-C"
+        chkint "$cropT" "-$opt"
+        chkint "$cropL" "-$opt"
+        chkint "$cropB" "-$opt"
+        chkint "$cropR" "-$opt"
+        chkNneg "$cropT" "-$opt"
+        chkNneg "$cropL" "-$opt"
+        chkNneg "$cropB" "-$opt"
+        chkNneg "$cropR" "-$opt"
         ;;
     R)  rotate=$OPTARG
-        chknum "$rotate" "-R"
+        chknum "$rotate" "-$opt"
         ;;
     t)  testme="$OPTARG";;
     v)  beverbose=true;;
@@ -159,7 +159,7 @@ while getopts "b:B:d:D:m:g:f:F:s:e:c:a:C:R:t:hv" opt ; do
 done
 shift $((OPTIND-1))
 
-args=""
+args="-I AM" # this option to fill the gaps
 if [ -n "$bgO" ] ; then
   args="$args -B $bgO"
 fi
@@ -206,6 +206,10 @@ if [ -z "$3" ] ; then # 2 positional arguments
   outVol="$2"
   if [ -z "$firstS" ] && [ -z "$delta" ] ; then
     echo "With a single input file either -F or -s options must be provided." >&2
+    printhelp >&2
+    exit 1
+  elif [ -n "$firstS" ] && [ -n "$delta" ] ; then
+    echo "With a single input only one of -F and -s options can be provided." >&2
     printhelp >&2
     exit 1
   elif [ -z "$delta" ] ; then
@@ -262,18 +266,19 @@ minNum() {
   echo -e "$1" | tr -d ' ' | sort -n | head -1
 }
 
-norgx=$(  maxNum "0 \n $shiftX \n $((2*$cent-$shiftX))" )
+centshift=$( roundToInt $(echo " 2 * $cent - $shiftX " | bc) )
+norgx=$(  maxNum "0 \n $shiftX \n $centshift" )
 norgxD=$( minNum "0 \n $shiftX" )
-norgxF=$( minNum "0 \n $((2*$cent-$shiftX))" )
-nendx=$(  minNum "0 \n $shiftX \n $((2*$cent-$shiftX))" )
+norgxF=$( minNum "0 \n $centshift" )
+nendx=$(  minNum "0 \n $shiftX \n $centshift" )
 nendxD=$( maxNum "0 \n $shiftX" )
-nendxF=$( maxNum "0 \n $((2*$cent-$shiftX))" )
+nendxF=$( maxNum "0 \n $centshift" )
 
 cropTB=$(abs "$shiftY")
 cropD="$(($norgx-$norgxD+$cropL))-$(($nendxD-$nendx+$cropR)),$(($cropTB+$cropT))-$(($cropTB+$cropB))"
 cropF="$(($norgx-$norgxF+$cropL))-$(($nendxF-$nendx+$cropR)),$(($cropTB+$cropT))-$(($cropTB+$cropB))"
 spshD="$shiftX,$shiftY"
-spshF="$((2*$cent-$shiftX)),$shiftY"
+spshF="$centshift,$shiftY"
 argD="-C $cropD -g $spshD"
 argF="-C $cropF -f $spshF"
 
@@ -281,12 +286,17 @@ argF="-C $cropF -f $spshF"
 doStitch() {
   stO=$(($firstO+$1))
   stS=$(($firstS+$2))
-  toExec="ctas proj $args $4 -o $outVol:$1-$(($1+$3)),$end\
-          $samO:$stO-$(($stO+$3))\
-          $samS:$stS-$(($stS+$3))"
+  outStr=""
+  if [ -n "$testme" ] ; then
+    outStr="T${testme}_O${stO}_S${stS}__${outVol}"
+  else
+    outStr="$outVol:$1-$(($1+$3)),$end"
+  fi
+  toExec="ctas proj $args $4 -o $outStr  $samO:$stO-$(($stO+$3))  $samS:$stS-$(($stS+$3))"
   if $beverbose ; then
     echo "Executing:"
     echo "  $toExec"
+    #echo "  $*"
   fi
   eval $toExec
 }
@@ -294,13 +304,12 @@ doStitch() {
 if (( $delta == 0 )) ; then
   doStitch 0 0 $end "$argD"
 elif (( $delta <= $piark  )) ; then
-  doStitch 0      $(($piark - $delta)) $(($delta-1))      "$argF"  && \
+  doStitch 0      $(($piark - $delta)) $(($delta-1))      "$argF"
   doStitch $delta 0                    $(($end - $delta)) "$argD"
 else
-  projE=$(($delta + $end))
-  tailS=$(($projE - 2*$piark))
-  doStitch 0      $((2*$piark - $delta)) $(($tailS-1))          "$argD" && \
-  doStitch $tailS 0                      $((2*$piark - $delta)) "$argF"
+  tailS=$(( $end + $firstS - $firstO - 2*$piark ))
+  doStitch 0      $(( 2*$piark - $delta )) $(( $tailS - 1 ))    "$argD"
+  doStitch $tailS $(( $end - $piark ))     $(( $end - $tailS )) "$argF"
 fi
 
 exit $?
