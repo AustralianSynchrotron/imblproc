@@ -307,9 +307,10 @@ elif (( $delta <= $piark  )) ; then
   doStitch 0      $(($piark - $delta)) $(($delta-1))      "$argF"
   doStitch $delta 0                    $(($end - $delta)) "$argD"
 else
-  tailS=$(( $end + $firstS - $firstO - 2*$piark ))
-  doStitch 0      $(( 2*$piark - $delta )) $(( $tailS - 1 ))    "$argD"
-  doStitch $tailS $(( $end - $piark ))     $(( $end - $tailS )) "$argF"
+  tailO=$(( 2*$piark - $delta ))
+  tailS=$(( $end - $tailO ))
+  doStitch 0      $tailO               $(( $tailS - 1 )) "$argD"
+  doStitch $tailS $(( $end - $piark )) $tailO            "$argF"
 fi
 
 exit $?
