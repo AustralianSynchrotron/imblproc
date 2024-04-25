@@ -161,7 +161,7 @@ if $uselog ; then
     echo "No log file \"$logfile\" found in input path." >&2
     exit 1
   fi
-  logi=$(cat $(dirname $logfile)/acquisition*log | imbl-log.py $uselabels)
+  logi=$(cat $(dirname $logfile)/acquisition*log | imbl-log.py $uselabels | sed -e '1,2d' )
   #logi=$(cat "$logfile" | imbl-log.py $uselabels)
   if (( "$?" )) ; then
     echo "Error parsing log file \"$logfile\"." >&2
@@ -174,11 +174,11 @@ elif (( $Ysteps > 0 )) ; then
       while read Zcur ; do
         label="${ylabel}_Z${Zcur}"
         if [ -z "$uselabels" ]  ||  grep -q "$label" <<< "$uselabels" ; then
-          logi="$logi"$'\n'"$label"
+          logi="$logi$label"$'\n'
         fi
       done < <(seq -w 0 $(( $Zsteps - 1 )) )
     elif [ -z "$uselabels" ]  ||  grep -q "$label" <<< "$uselabels" ; then
-      logi="$logi"$'\n'"$ylabel"
+      logi="$logi""$ylabel"$'\n'
     fi
   done < <(seq -w 0 $(( $Ysteps - 1 )) )
 fi
@@ -186,7 +186,7 @@ fi
 Zlist=""
 Zdirs="."
 if (( $Zsteps > 1 )) ; then
-  Zlist="$( sed -e '1,2d' -e 's :  g' -e 's .*\(Z[0-9]*\).* \1 g' <<< "$logi" | sort | uniq )"
+  Zlist="$( sed -e 's :  g' -e 's .*\(Z[0-9]*\).* \1 g' <<< "$logi" | sort | uniq )"
   if ! $Zst ; then
     Zdirs="$Zlist"
     Zlist="_"
@@ -197,7 +197,7 @@ Zsize=$( wc -w <<< $Zlist )
 Ylist=""
 Ydirs="."
 if (( $Ysteps > 1 )) ; then
-  Ylist="$( sed -e '1,2d' -e 's :  g' -e 's .*\(Y[0-9]*\).* \1 g' <<< "$logi" | sort | uniq )"
+  Ylist="$( sed -e 's :  g' -e 's .*\(Y[0-9]*\).* \1 g' <<< "$logi" | sort | uniq )"
   if ! $Yst ; then
     Ydirs="$Ylist"
     Ylist="_"
@@ -283,7 +283,6 @@ Sdirs=""
 for Ydir in $Ydirs ; do
   for Zdir in $Zdirs ; do
     Sdir="$Ydir/$Zdir"
-
 
     Slist=""
     for Ycur in $Ylist ; do
