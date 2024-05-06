@@ -1372,14 +1372,18 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.prShape.setText(projShape)
             self.ui.prFile.setText(projFile)
             self.ui.prFile.setEnabled(True)
+            os.environ["PROJHDF"] = projFile
         elif recShape is not None:
             self.ui.prShape.setText(recShape)
             self.ui.prFile.setText(recFile)
             self.ui.prFile.setEnabled(True)
+            os.environ["RECHDF"] = recFile
         else:
             self.ui.prShape.setText("")
             self.ui.prFile.setText("no projection or reconstruction volumes found in memory.")
             self.ui.prFile.setEnabled(False)
+            os.environ["PROJHDF"] = ""
+            os.environ["RECHDF"] = ""
         if projShape is None: # check for broken link
             Script.run(f" if [ -e \"{file_postfix}\" ] && " \
                        f"    [ -n \"$(readlink {file_postfix})\" ] && " \
