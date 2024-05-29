@@ -50,13 +50,17 @@ try:
       label = ""
 
     elif "SAMPLE" in strg and "Acquisition started" in strg:
-      if label  and  len(pos[label]) < 2 :
-        eprint("Empty set on label " + label + ".")
-        sys.exit(1)
+      if label  and  len(pos[label]) < 4 : # check previously filled label
+        eprint(f"Warning! Too small ({len(pos[label])}) set on label \"{label}\". Will be disregarded.")
+        labels.pop(-1)
+        idx.pop(label)
+        pos.pop(label)
+        continue
       lres = re.search('\"SAMPLE(.*?)\"', strg)
-      if (not lres):
-        eprint("Can't find sample in acquisition string \"" + strg + "\".")
-        sys.exit(1)
+      if not lres:
+        eprint(f"Warning! Can't find label in acquisition string \"{strg}\".")
+        label = ""
+        continue
       label = lres.group(1)
       if label.endswith("_T") :
         label = label[:-2]
@@ -66,10 +70,9 @@ try:
       if  args.labels  and not any( lbl in label for lbl in args.labels ) :
         label = ""
       else :
-        #if label in labels :
-        #  eprint("Warning. Label " + label + " already exists. Will overwrite previous.")
-        #else :
-        if not label in labels :
+        if label in labels :
+          eprint(f"Warning! Label \"{label}\" already exists. Will overwrite previous.")
+        else :
           labels.append(label)
         idx[label] = []
         pos[label] = []
@@ -81,13 +84,13 @@ try:
           idx[label].append(int(cidx))
           pos[label].append(float(cpos))
       except :
-        eprint("Error in log at string %i: %s" %( strcounter, strg))
+        eprint(f"Error in log at string {strcounter}: \"{strg}\"")
 
 except EOFError:
   pass
 
 if len(labels) == 0 :
-  eprint("Empty or corrupt log.")
+  eprint("Error! Empty or corrupt log.")
   sys.exit(1)
 
 starts = {label: pos[label][ 0] for label in labels }
@@ -98,6 +101,7 @@ stop  = min(stops.values())   if pdir else  max(stops.values())
 minPos = min (start, stop)
 maxPos = max (start, stop)
 
+good_labels = []
 for lbl in labels:
   while len(pos[lbl]) > 3 and not minPos <= pos[lbl][1] <= maxPos :
     del pos[lbl][0]
@@ -106,8 +110,10 @@ for lbl in labels:
     del pos[lbl][-1]
     del idx[lbl][-1]
   if len(pos[lbl]) < 4 :
-    eprint("Corrupt log or incomplete scan.")
-    sys.exit(1)
+    eprint(f"Warning! Corrupt log or incomplete scan on label \"{lbl}\". Will be disregarded.")
+  else :
+    good_labels.append(lbl)
+labels = good_labels
 
 step = args.step
 if not step :
