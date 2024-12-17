@@ -1491,6 +1491,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     f" -o {ostr}" \
                     f" -k {kontrLine} " \
                     f" -c {self.ui.cor.value()}" \
+                    f" -r {self.ui.pixelSize.value()}" \
                     f" -a {step}" + \
                     resLine + fltLine + mmLine
         self.execScrRole("ct")

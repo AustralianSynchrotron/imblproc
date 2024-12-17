@@ -22,6 +22,7 @@ printhelp() {
   echo "  -C T,L,B,R   Crop final image (all INT). T, L, B and R give cropping from the edges of the"
   echo "               images: top, left, bottom, right."
   echo "  -R FLOAT     Rotate projections."
+  echo "  -I str       Type of gap fill algorithm: NO(default), NS, AT, AM"
   echo "  -t INT       Test mode: keeps intermediate images for the given projection."
   echo "  -v           Be verbose to show progress."
   echo "  -h           Prints this help."
@@ -96,10 +97,11 @@ delta=""
 end=""
 cent=0
 rotate=0
+fill=""
 testme=""
 beverbose=false
 allargs=""
-while getopts "b:B:d:D:m:g:f:F:s:e:c:a:C:R:t:hv" opt ; do
+while getopts "b:B:d:D:m:g:f:F:s:e:c:a:C:R:I:t:hv" opt ; do
   allargs=" $allargs -$opt $OPTARG"
   case $opt in
     b)  bgO=$OPTARG;;
@@ -150,6 +152,7 @@ while getopts "b:B:d:D:m:g:f:F:s:e:c:a:C:R:t:hv" opt ; do
     R)  rotate=$OPTARG
         chknum "$rotate" "-$opt"
         ;;
+    I)  fill="$OPTARG";;
     t)  testme="$OPTARG";;
     v)  beverbose=true;;
     h)  printhelp ; exit 1 ;;
@@ -159,7 +162,6 @@ while getopts "b:B:d:D:m:g:f:F:s:e:c:a:C:R:t:hv" opt ; do
 done
 shift $((OPTIND-1))
 
-args="-I AM" # this option to fill the gaps
 if [ -n "$bgO" ] ; then
   args="$args -B $bgO"
 fi
@@ -181,6 +183,10 @@ fi
 if [ "$rotate" !=  "0" ]  ; then
   args="$args -r $rotate"
 fi
+if [ -n "$fill" ] ; then
+  args="$args -I $fill"
+fi
+
 if $beverbose ; then
   args="$args -v"
 fi
