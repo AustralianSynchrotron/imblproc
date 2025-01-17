@@ -1700,7 +1700,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.addToConsole(f"Reconstructing into memory: {outPath}.")
             if self.execScrProc("Creating file for reconstructed volume.",
                     f"convert -size {x}x{x} -colorspace gray canvas:black {outTest} && \n"
-                    f"ctas v2v {outTest} -o {outPath}:-{y - 1} && \n"
+                    f"ctas v2v {outTest} -o {outPath}::{y} && \n"
                     f"if (( {4*x*x*y} >  $( du --block-size=1 {outFile} | cut -d$'\t' -f1 ) )) ; then \n"
                     f"  cp --sparse=never {outFile} {outFile}.tmp  && \n"
                     f"  mv {outFile}.tmp {outFile}\n"

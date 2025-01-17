@@ -298,7 +298,7 @@ doStitch() {
   else
     outStr="$outVol:$1-$(($1+$3)),$end"
   fi
-  toExec="ctas proj $args $4 -o $outStr  $samO:$stO-$(($stO+$3))  $samS:$stS-$(($stS+$3))"
+  toExec="ctas proj $args $4 -o $outStr  $samO:${stO}+${3}  $samS:${stS}+${3}"
   if $beverbose ; then
     echo "Executing:"
     echo "  $toExec"
@@ -308,15 +308,15 @@ doStitch() {
 }
 
 if (( $delta == 0 )) ; then
-  doStitch 0 0 $end "$argD"
+  doStitch 0 0 $(( end + 1 )) "$argD"
 elif (( $delta <= $piark  )) ; then
-  doStitch 0      $(($piark - $delta)) $(($delta-1))      "$argF"
-  doStitch $delta 0                    $(($end - $delta)) "$argD"
+  doStitch 0      $(($piark - $delta)) $delta                 "$argF"
+  doStitch $delta 0                    $(($end - $delta + 1)) "$argD"
 else
   tailO=$(( 2*$piark - $delta ))
   tailS=$(( $end - $tailO ))
-  doStitch 0      $tailO               $(( $tailS - 1 )) "$argD"
-  doStitch $tailS $(( $end - $piark )) $tailO            "$argF"
+  doStitch 0      $tailO               $tailS           "$argD"
+  doStitch $tailS $(( $end - $piark )) $(( tailO + 1 )) "$argF"
 fi
 
 exit $?

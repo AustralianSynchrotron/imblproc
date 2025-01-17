@@ -248,7 +248,7 @@ prepare_seq() {
       elif (( $idx - $pidx != 1 )) ; then
         echo -n "$sseq"
         if (( $sseq != $pidx )) ; then
-          echo -n "-${pidx}"
+          echo -n ":$(( pidx + 1 ))"
         fi
         echo -n ','
         sseq=${idx}
@@ -257,7 +257,7 @@ prepare_seq() {
     done
     echo -n "${sseq}"
     if (( $pidx != $sseq )) ; then
-      echo -n "-$pidx"
+      echo -n ":$(( pidx + 1 ))"
     fi
     echo
   else
@@ -342,7 +342,7 @@ if ( ! $volWipe || ! $volStore ) ; then # create file in memory
     tifForSize="${crFilePrefix}for_size.tif"
     if ! convert -size ${x}x${y} -colorspace gray -depth 8 canvas: "$tifForSize" \
        ||
-       ! ctas v2v "$tifForSize" -o "${tpnm}:/data:-$(( $z - 1 ))" \
+       ! ctas v2v "$tifForSize" -o "${tpnm}:/data::$z" \
        ||
        ! (
          vsize=$( du --block-size=1 "$tpnm" | cut -d$'\t' -f1 )
