@@ -141,12 +141,12 @@ for label in labels:
 
 print( "# Set: start, range, projections, step (full scan)")
 print(f"# Common: {start:.3f} {stop - start:.3f} {steps} {step:.6f}")
-if len(labels) > 1 :
-  for label in labels :
-    rangeL = pos[label][-1] - pos[label][0]
-    stepsL = idx[label][-1] - idx[label][0]
-    print(f"# {label}: {pos[label][0]: .3f} {rangeL: .3f} {stepsL} {rangeL/stepsL:.6f}"
-          f" ({starts[label]: .3f} ... {stops[label]: .3f})")
+#if len(labels) > 1 :
+for label in labels :
+  rangeL = pos[label][-1] - pos[label][0]
+  stepsL = idx[label][-1] - idx[label][0]
+  print(f"# {label}: {pos[label][0]: .3f} {rangeL: .3f} {stepsL} {rangeL/stepsL:.6f}"
+        f" ({starts[label]: .3f} ... {stops[label]: .3f})")
 if not args.all :
   sys.exit(0)
 
