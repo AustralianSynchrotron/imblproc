@@ -296,7 +296,7 @@ doStitch() {
   if [ -n "$testme" ] ; then
     outStr="T${testme}_O${stO}_S${stS}__${outVol}"
   else
-    outStr="$outVol:$1-$(($1+$3)),$end"
+    outStr="$outVol:$1+$3,$end"
   fi
   toExec="ctas proj $args $4 -o $outStr  $samO:${stO}+${3}  $samS:${stS}+${3}"
   if $beverbose ; then
