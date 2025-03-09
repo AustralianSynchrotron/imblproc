@@ -11,7 +11,8 @@ printhelp() {
   echo "  -B PATH      Background image in shifted position."
   echo "  -d PATH      Dark field image in original position."
   echo "  -D PATH      Dark field image in shifted position."
-  echo "  -m PATH      Image containing map of gaps."
+  echo "  -m PATH      Image containing map of gaps in original position."
+  echo "  -M PATH      Image containing map of gaps in shifted position."
   echo "  -a INT       Number of frames constituting 180 degree ark."
   echo "  -f INT       First frame in original data set."
   echo "  -F INT       First frame in shifted data set."
@@ -83,7 +84,8 @@ bgO=""
 bgS=""
 dfO=""
 dfS=""
-gmask=""
+gmaskOrg=""
+gmaskSft=""
 cropT=0
 cropL=0
 cropB=0
@@ -101,14 +103,15 @@ fill=""
 testme=""
 beverbose=false
 allargs=""
-while getopts "b:B:d:D:m:g:f:F:s:e:c:a:C:R:I:t:hv" opt ; do
+while getopts "b:B:d:D:m:M:g:f:F:s:e:c:a:C:R:I:t:hv" opt ; do
   allargs=" $allargs -$opt $OPTARG"
   case $opt in
     b)  bgO=$OPTARG;;
     B)  bgS=$OPTARG;;
     d)  dfO=$OPTARG;;
     D)  dfS=$OPTARG;;
-    m)  gmask=$OPTARG;;
+    m)  gmaskOrg=$OPTARG;;
+    M)  gmaskSft=$OPTARG;;
     g)  IFS=',:' read shiftX shiftY <<< "$OPTARG"
         chkint "$shiftX" " from the string '$OPTARG' determined by option -$opt"
         chkint "$shiftY" " from the string '$OPTARG' determined by option -$opt"
@@ -174,8 +177,11 @@ fi
 if [ -n "$dfS" ] ; then
   args="$args -D $dfS"
 fi
-if [ -n "$gmask" ] ; then
-  args="$args -M $gmask"
+if [ -n "$gmaskOrg" ] ; then
+  args="$args -M $gmaskOrg"
+fi
+if [ -n "$gmaskSft" ] ; then
+    args="$args -M $gmaskSft"
 fi
 if [ -n "$testme" ] ; then
   args="$args -t $testme"
