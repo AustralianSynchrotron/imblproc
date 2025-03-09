@@ -1475,7 +1475,7 @@ class MainWindow(QtWidgets.QMainWindow):
         kontrLine = "FLT" if fltLine == "NONE" else "ABS"
         fltLine = "" if fltLine == "NONE" else f" -f {fltLine}"
         resLine = f" -r {self.ui.pixelSize.value()} " + \
-            "" if self.ui.outMu.isChecked() else f" -w {12.398/self.ui.energy.value()}"
+            ( "" if self.ui.outMu.isChecked() else f" -w {12.398/self.ui.energy.value()}" )
         mmLine=""
         dataFormat = self.ui.resDataFormat.currentText()
         if not "float" in dataFormat :
