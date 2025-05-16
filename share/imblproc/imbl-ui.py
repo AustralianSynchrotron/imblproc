@@ -1451,7 +1451,8 @@ class MainWindow(QtWidgets.QMainWindow):
                                 f" -z {self.ui.distance.value()}" \
                                 f" -d {self.ui.d2b.value()}" \
                                 f" -r {self.ui.pixelSize.value()}" \
-                                f" -w {12.398/self.ui.energy.value()}"   # keV to Angstrom
+                                f" -w {12.398/self.ui.energy.value()}" \
+                                + ( "" if self.ui.zerroPadding.isChecked() else " -p" )
         if saveHist :
             Script.run(f"echo '{command}' >> {self.historyName}")
         return self.execScrProc( "Retrieving phase", command)
