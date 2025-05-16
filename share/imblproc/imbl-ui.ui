@@ -396,7 +396,7 @@
                 <bool>true</bool>
                </property>
                <property name="buttonSymbols">
-                <enum>QAbstractSpinBox::ButtonSymbols::NoButtons</enum>
+                <enum>QAbstractSpinBox::NoButtons</enum>
                </property>
                <property name="maximum">
                 <number>999</number>
@@ -411,7 +411,7 @@
                   <bool>true</bool>
                  </property>
                  <property name="buttonSymbols">
-                  <enum>QAbstractSpinBox::ButtonSymbols::NoButtons</enum>
+                  <enum>QAbstractSpinBox::NoButtons</enum>
                  </property>
                  <property name="maximum">
                   <number>999999999</number>
@@ -494,7 +494,7 @@
                 <bool>true</bool>
                </property>
                <property name="buttonSymbols">
-                <enum>QAbstractSpinBox::ButtonSymbols::NoButtons</enum>
+                <enum>QAbstractSpinBox::NoButtons</enum>
                </property>
                <property name="maximum">
                 <number>999</number>
@@ -593,7 +593,7 @@
              <bool>true</bool>
             </property>
             <property name="buttonSymbols">
-             <enum>QAbstractSpinBox::ButtonSymbols::NoButtons</enum>
+             <enum>QAbstractSpinBox::NoButtons</enum>
             </property>
             <property name="maximum">
              <number>999999999</number>
@@ -619,7 +619,7 @@
              <string>x</string>
             </property>
             <property name="alignment">
-             <set>Qt::AlignmentFlag::AlignCenter</set>
+             <set>Qt::AlignCenter</set>
             </property>
            </widget>
           </item>
@@ -632,7 +632,7 @@
              <bool>true</bool>
             </property>
             <property name="buttonSymbols">
-             <enum>QAbstractSpinBox::ButtonSymbols::NoButtons</enum>
+             <enum>QAbstractSpinBox::NoButtons</enum>
             </property>
             <property name="maximum">
              <number>999999999</number>
@@ -1056,7 +1056,7 @@
               <string>X</string>
              </property>
              <property name="alignment">
-              <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
              </property>
             </widget>
            </item>
@@ -1082,7 +1082,7 @@
               <string>Y</string>
              </property>
              <property name="alignment">
-              <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
              </property>
             </widget>
            </item>
@@ -1114,7 +1114,7 @@
               <string>X</string>
              </property>
              <property name="alignment">
-              <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
              </property>
             </widget>
            </item>
@@ -1140,7 +1140,7 @@
               <string>Y</string>
              </property>
              <property name="alignment">
-              <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
              </property>
             </widget>
            </item>
@@ -1189,7 +1189,7 @@
               <string>X</string>
              </property>
              <property name="alignment">
-              <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
              </property>
             </widget>
            </item>
@@ -1215,7 +1215,7 @@
               <string>Y</string>
              </property>
              <property name="alignment">
-              <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
              </property>
             </widget>
            </item>
@@ -1366,7 +1366,7 @@
           <item>
            <spacer name="horizontalSpacer_2">
             <property name="orientation">
-             <enum>Qt::Orientation::Horizontal</enum>
+             <enum>Qt::Horizontal</enum>
             </property>
             <property name="sizeHint" stdset="0">
              <size>
@@ -1591,7 +1591,7 @@
        </attribute>
        <layout class="QGridLayout" name="gridLayout_13" rowstretch="0,0,0,0,0,0,0,0,0,0">
         <property name="sizeConstraint">
-         <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
+         <enum>QLayout::SetDefaultConstraint</enum>
         </property>
         <item row="3" column="1">
          <widget class="QWidget" name="widget" native="true">
@@ -1689,49 +1689,45 @@
             <widget class="QWidget" name="widget" native="true">
              <layout class="QHBoxLayout" name="horizontalLayout_29">
               <item>
-               <layout class="QHBoxLayout" name="horizontalLayout">
-                <item>
-                 <widget class="QDoubleSpinBox" name="d2b">
-                  <property name="toolTip">
-                   <string>Ratio of imaginary (refraction) to real (absorption) components of complex refraction index. In phase retrieval this value is assuemed to be same for the whole sample. Without phase it makes no difference.</string>
-                  </property>
-                  <property name="specialValueText">
-                   <string>no phase</string>
-                  </property>
-                  <property name="decimals">
-                   <number>0</number>
-                  </property>
-                  <property name="maximum">
-                   <double>10000.000000000000000</double>
-                  </property>
-                  <property name="saveInConfig" stdset="0">
-                   <number>0</number>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QCheckBox" name="zeroPadding">
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="toolTip">
-                   <string>Uses zero-padding instead of reflection-padding in FFT operations of the phase retreival. Reflection padding eliminates FFT artefacts on the edges of the image. However, it can be slower because enforces the size of the FFT array, thus inhibiting some optimizations and GPU utilization.</string>
-                  </property>
-                  <property name="text">
-                   <string>0-padding</string>
-                  </property>
-                  <property name="checked">
-                   <bool>true</bool>
-                  </property>
-                  <property name="saveInConfig" stdset="0">
-                   <number>1</number>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
+               <widget class="QDoubleSpinBox" name="d2b">
+                <property name="toolTip">
+                 <string>Ratio of imaginary (refraction) to real (absorption) components of complex refraction index. In phase retrieval this value is assuemed to be same for the whole sample. Without phase it makes no difference.</string>
+                </property>
+                <property name="specialValueText">
+                 <string>no phase</string>
+                </property>
+                <property name="decimals">
+                 <number>0</number>
+                </property>
+                <property name="maximum">
+                 <double>10000.000000000000000</double>
+                </property>
+                <property name="saveInConfig" stdset="0">
+                 <number>0</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="zeroPadding">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="toolTip">
+                 <string>Uses zero-padding instead of reflection-padding in FFT operations of the phase retreival. Reflection padding eliminates FFT artefacts on the edges of the image. However, it can be slower because enforces the size of the FFT array, thus inhibiting some optimizations and GPU utilization.</string>
+                </property>
+                <property name="text">
+                 <string>0-padding</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+                <property name="saveInConfig" stdset="0">
+                 <number>1</number>
+                </property>
+               </widget>
               </item>
              </layout>
             </widget>
@@ -1838,7 +1834,7 @@
              <string/>
             </property>
             <property name="alignment">
-             <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
            </widget>
           </item>
@@ -2141,10 +2137,10 @@
         <item row="0" column="2">
          <spacer name="horizontalSpacer">
           <property name="orientation">
-           <enum>Qt::Orientation::Horizontal</enum>
+           <enum>Qt::Horizontal</enum>
           </property>
           <property name="sizeType">
-           <enum>QSizePolicy::Policy::Fixed</enum>
+           <enum>QSizePolicy::Fixed</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -2348,7 +2344,7 @@
          <widget class="QWidget" name="widget" native="true">
           <layout class="QHBoxLayout" name="horizontalLayout_13">
            <property name="sizeConstraint">
-            <enum>QLayout::SizeConstraint::SetNoConstraint</enum>
+            <enum>QLayout::SetNoConstraint</enum>
            </property>
            <item>
             <widget class="QCheckBox" name="autocor">
@@ -2520,7 +2516,7 @@
            <string>Execute before:</string>
           </property>
           <property name="alignment">
-           <set>Qt::AlignmentFlag::AlignCenter</set>
+           <set>Qt::AlignCenter</set>
           </property>
          </widget>
         </item>
@@ -2540,7 +2536,7 @@
            <string>Code</string>
           </property>
           <property name="alignment">
-           <set>Qt::AlignmentFlag::AlignCenter</set>
+           <set>Qt::AlignCenter</set>
           </property>
          </widget>
         </item>
@@ -2647,6 +2643,7 @@
   <tabstop>pixelSize</tabstop>
   <tabstop>energy</tabstop>
   <tabstop>distance</tabstop>
+  <tabstop>d2b</tabstop>
   <tabstop>ring</tabstop>
   <tabstop>ringBeforePhase</tabstop>
   <tabstop>ringAfterPhase</tabstop>
@@ -2737,12 +2734,12 @@
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="ringOrder">
+  <buttongroup name="resFormat">
    <property name="saveInConfig" stdset="0">
     <number>1</number>
    </property>
   </buttongroup>
-  <buttongroup name="resFormat">
+  <buttongroup name="ringOrder">
    <property name="saveInConfig" stdset="0">
     <number>1</number>
    </property>
