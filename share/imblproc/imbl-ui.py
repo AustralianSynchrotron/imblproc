@@ -497,6 +497,10 @@ class MainWindow(QtWidgets.QMainWindow):
                     raise SyntaxError(f"Can't find sample \"{args.expSample}\" "
                                       f"in the experiment \"{self.ui.expPath.text()}\". "
                                       f"Found samples are: {listOfsamples}.")
+                didx = self.ui.expSample.findText(args.expSample)
+                if didx >= 0:
+                    self.ui.expSample.setCurrentIndex(didx)
+                    self.on_outPath_textChanged()
             if not args.headless:
                 self.show()
             self.ui.setEnabled(True)
