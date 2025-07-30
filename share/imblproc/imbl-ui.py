@@ -268,7 +268,7 @@ def hdf5shape(filename, dataset):
     outed = Script.run(f"export HDF5_USE_FILE_LOCKING=FALSE ; "
                        f"h5clear -s --increment {filename} 2>&1 /dev/null ; "
                        f"h5ls {filename}/{dataset}")[1]
-    if lres := re.search('.*{([0-9]+), ([0-9]+), ([0-9]+)}.*', outed) :
+    if lres := re.search(r'.*{([0-9]+), ([0-9]+), ([0-9]+)}.*', outed) :
         return int(lres.group(3)), int(lres.group(2)), int(lres.group(1))
     else:
         return None, None, None
@@ -311,7 +311,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # place Script UI's
         self.scrProc = Script(self)
-        for place in self.ui.findChildren(QtWidgets.QLayout, QtCore.QRegExp(self.placePrefix+"\w+")):
+        for place in self.ui.findChildren(QtWidgets.QLayout, QtCore.QRegExp(self.placePrefix+r"\w+")):
             role = place.objectName().removeprefix(self.placePrefix)
             scrw = UScript(self.ui)
             scrw.setRole(role)
@@ -450,7 +450,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 elif isinstance(awdg, QtWidgets.QComboBox):
                     listOfItems = [ awdg.itemText(i) for i in range(0,awdg.count()) ]
                     help += f" Possible values are: {listOfItems}" if len(listOfItems) else ""
-                    parser.add_argument(f"--{name}" , type=str, metavar="STR", choices=listOfItems, help = help)
+                    choices = None if name == "expSample" else listOfItems
+                    parser.add_argument(f"--{name}" , type=str, metavar="STR", choices=choices, help = help)
                 elif isinstance(awdg, UScript):
                     parser.add_argument(f"--{name}" , type=str, metavar="STR",
                                         help = f"Script is executed before {awdg.role()}.")
@@ -489,9 +490,15 @@ class MainWindow(QtWidgets.QMainWindow):
         # This will run only after QApplication was executed
         def afterStart() :
             self.ui.setEnabled(False)
+            self.loadConfiguration(args.config, vars(args))
+            if args.expSample:
+                listOfsamples = [ self.ui.expSample.itemText(i) for i in range(self.ui.expSample.count()) ]
+                if not args.expSample in listOfsamples :
+                    raise SyntaxError(f"Can't find sample \"{args.expSample}\" "
+                                      f"in the experiment \"{self.ui.expPath.text()}\". "
+                                      f"Found samples are: {listOfsamples}.")
             if not args.headless:
                 self.show()
-            self.loadConfiguration(args.config, vars(args))
             self.ui.setEnabled(True)
             acted = False
             if args.init:
@@ -688,7 +695,7 @@ class MainWindow(QtWidgets.QMainWindow):
         addToOut = ""
         for curL in outed.splitlines():
             # poptmx start
-            if lres := re.search('Starting process \((.*) steps\)\: (.*)\.', curL) :
+            if lres := re.search(r'Starting process \((.*) steps\)\: (.*)\.', curL) :
                 progg=0
                 proggMax=int(lres.group(1))
                 proggTxt = f"{role} - {lres.group(2)}"
@@ -698,7 +705,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 progg=-1
                 addToOut += curL.strip() + '\n'
             # poptmx progg
-            elif lres := re.search('^([0-9]+)/([0-9]+)$', curL) :
+            elif lres := re.search(r'^([0-9]+)/([0-9]+)$', curL) :
                 progg=int(lres.group(1))
                 proggMax=int(lres.group(2))
             # other
@@ -712,10 +719,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 proggTxt = role
             # GNU parallel skip
             elif 'Computer:jobs running/jobs completed/%of started jobs/Average seconds to complete' in curL \
-                 or re.search('.+ / [0-9]+ / [0-9]+', curL) :
+                 or re.search(r'.+ / [0-9]+ / [0-9]+', curL) :
                 progg=0
             # GNU parallel progg
-            elif lres := re.search('ETA\: .* Left\: ([0-9]+) AVG\: .*\:[0-9]+/([0-9]+)/.*/.*', curL) :
+            elif lres := re.search(r'ETA\: .* Left\: ([0-9]+) AVG\: .*\:[0-9]+/([0-9]+)/.*/.*', curL) :
                 leftToDo = int(lres.group(1))
                 progg = int(lres.group(2)) if leftToDo else -1
                 proggMax = progg + leftToDo
@@ -1254,7 +1261,7 @@ class MainWindow(QtWidgets.QMainWindow):
         wdir = self.onStorNamePrefix()
         stRes = self.common_stitch(wdir, self.ui.testProj, ars)
         lres = False if stRes is None else \
-            re.search('^([0-9]+) ([0-9]+) ([0-9]+) (.*)', stRes.splitlines()[-1])
+            re.search(r'^([0-9]+) ([0-9]+) ([0-9]+) (.*)', stRes.splitlines()[-1])
         if lres:
             z, y, x, imageFile = lres.groups()
             imageFile =  Script.run(f"cd {wdir} ; realpath {imageFile}")[1].strip()
@@ -1480,7 +1487,7 @@ class MainWindow(QtWidgets.QMainWindow):
         mmLine=""
         dataFormat = self.ui.resDataFormat.currentText()
         if not "float" in dataFormat :
-            if lres := re.search('([0-9]+)-bit.*', dataFormat) :
+            if lres := re.search(r'([0-9]+)-bit.*', dataFormat) :
                 mmLine = " -i " + ( "" if "unsigned" in dataFormat else "-" ) + lres.group(1) + \
                         f" -m {self.ui.toIntMin.value()} -M {self.ui.toIntMax.value()} "
             else:
